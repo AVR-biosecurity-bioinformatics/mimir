@@ -3,3 +3,6 @@
 *.log.[0-9]
 *.slurm
 *.out
+/output/
+/work/
+/trace/
