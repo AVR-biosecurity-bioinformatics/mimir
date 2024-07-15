@@ -1,0 +1,5 @@
+*.log
+.nextflow/
+*.log.[0-9]
+*.slurm
+*.out

@@ -1,0 +1,8 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/AVR-biosecurity-bioinformatics/mimir",
+    "title": "AVR-biosecurity-bioinformatics/freyr pipeline parameters",
+    "description": "Reference database pipeline [IN DEVELOPMENT]",
+    "type": "object",
+    "defs": {}
+}
