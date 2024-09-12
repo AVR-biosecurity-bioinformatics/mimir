@@ -67,7 +67,7 @@ if (params.help) {
 }
 
 // Validate input parameters using schema
-validateParameters( parameters_schema: 'nextflow_schema.json' )
+// validateParameters( parameters_schema: 'nextflow_schema.json' )
 
 
 // Print summary of supplied parameters (that differ from defaults)
@@ -80,6 +80,14 @@ log.info paramsSummaryLog(workflow)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+//// subworkflows
+include { TAXRETURN                                             } from './nextflow/subworkflows/taxreturn'
+
+
+
+
+//// modules
+// include { PULL_NCBI                                             } from './nextflow/modules/pull_ncbi'
 
 
 
@@ -92,7 +100,10 @@ log.info paramsSummaryLog(workflow)
 //// define main workflow
 workflow MIMIR {
 
-    println "Hello"
+    TAXRETURN (
+        "dummy"
+    )
+
 
 }
 
