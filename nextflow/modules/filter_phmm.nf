@@ -1,16 +1,15 @@
-process FETCH_GENBANK {
-    def module_name = "fetch_genbank"
+process FILTER_PHMM {
+    def module_name = "filter_phmm"
     tag "-"
     label "small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(taxon)
-    val(db_file)
+    tuple val(taxon), val(type), val(seqs_file)
+    val(phmm_model_file)
 
     output: 
-    tuple val(taxon), val("genbank"), path("*_genbank.rds"),                  emit: seqs
-    path("*.fasta"),                                                           emit: fasta
+    tuple val(taxon), val(type), path("*_filter_phmm.rds"),                  emit: seqs
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,9 +22,10 @@ process FETCH_GENBANK {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    taxon =                 "${taxon}"
-    db_file =               "${db_file}"
-    task_index =            "${task.index}"
+    taxon =                  "${taxon}"
+    type =                   "${type}"
+    seqs_file =              "${seqs_file}"
+    phmm_model_file =        "${phmm_model_file}"
 
     ## global variables
     projectDir = "$projectDir"

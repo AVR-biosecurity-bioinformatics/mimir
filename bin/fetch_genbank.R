@@ -15,7 +15,8 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "taxon",
-    "db_file"
+    "db_file",
+    "task_index"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -40,13 +41,13 @@ genbank_seqs <-
     )
 
 # save sequences (DNAbin object) as .rds file
-saveRDS(genbank_seqs, paste0(taxon,"_genbank.rds"))
+saveRDS(genbank_seqs, paste0(taxon, "_", task_index, "_genbank.rds"))
 
 # write fasta for debugging
 if ( params.all_fasta == "true"){
     taxreturn::write_fasta(
         genbank_seqs, 
-        file = paste0(taxon, "_genbank.fasta"), 
+        file = paste0(taxon, "_", task_index, "_genbank.fasta"), 
         compress = FALSE
         )
 }
