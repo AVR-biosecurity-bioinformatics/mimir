@@ -6,4 +6,4 @@ This pipeline is being developed by a team at [Agriculture Victoria Research](ht
 
 `mimir` is a sibling pipeline to [`freyr`](https://github.com/AVR-biosecurity-bioinformatics/freyr), which handles sequencing data analysis for metabarcoding experiments. 
 
-> This pipeline is currently **experimental** and being actively developed, with no guarantee that the code is stable!
+> This pipeline is currently **UNFINISHED** and being actively developed, with no guarantee that the code is stable or usable!
