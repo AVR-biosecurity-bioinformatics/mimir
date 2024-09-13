@@ -7,7 +7,7 @@ process_packages <- c(
     "readr",
     "stringr",
     "tidyr",
-    "taxreturn",
+    # "taxreturn",
     NULL
 )
 invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn.conflicts = FALSE))
@@ -26,7 +26,9 @@ lapply(nf_vars, nf_var_check)
 ### run code
 
 # download ncbi taxonomy files
-db <- taxreturn::get_ncbi_taxonomy()
+# db <- taxreturn::get_ncbi_taxonomy()
+db <- get_ncbi_taxonomy()
+
 
 # save db object
 saveRDS(db, "ncbi_tax_db.rds")

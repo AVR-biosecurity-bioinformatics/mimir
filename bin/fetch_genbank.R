@@ -5,7 +5,7 @@ process_packages <- c(
     "magrittr",
     "stringr",
     "tidyr",
-    "taxreturn",
+    # "taxreturn",
     NULL
 )
 invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn.conflicts = FALSE))
@@ -28,7 +28,7 @@ db <- readRDS(db_file)
 
 ## Fetch sequences from GenBank by searching for a taxon name
 genbank_seqs <- 
-    taxreturn::fetch_seqs(
+    fetch_seqs(
         x = taxon, 
         database = "genbank", 
         db = db,
@@ -45,7 +45,7 @@ saveRDS(genbank_seqs, paste0(taxon, "_", task_index, "_genbank.rds"))
 
 # write fasta for debugging
 if ( params.all_fasta == "true"){
-    taxreturn::write_fasta(
+    write_fasta(
         genbank_seqs, 
         file = paste0(taxon, "_", task_index, "_genbank.fasta"), 
         compress = FALSE

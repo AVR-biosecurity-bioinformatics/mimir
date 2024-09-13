@@ -5,7 +5,7 @@ process_packages <- c(
     "magrittr",
     "stringr",
     "tidyr",
-    "taxreturn",
+    # "taxreturn",
     NULL
 )
 invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn.conflicts = FALSE))
@@ -33,7 +33,7 @@ seqs <- readRDS(seqs_file)
 
 ## filter using PHMM model
 seqs_filtered <- 
-    taxreturn::map_to_model(
+    map_to_model(
         x = seqs, # sequences, as a DNAbin or DNAStringset object
         model = phmm_model, # PHMM, as a PHMM object
         min_score = 100, # minimum specificity of match for retention (see ?aphid::Viterbi)
@@ -48,6 +48,6 @@ seqs_filtered <-
         quiet = FALSE
     )
 
-# save trimmed model as .rds file
+# save filtered sequences as .rds file
 saveRDS(seqs_filtered, paste0(taxon,"_",type,"_filter_phmm.rds"))
 

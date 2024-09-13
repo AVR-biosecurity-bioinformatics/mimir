@@ -11,6 +11,7 @@ include { FETCH_GENBANK                                             } from '../m
 // include { FETCH_MITO                                                } from '../modules/error_model'
 include { TRIM_PHMM                                                 } from '../modules/trim_phmm'
 include { FILTER_PHMM                                                 } from '../modules/filter_phmm'
+include { FILTER_STOP                                                 } from '../modules/filter_stop'
 
 
 
@@ -26,7 +27,7 @@ workflow TAXRETURN {
     //// dummy channel of taxon to test
     ch_taxon = Channel.from(
         "Scaptodrosophila",
-        "Carpophilus"
+        "Phylloxeridae"
         )
 
     //// make empty channels
@@ -102,12 +103,17 @@ workflow TAXRETURN {
     )
 
     //// optional: filter for stop codons
-    // FILTER_STOP
+    if ( params.coding ){
+        FILTER_STOP (
+            FILTER_PHMM.out.seqs,
+            "SGC4"
+        )
+    }
 
     //// combine chunks together
     // COMBINE_CHUNKS
     
-    //// resolve synonyms
+    //// resolve taxonomic synonyms
     // RESOLVE_SYNONYMS
 
     //// remove contaminating sequences

@@ -5,7 +5,7 @@ process_packages <- c(
     "magrittr",
     "stringr",
     "tidyr",
-    "taxreturn",
+    # "taxreturn",
     NULL
 )
 invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn.conflicts = FALSE))
@@ -39,9 +39,9 @@ if ( remove_primers == "true" ) {
 
 ## trim PHMM model
 phmm_model_trimmed <- 
-    taxreturn::subset_model(
+    subset_model(
         x = phmm_model, 
-        primers = c(primer_fwd, priemr_rev), 
+        primers = c(primer_fwd, primer_rev), 
         trimprimers = trimprimers
     )
 
