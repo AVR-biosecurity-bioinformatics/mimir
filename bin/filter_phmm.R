@@ -1,11 +1,40 @@
 #!/usr/bin/env Rscript
 ### load only required packages
 process_packages <- c(
+    "Biostrings",
+    "DECIPHER",
+    "IRanges",
+    "R.utils",
+    "RCurl",
+    "ape",
+    "aphid",
+    "bold",
+    "data.table",
+    "data.tree",
     "dplyr",
+    "entropy",
+    "fs",
+    "furrr",
+    "future",
+    "httr",
+    "kmer",
     "magrittr",
+    "methods",
+    "openssl",
+    "parallel",
+    "phytools",
+    "purrr",
+    "readr",
+    "rentrez",
+    "rvest",
+    "stats",
     "stringr",
+    "taxize",
+    "tibble",
     "tidyr",
-    # "taxreturn",
+    "utils",
+    "vroom",
+    "xml2",
     NULL
 )
 invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn.conflicts = FALSE))
@@ -15,6 +44,7 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "taxon",
+    "task_index",
     "type",
     "seqs_file",
     "phmm_model_file"
@@ -49,5 +79,13 @@ seqs_filtered <-
     )
 
 # save filtered sequences as .rds file
-saveRDS(seqs_filtered, paste0(taxon,"_",type,"_filter_phmm.rds"))
+saveRDS(seqs_filtered, paste0(taxon,"_",task_index,"_",type,"_filter_phmm.rds"))
 
+# write fasta for debugging
+if ( params.all_fasta == "true"){
+    write_fasta(
+        seqs_filtered, 
+        file = paste0(taxon,"_",task_index,"_",type,"_filter_phmm.fasta"), 
+        compress = FALSE
+        )
+}

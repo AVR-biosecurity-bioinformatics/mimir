@@ -12,6 +12,9 @@ include { FETCH_GENBANK                                             } from '../m
 include { TRIM_PHMM                                                 } from '../modules/trim_phmm'
 include { FILTER_PHMM                                                 } from '../modules/filter_phmm'
 include { FILTER_STOP                                                 } from '../modules/filter_stop'
+include { COMBINE_CHUNKS                                                 } from '../modules/combine_chunks'
+include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
+include { REMOVE_CONTAM                                                 } from '../modules/remove_contam'
 
 
 
@@ -104,20 +107,43 @@ workflow TAXRETURN {
 
     //// optional: filter for stop codons
     if ( params.coding ){
+
         FILTER_STOP (
             FILTER_PHMM.out.seqs,
             "SGC4"
         )
+
+        //// create chunks channel from FILTER_STOP output
+        FILTER_STOP.out.seqs
+            .map { taxon, index, type, seqs_file -> seqs_file }
+            .collect()
+            .set { ch_chunks }
+
+    } else {
+        
+        //// create chunks channel from FILTER_PHMM output
+        FILTER_PHMM.out.seqs
+            .map { taxon, index, type, seqs_file -> seqs_file }
+            .collect()
+            .set { ch_chunks }
     }
 
     //// combine chunks together
-    // COMBINE_CHUNKS
+    COMBINE_CHUNKS ( 
+        ch_chunks 
+    )
     
     //// resolve taxonomic synonyms
-    // RESOLVE_SYNONYMS
+    RESOLVE_SYNONYMS ( 
+        COMBINE_CHUNKS.out.seqs,
+        GET_NCBI_TAXONOMY.out.db_path
+    )
 
     //// remove contaminating sequences
-    // REMOVE_CONTAM
+    REMOVE_CONTAM (
+        RESOLVE_SYNONYMS.out.seqs,
+        GET_NCBI_TAXONOMY.out.db_file
+    )
 
     //// prune large groups
     // PRUNE_GROUPS

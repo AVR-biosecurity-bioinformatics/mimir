@@ -1,16 +1,16 @@
-process FETCH_GENBANK {
-    def module_name = "fetch_genbank"
+process REMOVE_CONTAM {
+    def module_name = "remove_contam"
     tag "-"
-    label "small"
+    label "medium"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(taxon)
+    val(seqs_file)
     val(db_file)
 
     output: 
-    tuple val(taxon), val(task.index), val("genbank"), path("*_genbank.rds"),                  emit: seqs
-    path("*.fasta"),                                                           emit: fasta, optional: true
+    path("seqs_decontaminated.rds"),                  emit: seqs
+    path("*.fasta"),                            emit: fasta, optional: true
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,9 +23,8 @@ process FETCH_GENBANK {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    taxon =                 "${taxon}"
-    db_file =               "${db_file}"
-    task_index =            "${task.index}"
+    seqs_file =                   "${seqs_file}"
+    db_file =                     "${db_file}"
 
     ## global variables
     projectDir = "$projectDir"

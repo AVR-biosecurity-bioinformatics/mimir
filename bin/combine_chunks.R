@@ -43,38 +43,34 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "taxon",
-    "task_index",
-    "type",
-    "seqs_file",
-    "genetic_code"
+    "seqs_list"
     )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-# read in seqs from file
-seqs <- readRDS(seqs_file)
+# read in list of sequences
+seqs_list <- # convert Groovy to R list format
+    stringr::str_extract_all(seqs_list, pattern = "[^\\s,\\[\\]]+") %>% unlist()
+
+seqs_list <- lapply(seqs_list, readRDS) # read in taxtabs and store as list of tibbles
 
 ### run code
 
 ## filter out sequences with stop codons
-seqs_filtered <- 
-    codon_filter(
-        x = seqs, 
-        genetic_code = genetic_code, 
-        tryrc = TRUE, 
-        resolve_draws = "majority"
+seqs_combined <- 
+    concat_DNAbin(
+        seqs_list
     )
 
 # save filtered sequences as .rds file
-saveRDS(seqs_filtered, paste0(taxon,"_",task_index,"_",type,"_filter_stop.rds"))
+saveRDS(seqs_combined, "seqs_combined.rds")
 
 # write fasta for debugging
 if ( params.all_fasta == "true"){
     write_fasta(
-        seqs_filtered, 
-        file = paste0(taxon, "_",task_index,"_",type, "_filter_stop.fasta"), 
+        seqs_combined, 
+        file = "combined_chunks.fasta", 
         compress = FALSE
         )
 }

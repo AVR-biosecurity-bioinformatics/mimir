@@ -1,16 +1,15 @@
-process FETCH_GENBANK {
-    def module_name = "fetch_genbank"
+process COMBINE_CHUNKS {
+    def module_name = "combine_chunks"
     tag "-"
     label "small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(taxon)
-    val(db_file)
+    val(seqs_list)
 
     output: 
-    tuple val(taxon), val(task.index), val("genbank"), path("*_genbank.rds"),                  emit: seqs
-    path("*.fasta"),                                                           emit: fasta, optional: true
+    path("seqs_combined.rds"),                  emit: seqs
+    path("*.fasta"),                            emit: fasta, optional: true
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,9 +22,7 @@ process FETCH_GENBANK {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    taxon =                 "${taxon}"
-    db_file =               "${db_file}"
-    task_index =            "${task.index}"
+    seqs_list =              "${seqs_list}"
 
     ## global variables
     projectDir = "$projectDir"

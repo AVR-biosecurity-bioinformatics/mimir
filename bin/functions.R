@@ -2156,10 +2156,10 @@ codon_entropy <- function(x, genetic_code = NULL, tryrc = TRUE, codon_filter = T
 kmer_screen <- function(seqs, model, threshold = 0.3, k = 5, quiet=FALSE){
   # Check inputs
   if(!class(model) == "PHMM") {
-    stop("Model must be of class PHMM")
+    stop(paste0("Model must be of class 'PHMM', but it is of class '",class(model),"'."))
   }
   if(!class(seqs) == "DNAbin") {
-    stop("Seqs must be of class DNAbin")
+    stop(paste0("Seqs must be of class 'DNAbin', but it is of class '",class(seqs),"'."))
   }
 
   # Generate a reference sequence from the model to align against
