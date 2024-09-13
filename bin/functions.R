@@ -790,7 +790,7 @@ blast_assign_species <- function(query, db, type="blastn",
 #' @param max_length The maximum length of sequences to download
 #' @param subsample (Numeric) return a random subsample of sequences from the search.
 #' @param chunk_size Split up the query into chunks of this size to avoid overloading API servers. if left NULL, the default will be 300
-#' @param db a database file generated using `taxreturn::get_ncbi_taxonomy()`. Generated automatically if NULL.
+#' @param db a database file generated using ` get_ncbi_taxonomy()`. Generated automatically if NULL.
 #' @param multithread Whether multithreading should be used, if TRUE the number of cores will be automatically detected, or provided a numeric vector to manually set the number of cores to use
 #' @param quiet Whether progress should be printed to the console.
 #' @param progress A logical, for whether or not to print a progress bar when multithread is true. Note, this will slow down processing.
@@ -1008,7 +1008,7 @@ parse_gb <- function(gb){
 #' "gb" for genbank taxonomic ID (Accession|GBTaxID),
 #' "gb-binom" which outputs genbank taxonomic ID's and Genus species binomials, translating BOLD taxonomic ID's to genbank in the process (Accession|GBTaxID;Genus_species)
 #' or "standard" which outputs the default format for each database. For genbank this is the description field, and for bold this is `sampleid|species name|markercode|genbankid`
-#' @param db (Optional) a database file generated using `taxreturn::get_ncbi_taxonomy()` or `taxreturn::get_ott_taxonomy()`
+#' @param db (Optional) a database file generated using ` get_ncbi_taxonomy()` or ` get_ott_taxonomy()`
 #' @param retry_attempt The number of query attempts in case of query failure due to poor internet connection.
 #' @param retry_wait How long to wait between query attempts
 #'
@@ -1294,7 +1294,7 @@ split_bold_query <- function(x, chunk_size=100000, split_if_under = FALSE, quiet
 #' @param chunk_size Split up the queries made (for genbank), or returned records(for BOLD) into chunks of this size to avoid overloading API servers.
 #' if left NULL, the default for genbank searches will be 10,000 for regular queries, 1,000 if marker is "mitochondria", and 1 if marker is "genome"
 #' For BOLD queries the default is 100,000 returned records
-#' @param db a database file generated using `taxreturn::get_ncbi_taxonomy()`. Generated automatically if NULL.
+#' @param db a database file generated using ` get_ncbi_taxonomy()`. Generated automatically if NULL.
 #' @param multithread Whether multithreading should be used, if TRUE the number of cores will be automatically detected, or provided a numeric vector to manually set the number of cores to use
 #' @param quiet Whether progress should be printed to the console.
 #' @param progress A logical, for whether or not to print a progress bar when multithread is true. Note, this will slow down processing.
@@ -2095,7 +2095,7 @@ codon_filter <- function(x, genetic_code = NULL, tryrc=TRUE, resolve_draws="majo
 #' @param x Sequences in DNAStringset or DNAbin format
 #' @param genetic_code A genetic code for the Amino acid translation. set to 'SGC4' for Invertebrate mitochondrial or see all known codes at Biostrings::GENETIC_CODE_TABLE
 #' @param tryrc Whether the reverse complemement should be evaluated if no frame without stop codons was found in the forward orientation.
-#' @param codon_filter Whether `taxreturn::codon_filter` should be run first to remove sequences containing stop codons or frameshifts.
+#' @param codon_filter Whether ` codon_filter` should be run first to remove sequences containing stop codons or frameshifts.
 #' @param resolve_draws How draws should be resolved when multiple possible frames produce sequences with no stop codons.
 #' Options are "remove" to completely remove the sequence, or "majority" to pick the most common frame from the entire alignment.
 #' @param method the method employed to estimate entropy. see `?entropy::entropy` for more details
@@ -2480,10 +2480,10 @@ get_mixed_clusters <- function (x, db, rank = "order", threshold = 0.97, rngseed
   #Get lineage
   if(attr(db, "type")  == "ncbi"){
     source <- "ncbi"
-    lineage <- taxreturn::get_ncbi_lineage(x = x, db = db)
+    lineage <-  get_ncbi_lineage(x = x, db = db)
   } else if(attr(db, "type")  == "OTT"){
     source <- "OTT"
-    lineage <- taxreturn::get_ott_lineage(x = x, db = db)
+    lineage <-  get_ott_lineage(x = x, db = db)
   } else (stop("db type is not supported"))
 
   # Cluster OTUS
@@ -3217,7 +3217,7 @@ get_ncbi_taxonomy <- function(dest_dir, include_synonyms = TRUE, force=FALSE) {
 #' Get lineage
 #'
 #' @param x A DNAbin or DNAStringSet object with names in format `accession|tax_id;Genus species`
-#' @param db a database file generated using `taxreturn::get_ncbi_taxonomy()`
+#' @param db a database file generated using ` get_ncbi_taxonomy()`
 #'
 #' @return
 #' @export
@@ -3230,7 +3230,7 @@ get_ncbi_taxonomy <- function(dest_dir, include_synonyms = TRUE, force=FALSE) {
 get_ncbi_lineage <- function(x, db){
   if(missing(x)){stop("x must be a DNAbin or DNAStringSet object")}
   if(!length(x) > 0) {stop("x is empty or not a DNAbin or DNAStringSet object")}
-  if(missing(db)){ db <- taxreturn::get_ncbi_taxonomy()}
+  if(missing(db)){ db <-  get_ncbi_taxonomy()}
   cat("Getting taxonomic lineage from taxids\n")
   na_taxids <- names(x)[stringr::str_extract(names(x), "(?<=\\|).+?(?=;)") == "NA"]
   if(length(na_taxids)> 0){
@@ -3378,7 +3378,7 @@ resolve_synonyms_ncbi <- function(x, dir=NULL, quiet = FALSE) {
 #' Get ncbi taxid's for a taxon name
 #'
 #' @param x A DNAbin or DNAStringSet object with names in format `accession|tax_id;Genus species`
-#' @param db a database file generated using `taxreturn::get_ncbi_taxonomy()`
+#' @param db a database file generated using ` get_ncbi_taxonomy()`
 #'
 #' @return
 #' @export
@@ -4234,7 +4234,7 @@ train_idtaxa <- function(x, max_group_size=10, max_iterations = 3,  allow_group_
 
   #Reformat to complete taxonomic hierarchy
   if(get_lineage & !is.null(db)){
-    seqs <- taxreturn::reformat_hierarchy(x, db=db, quiet=FALSE)
+    seqs <-  reformat_hierarchy(x, db=db, quiet=FALSE)
   } else if(get_lineage &  is.null(db)){
     stop("If get_lineage is TRUE, a db needs to be provided")
   } else  (seqs <- x)
@@ -4249,7 +4249,7 @@ train_idtaxa <- function(x, max_group_size=10, max_iterations = 3,  allow_group_
 
   # Convert to DNAstringset for DECIPHER
   if(methods::is(seqs, "DNAbin")){
-    seqs <- taxreturn::DNAbin2DNAstringset(seqs)
+    seqs <-  DNAbin2DNAstringset(seqs)
   }
 
   # Remove gaps
