@@ -9,8 +9,8 @@ process FETCH_GENBANK {
     val(db_file)
 
     output: 
-    tuple val(taxon), val(task.index), val("genbank"), path("*_genbank.rds"),                  emit: seqs
-    path("*.fasta"),                                                           emit: fasta, optional: true
+    path("*_genbank.rds"),                  emit: seqs
+    path("*.fasta"),                        emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

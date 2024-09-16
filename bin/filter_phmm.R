@@ -43,10 +43,7 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "taxon",
-    "task_index",
-    "type",
-    "seqs_file",
+    "fasta_file",
     "phmm_model_file"
     )
 lapply(nf_vars, nf_var_check)
@@ -56,8 +53,14 @@ lapply(nf_vars, nf_var_check)
 # read in phmm model from file
 phmm_model <- readRDS(phmm_model_file)
 
-# read in seqs from file
-seqs <- readRDS(seqs_file)
+# convert fasta to DNAbin
+seqs <- 
+    ape::read.FASTA(fasta_file, type = "DNA")
+
+# get basename
+file_basename_noext <- 
+    basename(fasta_file) %>%
+    stringr::str_remove("\\.fasta$")
 
 ### run code
 
@@ -79,13 +82,15 @@ seqs_filtered <-
     )
 
 # save filtered sequences as .rds file
-saveRDS(seqs_filtered, paste0(taxon,"_",task_index,"_",type,"_filter_phmm.rds"))
+if ( !is.null(seqs_filtered)) {
+    saveRDS(seqs_filtered, paste0(file_basename_noext,"_filter_phmm.rds"))
+}
 
 # write fasta for debugging
-if ( params.all_fasta == "true"){
+if ( params.all_fasta == "true" && !is.null(seqs_filtered) ){
     write_fasta(
         seqs_filtered, 
-        file = paste0(taxon,"_",task_index,"_",type,"_filter_phmm.fasta"), 
+        file = paste0(file_basename_noext,"_filter_phmm.fasta"), 
         compress = FALSE
         )
 }

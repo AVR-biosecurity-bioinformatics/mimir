@@ -43,9 +43,6 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "taxon",
-    "task_index",
-    "type",
     "seqs_file",
     "genetic_code"
     )
@@ -55,6 +52,11 @@ lapply(nf_vars, nf_var_check)
 
 # read in seqs from file
 seqs <- readRDS(seqs_file)
+
+# get basename
+file_basename_noext <- 
+    basename(seqs_file) %>%
+    stringr::str_remove("_filter_phmm\\.rds$")
 
 ### run code
 
@@ -68,13 +70,15 @@ seqs_filtered <-
     )
 
 # save filtered sequences as .rds file
-saveRDS(seqs_filtered, paste0(taxon,"_",task_index,"_",type,"_filter_stop.rds"))
+if ( !is.null(seqs_filtered)) {
+    saveRDS(seqs_filtered, paste0(file_basename_noext,"_filter_stop.rds"))
+}
 
 # write fasta for debugging
-if ( params.all_fasta == "true"){
+if ( params.all_fasta == "true" && !is.null(seqs_filtered) ){
     write_fasta(
         seqs_filtered, 
-        file = paste0(taxon, "_",task_index,"_",type, "_filter_stop.fasta"), 
+        file = paste0(file_basename_noext,"_filter_stop.fasta"), 
         compress = FALSE
         )
 }

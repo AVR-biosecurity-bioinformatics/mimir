@@ -31,9 +31,9 @@ workflow TAXRETURN {
     main:
 
     //// dummy channel of taxon to test
-    ch_taxon = Channel.from(
-        "Drosophila",
-        "Aphididae"
+    ch_taxon            = Channel.from(
+        // "Drosophila", "Aphis"
+        "Scaptodrosophila", "Phylloxeridae"
         )
 
     //// make empty channels
@@ -43,7 +43,7 @@ workflow TAXRETURN {
     ch_internal         = Channel.empty()
 
     //// parse file path parameters as channels
-    ch_phmm = channel.fromPath( params.phmm_model, checkIfExists: true).first()
+    ch_phmm             = channel.fromPath( params.phmm_model, checkIfExists: true ).first()
 
     //// get NCBI taxonomy file
     GET_NCBI_TAXONOMY ()
@@ -61,12 +61,14 @@ workflow TAXRETURN {
         GET_NCBI_TAXONOMY.out.db_file
     )
 
-    ch_genbank = 
-        ch_genbank 
-        .concat ( FETCH_GENBANK.out.seqs )
-
-    //// split .fasta records into chunks of 1000 sequences for similar processing times
-    /// use .splitFasta operator 
+    ch_genbank 
+        .concat ( FETCH_GENBANK.out.fasta )
+        .splitFasta ( 
+            by: 100,
+            elem: 3,
+            file: true
+        )
+        . set { ch_genbank }
 
     // //// fetch BOLD sequences for each chunk
     // FETCH_BOLD (
@@ -134,9 +136,8 @@ workflow TAXRETURN {
         )
     }
 
-    //// create chunks channel from RESOLVE_SYNONYMS output
+    //// collect chunks into a list
     RESOLVE_SYNONYMS.out.seqs
-        .map { taxon, index, type, seqs_file -> seqs_file }
         .collect()
         .set { ch_chunks }
 

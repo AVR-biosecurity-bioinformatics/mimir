@@ -66,18 +66,16 @@ genbank_seqs <-
         retry_attempt = 3, 
         retry_wait = 5, 
         multithread = FALSE, 
-        quiet=FALSE
+        quiet = FALSE
     )
 
 # save sequences (DNAbin object) as .rds file
 saveRDS(genbank_seqs, paste0(taxon, "_", task_index, "_genbank.rds"))
 
-# write fasta for debugging
-if ( params.all_fasta == "true"){
-    write_fasta(
-        genbank_seqs, 
-        file = paste0(taxon, "_", task_index, "_genbank.fasta"), 
-        compress = FALSE
-        )
-}
+# write fasta
+write_fasta(
+    genbank_seqs, 
+    file = paste0(taxon, "_", task_index, "_genbank.fasta"), 
+    compress = FALSE
+    )
 

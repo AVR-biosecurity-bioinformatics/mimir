@@ -5,11 +5,11 @@ process RESOLVE_SYNONYMS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple val(taxon), val(index), val(type), val(seqs_file)
+    val(seqs_file)
     val(db_path)
 
     output: 
-    tuple val(taxon), val(index), val(type), path("*_seqs_resolved.rds"),                  emit: seqs
+    path("*_seqs_resolved.rds"),                  emit: seqs
     path("*.fasta"),                            emit: fasta, optional: true
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
@@ -23,9 +23,6 @@ process RESOLVE_SYNONYMS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    taxon =                  "${taxon}"
-    task_index =             "${index}"
-    type =                   "${type}"
     seqs_file =              "${seqs_file}"
     db_path =                "${db_path}"
 
