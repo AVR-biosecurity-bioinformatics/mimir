@@ -43,11 +43,8 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "taxon",
-    "task_index",
-    "type",
     "seqs_file",
-    "db_path"
+    "db_file"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -56,23 +53,33 @@ lapply(nf_vars, nf_var_check)
 # read sequences from file
 seqs <- readRDS(seqs_file)
 
+# read ncbi db file
+db <- readRDS(db_file)
+
 ### run code
 
-## filter out sequences with stop codons
-seqs_resolved <- 
-    resolve_synonyms_ncbi(
-        x = seqs,
-        dir = db_path
+# reformat to complete taxonomic heirarchy 
+seqs_renamed <- 
+    taxreturn::reformat_hierarchy(
+        x = seqs, 
+        db = db, 
+        ranks = c("kingdom", "phylum", "class", "order", "family", "genus", "species"),
+        quiet = FALSE
     )
 
-# save filtered sequences as .rds file
-saveRDS(seqs_resolved, paste0(taxon,"_",task_index,"_",type,"_seqs_resolved.rds"))
+# add "Root" to the hierarchy
+names(seqs_renamed) <- 
+  names(seqs_renamed) %>%
+  stringr::str_replace(";",";Root;")
+
+# save renamed sequences as .rds file
+saveRDS(seqs_renamed, "seqs_renamed.rds")
 
 # write fasta for debugging
 if ( params.all_fasta == "true"){
     write_fasta(
-        seqs_resolved, 
-        file = paste0(taxon, "_",task_index,"_",type, "_seqs_resolved.fasta"), 
+        seqs_renamed, 
+        file = "seqs_renamed.fasta", 
         compress = FALSE
         )
 }

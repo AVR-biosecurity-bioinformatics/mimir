@@ -1,16 +1,14 @@
-process RESOLVE_SYNONYMS {
-    def module_name = "resolve_synonyms"
+process TAXA_SUMMARY {
+    def module_name = "taxa_summary"
     tag "-"
-    label "medium"
+    label "small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple val(taxon), val(index), val(type), val(seqs_file)
-    val(db_path)
+    val(seqs_file)
 
     output: 
-    tuple val(taxon), val(index), val(type), path("*_seqs_resolved.rds"),                  emit: seqs
-    path("*.fasta"),                            emit: fasta, optional: true
+    path("taxa_summary.csv"),                  emit: csv
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,11 +21,7 @@ process RESOLVE_SYNONYMS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    taxon =                  "${taxon}"
-    task_index =             "${index}"
-    type =                   "${type}"
-    seqs_file =              "${seqs_file}"
-    db_path =                "${db_path}"
+    seqs_file =                   "${seqs_file}"
 
     ## global variables
     projectDir = "$projectDir"

@@ -43,11 +43,7 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "taxon",
-    "task_index",
-    "type",
-    "seqs_file",
-    "db_path"
+    "seqs_file"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -58,21 +54,34 @@ seqs <- readRDS(seqs_file)
 
 ### run code
 
-## filter out sequences with stop codons
-seqs_resolved <- 
-    resolve_synonyms_ncbi(
-        x = seqs,
-        dir = db_path
-    )
-
-# save filtered sequences as .rds file
-saveRDS(seqs_resolved, paste0(taxon,"_",task_index,"_",type,"_seqs_resolved.rds"))
-
-# write fasta for debugging
-if ( params.all_fasta == "true"){
-    write_fasta(
-        seqs_resolved, 
-        file = paste0(taxon, "_",task_index,"_",type, "_seqs_resolved.fasta"), 
-        compress = FALSE
+# summarise
+taxa_summary <- 
+    names(seqs) %>%
+    stringr::str_split_fixed(";", n = 9) %>%
+    tibble::as_tibble() %>%
+    tidyr::separate(
+        V1, 
+        into = c("Sequences", "tax_ids"), 
+        sep = "\\|"
+    ) %>%
+    magrittr::set_colnames(
+        c(
+            "Sequences", 
+            "tax_ids", 
+            "root", 
+            "kingdom", 
+            "phylum",
+            "class", 
+            "order", 
+            "family", 
+            "genus", 
+            "species"
         )
-}
+    ) %>%
+    dplyr::summarise_all(n_distinct)
+
+# save as .csv
+readr::write_csv(
+    x = taxa_summary, 
+    file = "taxa_summary.csv"
+)

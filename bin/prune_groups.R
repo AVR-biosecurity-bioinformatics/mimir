@@ -43,11 +43,7 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "taxon",
-    "task_index",
-    "type",
-    "seqs_file",
-    "db_path"
+    "seqs_file"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -58,21 +54,25 @@ seqs <- readRDS(seqs_file)
 
 ### run code
 
-## filter out sequences with stop codons
-seqs_resolved <- 
-    resolve_synonyms_ncbi(
-        x = seqs,
-        dir = db_path
+#Prune group sizes down to 5, removing all identical sequences first
+seqs_pruned <- 
+    prune_groups(
+        x = seqs, # DNAbin or DNAStringset object
+        max_group_size = 5, # max sequences to keep
+        discardby = "length", # 'length': discard smallest sequences first; 'random': discard randomly
+        dedup = TRUE, # remove sequences with identical taxonomic name and sequence first
+        prefer = NULL, # vector of sequence names to prefer (eg. high-quality internal sequences)
+        quiet = FALSE
     )
 
 # save filtered sequences as .rds file
-saveRDS(seqs_resolved, paste0(taxon,"_",task_index,"_",type,"_seqs_resolved.rds"))
+saveRDS(seqs_pruned, "seqs_pruned.rds")
 
 # write fasta for debugging
 if ( params.all_fasta == "true"){
     write_fasta(
-        seqs_resolved, 
-        file = paste0(taxon, "_",task_index,"_",type, "_seqs_resolved.fasta"), 
+        seqs_pruned, 
+        file = "seqs_pruned.fasta", 
         compress = FALSE
         )
 }
