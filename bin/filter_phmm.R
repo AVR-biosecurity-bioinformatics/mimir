@@ -54,8 +54,7 @@ lapply(nf_vars, nf_var_check)
 phmm_model <- readRDS(phmm_model_file)
 
 # convert fasta to DNAbin
-seqs <- 
-    ape::read.FASTA(fasta_file, type = "DNA")
+seqs <- ape::read.FASTA(fasta_file, type = "DNA")
 
 # get basename
 file_basename_noext <- 

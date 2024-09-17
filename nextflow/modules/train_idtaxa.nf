@@ -1,16 +1,15 @@
-process REMOVE_CONTAM {
-    def module_name = "remove_contam"
+process TRAIN_IDTAXA {
+    def module_name = "train_idtaxa"
     tag "-"
     label "medium"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
+    val(seqs_file)
     val(db_file)
 
     output: 
-    path("seqs_decontaminated.rds"),                  emit: seqs
-    path("*.fasta"),                            emit: fasta, optional: true
+    path("idtaxa_model.rds"),                  emit: model
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,7 +22,7 @@ process REMOVE_CONTAM {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
+    seqs_file =                   "${seqs_file}"
     db_file =                     "${db_file}"
 
     ## global variables

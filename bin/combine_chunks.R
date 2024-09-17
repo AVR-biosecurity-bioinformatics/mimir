@@ -63,14 +63,12 @@ seqs_combined <-
         seqs_list
     )
 
-# save filtered sequences as .rds file
-saveRDS(seqs_combined, "seqs_combined.rds")
+# # save filtered sequences as .rds file
+# saveRDS(seqs_combined, "seqs_combined.rds")
 
-# write fasta for debugging
-if ( params.all_fasta == "true"){
-    write_fasta(
-        seqs_combined, 
-        file = "combined_chunks.fasta", 
-        compress = FALSE
-        )
-}
+# write sequences to fasta
+write_fasta(
+    seqs_combined, 
+    file = "combined_chunks.fasta", 
+    compress = FALSE
+    )

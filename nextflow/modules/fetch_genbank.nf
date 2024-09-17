@@ -1,7 +1,7 @@
 process FETCH_GENBANK {
     def module_name = "fetch_genbank"
     tag "-"
-    label "small"
+    label "medium"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
@@ -9,8 +9,8 @@ process FETCH_GENBANK {
     val(db_file)
 
     output: 
-    path("*_genbank.rds"),                  emit: seqs
-    path("*.fasta"),                        emit: fasta
+    path("*_genbank.rds"),                  emit: seqs, optional: true
+    path("*.fasta"),                        emit: fasta, optional: true
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

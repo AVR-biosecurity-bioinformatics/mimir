@@ -1,16 +1,16 @@
-process REMOVE_CONTAM {
-    def module_name = "remove_contam"
+process CHUNK_TAXON {
+    def module_name = "chunk_taxon"
     tag "-"
-    label "medium"
+    label "long"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
-    val(db_file)
+    val(taxon)
+    val(entrez_key)
+    val(chunk_rank)
 
     output: 
-    path("seqs_decontaminated.rds"),                  emit: seqs
-    path("*.fasta"),                            emit: fasta, optional: true
+    path("tax_list.txt"),                  emit: tax_list
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,8 +23,9 @@ process REMOVE_CONTAM {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
-    db_file =                     "${db_file}"
+    taxon =                 "${taxon}"
+    entrez_key =               "${entrez_key}"
+    chunk_rank =            "${chunk_rank}"
 
     ## global variables
     projectDir = "$projectDir"

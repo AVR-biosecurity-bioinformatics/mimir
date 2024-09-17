@@ -8,8 +8,8 @@ process COMBINE_CHUNKS {
     val(seqs_list)
 
     output: 
-    path("seqs_combined.rds"),                  emit: seqs
-    path("*.fasta"),                            emit: fasta, optional: true
+    // path("seqs_combined.rds"),                  emit: seqs
+    path("*.fasta"),                            emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

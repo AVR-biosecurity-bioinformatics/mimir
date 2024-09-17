@@ -43,42 +43,32 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "taxon",
-    "db_file",
-    "task_index"
+    "seqs_file",
+    "db_file"
     )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
+# read sequences from file
+seqs <- readRDS(seqs_file)
+
+# read sequences from file
 db <- readRDS(db_file)
 
 ### run code
 
-## Fetch sequences from GenBank by searching for a taxon name
-genbank_seqs <- 
-    fetch_seqs(
-        x = taxon, 
-        database = "genbank", 
-        db = db,
-        marker="COI[GENE] OR COX1[GENE] OR COXI[GENE]", 
-        output = "gb-binom", 
-        retry_attempt = 3, 
-        retry_wait = 5, 
-        multithread = FALSE, 
+# train model
+training_set <- 
+    train_idtaxa(
+        seqs, 
+        max_group_size = 10, 
+        max_iterations = 3,  
+        allow_group_removal = TRUE,  
+        get_lineage = TRUE, 
+        db = db, 
         quiet = FALSE
     )
 
-# only save output files if sequences were downloaded
-if (!is.null(genbank_seqs)){
-    # save sequences (DNAbin object) as .rds file
-    saveRDS(genbank_seqs, paste0(taxon, "_", task_index, "_genbank.rds"))
-
-    # write fasta
-    write_fasta(
-        genbank_seqs, 
-        file = paste0(taxon, "_", task_index, "_genbank.fasta"), 
-        compress = FALSE
-        )
-}
-
+# save model
+saveRDS(training_set, "idtaxa_model.rds")

@@ -43,15 +43,15 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "seqs_file",
+    "fasta_file",
     "db_file"
     )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-# read sequences from file
-seqs <- readRDS(seqs_file)
+# convert fasta to DNAbin
+seqs <- ape::read.FASTA(fasta_file, type = "DNA")
 
 # read ncbi db file
 db <- readRDS(db_file)

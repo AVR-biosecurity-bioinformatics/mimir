@@ -4,7 +4,7 @@
 
 
 //// modules to import
-// include { CHUNK_TAXON                                               } from '../modules/error_model'
+include { CHUNK_TAXON                                               } from '../modules/chunk_taxon'
 include { COMBINE_CHUNKS                                                 } from '../modules/combine_chunks'
 // include { FETCH_BOLD                                                } from '../modules/error_model'
 include { FETCH_GENBANK                                             } from '../modules/fetch_genbank'
@@ -15,8 +15,10 @@ include { GET_NCBI_TAXONOMY                                         } from '../m
 include { PRUNE_GROUPS                                                 } from '../modules/prune_groups'
 include { REFORMAT_NAMES                                                 } from '../modules/reformat_names'
 include { REMOVE_CONTAM                                                 } from '../modules/remove_contam'
+include { REMOVE_EXACT_DUPLICATES                                                 } from '../modules/remove_exact_duplicates'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
 include { TAXA_SUMMARY                                                 } from '../modules/taxa_summary'
+include { TRAIN_IDTAXA                                                 } from '../modules/train_idtaxa'
 include { TRIM_PHMM                                                 } from '../modules/trim_phmm'
 
 
@@ -30,11 +32,23 @@ workflow TAXRETURN {
 
     main:
 
-    //// dummy channel of taxon to test
-    ch_taxon            = Channel.from(
-        // "Drosophila", "Aphis"
-        "Scaptodrosophila", "Phylloxeridae"
-        )
+    //// channel of taxon to test
+    if ( !params.target_taxon ){
+        ch_taxon            = Channel.from(
+            // "Drosophila", "Aphis"
+            // "Scaptodrosophila", "Phylloxeridae"
+            "Drosophilidae"
+            )
+    } else {
+        ch_taxon = params.target_taxon
+    }
+
+    //// ENTREZ key channel parsing
+    if ( params.entrez_key ) {
+        ch_entrez_key = params.entrez_key
+    } else {
+        ch_entrez_key = "no_key"
+    }
 
     //// make empty channels
     ch_genbank          = Channel.empty()
@@ -50,21 +64,29 @@ workflow TAXRETURN {
 
     /// use taxize to get taxonomic ranks from NCBI and BOLD: https://docs.ropensci.org/taxize/
 
-    // //// split input taxon into units for parallelisation
-    // CHUNK_TAXON (
+    //// split input taxon into units for parallelisation
+    CHUNK_TAXON (
+        ch_taxon, 
+        ch_entrez_key,
+        params.chunk_rank
+    )
 
-    // )
+    //// split taxon list into a channel
+    CHUNK_TAXON.out.tax_list
+        .splitText( by: 1 )
+        .map { string -> string.trim() } // remove newline characters
+        .set { ch_tax_chunks }
 
     //// fetch genbank sequences for each chunk 
     FETCH_GENBANK (
-        ch_taxon,
+        ch_tax_chunks,
         GET_NCBI_TAXONOMY.out.db_file
     )
 
     ch_genbank 
         .concat ( FETCH_GENBANK.out.fasta )
         .splitFasta ( 
-            by: 100,
+            by: params.subchunk_size,
             elem: 3,
             file: true
         )
@@ -146,9 +168,14 @@ workflow TAXRETURN {
         ch_chunks
     )
  
+    //// remove exact duplicate sequences if they exist
+    REMOVE_EXACT_DUPLICATES (
+        COMBINE_CHUNKS.out.fasta
+    )
+
     //// remove contaminating sequences
     REMOVE_CONTAM (
-        COMBINE_CHUNKS.out.seqs,
+        REMOVE_EXACT_DUPLICATES.out.fasta,
         GET_NCBI_TAXONOMY.out.db_file
     )
 
@@ -169,12 +196,16 @@ workflow TAXRETURN {
     )
 
     //// train IDTAXA model
-    // TRAIN_IDTAXA
+    TRAIN_IDTAXA (
+        REFORMAT_NAMES.out.seqs,
+        GET_NCBI_TAXONOMY.out.db_file
+    )
 
     emit:
 
     ncbi_taxonomy = GET_NCBI_TAXONOMY.out.db_file
     curated_fasta = REFORMAT_NAMES.out.fasta
     taxa_summary = TAXA_SUMMARY.out.csv
+    idtaxa_model = TRAIN_IDTAXA.out.model
 
 }
