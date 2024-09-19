@@ -6,6 +6,7 @@
 //// modules to import
 include { CHUNK_TAXON                                               } from '../modules/chunk_taxon'
 include { COMBINE_CHUNKS                                                 } from '../modules/combine_chunks'
+include { COUNT_GENBANK                                                 } from '../modules/count_genbank'
 // include { FETCH_BOLD                                                } from '../modules/error_model'
 include { FETCH_GENBANK                                             } from '../modules/fetch_genbank'
 // include { FETCH_MITO                                                } from '../modules/error_model'
@@ -33,22 +34,14 @@ workflow TAXRETURN {
     main:
 
     //// channel of taxon to test
-    if ( !params.target_taxon ){
-        ch_taxon            = Channel.from(
-            // "Drosophila", "Aphis"
-            // "Scaptodrosophila", "Phylloxeridae"
-            "Drosophilidae"
-            )
-    } else {
-        ch_taxon = params.target_taxon
-    }
+    ch_taxon = params.target_taxon ?: Channel.from(
+        // "Drosophila", "Aphis"
+        // "Scaptodrosophila", "Phylloxeridae"
+        "Drosophilidae" 
+    )
 
     //// ENTREZ key channel parsing
-    if ( params.entrez_key ) {
-        ch_entrez_key = params.entrez_key
-    } else {
-        ch_entrez_key = "no_key"
-    }
+    ch_entrez_key = params.entrez_key ?: "no_key"
 
     //// make empty channels
     ch_genbank          = Channel.empty()
@@ -77,9 +70,23 @@ workflow TAXRETURN {
         .map { string -> string.trim() } // remove newline characters
         .set { ch_tax_chunks }
 
+    //// fetch count of genbank sequences for each chunk
+    COUNT_GENBANK (
+        ch_tax_chunks
+    )
+
+    //// filter out chunks that return no sequences
+    COUNT_GENBANK.out.chunks_counts
+        .map { taxon, count_file -> 
+            int seq_count = count_file.getBaseName() as int
+            [ taxon, count_file, seq_count ] }
+        .filter { it[2] > 0 } // remove chunks with a sequence count of 0
+        .map { taxon, count_file, seq_count -> [ taxon, count_file ] }
+        .set { ch_filtered_chunks }
+
     //// fetch genbank sequences for each chunk 
     FETCH_GENBANK (
-        ch_tax_chunks,
+        ch_filtered_chunks,
         GET_NCBI_TAXONOMY.out.db_file
     )
 
@@ -90,7 +97,7 @@ workflow TAXRETURN {
             elem: 3,
             file: true
         )
-        . set { ch_genbank }
+        .set { ch_genbank }
 
     // //// fetch BOLD sequences for each chunk
     // FETCH_BOLD (
@@ -196,16 +203,24 @@ workflow TAXRETURN {
     )
 
     //// train IDTAXA model
-    TRAIN_IDTAXA (
-        REFORMAT_NAMES.out.seqs,
-        GET_NCBI_TAXONOMY.out.db_file
-    )
+    if ( params.train_idtaxa ) {
+        TRAIN_IDTAXA (
+            REFORMAT_NAMES.out.seqs,
+            GET_NCBI_TAXONOMY.out.db_file
+        )
+
+    }
+    
+    //// TODO: add proper model channel handling (with conditions)
+    ch_models = 
+        Channel.empty()
+    
 
     emit:
 
     ncbi_taxonomy = GET_NCBI_TAXONOMY.out.db_file
     curated_fasta = REFORMAT_NAMES.out.fasta
     taxa_summary = TAXA_SUMMARY.out.csv
-    idtaxa_model = TRAIN_IDTAXA.out.model
+    // idtaxa_model = TRAIN_IDTAXA.out.model
 
 }

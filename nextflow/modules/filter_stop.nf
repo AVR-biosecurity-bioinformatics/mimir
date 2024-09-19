@@ -1,7 +1,7 @@
 process FILTER_STOP {
     def module_name = "filter_stop"
     tag "-"
-    label "small"
+    label "very_small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

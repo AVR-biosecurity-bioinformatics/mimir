@@ -1,16 +1,14 @@
-process CHUNK_TAXON {
-    def module_name = "chunk_taxon"
-    tag "-"
-    label "long"
+process COUNT_GENBANK {
+    def module_name = "count_genbank"
+    tag "$taxon"
+    label "very_small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
     val(taxon)
-    val(entrez_key)
-    val(chunk_rank)
 
     output: 
-    path("tax_list.txt"),                 emit: tax_list
+    tuple val(taxon), path("*.count"),                       emit: chunks_counts 
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -24,8 +22,6 @@ process CHUNK_TAXON {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     taxon =                 "${taxon}"
-    entrez_key =               "${entrez_key}"
-    chunk_rank =            "${chunk_rank}"
 
     ## global variables
     projectDir = "$projectDir"

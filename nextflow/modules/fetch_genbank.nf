@@ -1,16 +1,27 @@
 process FETCH_GENBANK {
     def module_name = "fetch_genbank"
-    tag "-"
-    label "medium"
+    tag "$taxon"
+    // label "medium"
+    cpus 1
+    memory 2.GB
+    time {
+        int seq_count = count_file.getBaseName() as int
+        if ( params.entrez_key ) {
+            extraTime = Duration.of(seq_count * 105) // add 105 milliseconds per sequence
+        } else {
+            extraTime = Duration.of(seq_count * 340) // add 340 milliseconds per sequence
+        }
+        5.m + extraTime
+    }
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(taxon)
+    tuple val(taxon), path(count_file)
     val(db_file)
 
     output: 
-    path("*_genbank.rds"),                  emit: seqs, optional: true
-    path("*.fasta"),                        emit: fasta, optional: true
+    path("*_genbank.rds"),                  emit: seqs
+    path("*.fasta"),                        emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

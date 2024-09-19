@@ -51,7 +51,11 @@ lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
+# read in database
 db <- readRDS(db_file)
+
+# convert spaces to underscores in taxon if present
+taxon_nospace <- stringr::str_replace_all(taxon, " ", "_")
 
 ### run code
 
@@ -72,13 +76,13 @@ genbank_seqs <-
 # only save output files if sequences were downloaded
 if (!is.null(genbank_seqs)){
     # save sequences (DNAbin object) as .rds file
-    saveRDS(genbank_seqs, paste0(taxon, "_", task_index, "_genbank.rds"))
+    saveRDS(genbank_seqs, paste0(taxon_nospace, "_", task_index, "_genbank.rds"))
 
     # write fasta
     write_fasta(
         genbank_seqs, 
-        file = paste0(taxon, "_", task_index, "_genbank.fasta"), 
+        file = paste0(taxon_nospace, "_", task_index, "_genbank.fasta"), 
         compress = FALSE
         )
-}
+} else { stop("ERROR: No sequences downloaded when some expected") }
 

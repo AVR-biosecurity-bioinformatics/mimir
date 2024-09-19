@@ -56,37 +56,59 @@ if ( entrez_key != "no_key" ){
     Sys.setenv(ENTREZ_KEY = entrez_key)
 }
 
-# convert taxon to uid, if 
-if ( stringr::str_detect(taxon, "^\\d+$") ) {
+## convert taxon name to uid, if necessary
+if ( stringr::str_detect(taxon, "^\\d+$") ) { # if already a number, leave as is
+    # ensure numeric class
     id <- as.numeric(taxon)
+    # get character taxon name from id
+    taxon_name <- taxize::id2name(id, db = "ncbi")[[1]] %>% pull(name)
 } else {
+    # convert taxon name to uid
     id <- 
         taxize::get_uid(
             sci_com = taxon,
             modifier = "Scientific Name"
         )[1]
+    # save taxon name variable
+    taxon_name <- taxon
 }
 
 if ( is.na(id) ){
-    stop( paste0("ERROR: Target taxon '",id,"' could not be unambiguously converted to UID/taxid.\n\tConsider supplying UID directly."))
+    stop( paste0("ERROR: Target taxon '",taxon,"' could not be unambiguously converted to UID/taxid.\n\tConsider supplying UID directly."))
 }
 
 ### run code
 
-## Fetch downstream taxa at a given rank
-taxon_chunked <- 
-    taxize::ncbi_downstream(
-        id = id, 
-        downto = chunk_rank
+## check if target taxon rank is higher than the chunk rank
+# get classification of target rank
+taxon_classification <- 
+    taxize::classification(
+        sci_id = id,
+        db = "ncbi"
     )
+# get actual rank and upstream ranks of target taxon
+taxon_ranks <- taxon_classification[[1]] %>% pull(rank)
 
-# subset to just a vector of names
-chunk_list <- taxon_chunked$childtaxa_name
+## if chunk rank is lower than taxon rank, chunk taxon
+if ( !is.element(chunk_rank, taxon_ranks ) ){
+    ## Fetch downstream taxa at a given rank
+    taxon_chunked <- 
+        taxize::ncbi_downstream(
+            id = id, 
+            downto = chunk_rank
+        )
 
-# check that a list was produced
-if ( is.null(chunk_list) ){
+    # subset to just a vector of names
+    chunk_vector <- taxon_chunked$childtaxa_name    
+} else { 
+    ## if chunk rank same or higher than taxon rank, just use taxon as the output
+    chunk_vector <- taxon_name
+} 
+
+# check that a vector was produced
+if ( is.null(chunk_vector) ){
     stop (paste0("ERROR: No taxon list produced from taxid = '",id,"' and chunk_rank = '",chunk_rank,"'.\n\tCheck target taxon is not at or below the chunk rank."))
 }
 
-# save list as text file
-write(chunk_list, "tax_list.txt")
+# save vector as text file
+write(chunk_vector, "tax_list.txt")
