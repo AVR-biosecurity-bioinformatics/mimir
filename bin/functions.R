@@ -828,15 +828,29 @@ fetch_genbank <- function(x, database = "nuccore", marker = c("COI[GENE]", "CO1[
   setup_multithread(multithread, quiet=quiet)
 
   # Main function
-  if (!tolower(marker) %in% c("mitochondria", "mitochondrion", "genome")) {
-    searchQ <- paste("(", x, "[ORGN])", " AND (", paste(c(marker), collapse = " OR "), ") AND ", min_length, ":", max_length, "[Sequence Length]", sep = "")
-  } else if (tolower(marker) %in% c("mitochondria", "mitochondrion")) {
-    message(paste0("Input marker is ", marker, ", Downloading full mitochondrial genomes"))
-    searchQ <- paste("(", x, "[ORGN])", " AND mitochondrion[filter] AND genome", sep = "")
-  } else if (tolower(marker) %in% c("genome")){
-    message(paste0("Input marker is ", marker, ", Downloading full genomes"))
-    searchQ <- paste("(", x, "[ORGN])", " AND complete genome[title]", sep = "")
+  if ( stringr::str_detect(x, "^\\d+$") ){ # if supplied taxon is a number (uid)...
+      if (!tolower(marker) %in% c("mitochondria", "mitochondrion", "genome")) {
+      searchQ <- paste("(txid", x, "[Organism:exp])", " AND (", paste(c(marker), collapse = " OR "), ") AND ", min_length, ":", max_length, "[Sequence Length]", sep = "")
+    } else if (tolower(marker) %in% c("mitochondria", "mitochondrion")) {
+      message(paste0("Input marker is ", marker, ", Downloading full mitochondrial genomes"))
+      searchQ <- paste("(txid", x, "[Organism:exp])", " AND mitochondrion[filter] AND genome", sep = "")
+    } else if (tolower(marker) %in% c("genome")){
+      message(paste0("Input marker is ", marker, ", Downloading full genomes"))
+      searchQ <- paste("(txid", x, "[Organism:exp])", " AND complete genome[title]", sep = "")
+    }
+  } else { # if supplied taxon is a name (word characters)...
+    if (!tolower(marker) %in% c("mitochondria", "mitochondrion", "genome")) {
+      searchQ <- paste("(", x, "[ORGN])", " AND (", paste(c(marker), collapse = " OR "), ") AND ", min_length, ":", max_length, "[Sequence Length]", sep = "")
+    } else if (tolower(marker) %in% c("mitochondria", "mitochondrion")) {
+      message(paste0("Input marker is ", marker, ", Downloading full mitochondrial genomes"))
+      searchQ <- paste("(", x, "[ORGN])", " AND mitochondrion[filter] AND genome", sep = "")
+    } else if (tolower(marker) %in% c("genome")){
+      message(paste0("Input marker is ", marker, ", Downloading full genomes"))
+      searchQ <- paste("(", x, "[ORGN])", " AND complete genome[title]", sep = "")
+    }
   }
+
+
   if(!quiet){message("Searching genbank with query:", searchQ)}
 
   search_results <- rentrez::entrez_search(db = database, term = searchQ, retmax = 9999999, use_history = TRUE)

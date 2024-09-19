@@ -3,10 +3,11 @@ process COUNT_GENBANK {
     tag "$taxon"
     label "very_small"
     container "jackscanlan/piperline-multi:0.0.1"
+    maxForks 10
 
     input:
     val(taxon)
-
+    
     output: 
     tuple val(taxon), path("*.count"),                       emit: chunks_counts 
 

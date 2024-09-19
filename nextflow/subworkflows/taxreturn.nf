@@ -60,8 +60,7 @@ workflow TAXRETURN {
     //// split input taxon into units for parallelisation
     CHUNK_TAXON (
         ch_taxon, 
-        ch_entrez_key,
-        params.chunk_rank
+        ch_entrez_key
     )
 
     //// split taxon list into a channel

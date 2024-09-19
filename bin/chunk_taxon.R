@@ -44,8 +44,7 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "taxon",
-    "entrez_key",
-    "chunk_rank"
+    "entrez_key"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -90,16 +89,16 @@ taxon_classification <-
 taxon_ranks <- taxon_classification[[1]] %>% pull(rank)
 
 ## if chunk rank is lower than taxon rank, chunk taxon
-if ( !is.element(chunk_rank, taxon_ranks ) ){
+if ( !is.element(params.chunk_rank, taxon_ranks ) ){
     ## Fetch downstream taxa at a given rank
     taxon_chunked <- 
         taxize::ncbi_downstream(
             id = id, 
-            downto = chunk_rank
+            downto = params.chunk_rank
         )
 
     # subset to just a vector of names
-    chunk_vector <- taxon_chunked$childtaxa_name    
+    chunk_vector <- taxon_chunked$childtaxa_id    
 } else { 
     ## if chunk rank same or higher than taxon rank, just use taxon as the output
     chunk_vector <- taxon_name
@@ -107,7 +106,7 @@ if ( !is.element(chunk_rank, taxon_ranks ) ){
 
 # check that a vector was produced
 if ( is.null(chunk_vector) ){
-    stop (paste0("ERROR: No taxon list produced from taxid = '",id,"' and chunk_rank = '",chunk_rank,"'.\n\tCheck target taxon is not at or below the chunk rank."))
+    stop (paste0("ERROR: No taxon list produced from taxid = '",id,"' and chunk_rank = '",params.chunk_rank,"'.\n\tCheck target taxon is not at or below the chunk rank."))
 }
 
 # save vector as text file

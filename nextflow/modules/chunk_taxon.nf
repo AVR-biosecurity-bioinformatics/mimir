@@ -7,7 +7,6 @@ process CHUNK_TAXON {
     input:
     val(taxon)
     val(entrez_key)
-    val(chunk_rank)
 
     output: 
     path("tax_list.txt"),                 emit: tax_list
@@ -25,7 +24,6 @@ process CHUNK_TAXON {
     ## input channel variables
     taxon =                 "${taxon}"
     entrez_key =               "${entrez_key}"
-    chunk_rank =            "${chunk_rank}"
 
     ## global variables
     projectDir = "$projectDir"

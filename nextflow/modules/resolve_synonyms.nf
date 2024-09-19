@@ -1,7 +1,10 @@
 process RESOLVE_SYNONYMS {
     def module_name = "resolve_synonyms"
     tag "-"
-    label "medium"
+    cpus 1
+    memory 5.GB
+    time 10.m
+    // label "medium"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

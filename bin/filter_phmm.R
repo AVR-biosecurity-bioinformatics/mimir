@@ -61,6 +61,23 @@ file_basename_noext <-
     basename(fasta_file) %>%
     stringr::str_remove("\\.fasta$")
 
+## parameter parsing
+min_score <- as.numeric(params.min_score)
+
+min_length <- as.numeric(params.min_length)
+
+if ( params.shave_to_phmm == "true" ) {
+    shave <- TRUE
+} else {
+    shave <- FALSE
+}
+
+if ( params.coding == "true" ) { 
+    check_frame <- TRUE 
+} else {
+    check_frame <- FALSE
+}
+
 ### run code
 
 ## filter using PHMM model
@@ -68,12 +85,12 @@ seqs_filtered <-
     map_to_model(
         x = seqs, # sequences, as a DNAbin or DNAStringset object
         model = phmm_model, # PHMM, as a PHMM object
-        min_score = 100, # minimum specificity of match for retention (see ?aphid::Viterbi)
-        min_length = 100, # minimum length of match for retention 
+        min_score = min_score, # minimum specificity of match for retention (see ?aphid::Viterbi)
+        min_length = min_length, # minimum length of match for retention 
         max_N = Inf, # max ambiguous bases to allow 
         max_gap = Inf, # max gaps to allow
-        shave = TRUE, # whether to remove bases outside match to PHMM
-        check_frame = TRUE, # check if indels are in multiples of three
+        shave = shave, # whether to remove bases outside match to PHMM
+        check_frame = check_frame, # check if indels are in multiples of three
         kmer_threshold = 0.5, # k-mer distance allowed for retention for alignment step
         k = 5, # k-mer size for clustering
         multithread = FALSE, 

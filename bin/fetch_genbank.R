@@ -67,6 +67,8 @@ genbank_seqs <-
         db = db,
         marker="COI[GENE] OR COX1[GENE] OR COXI[GENE]", 
         output = "gb-binom", 
+        min_length = params.min_length,
+        max_length = params.max_length,
         retry_attempt = 3, 
         retry_wait = 5, 
         multithread = FALSE, 
