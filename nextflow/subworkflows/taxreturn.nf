@@ -142,27 +142,25 @@ workflow TAXRETURN {
     )
 
     //// optional: filter for stop codons
-    if ( params.coding ){
+    if ( params.coding && params.genetic_code ){
 
         FILTER_STOP (
-            FILTER_PHMM.out.seqs,
-            "SGC4"
+            FILTER_PHMM.out.seqs
         )
 
-        //// resolve taxonomic synonyms
-        RESOLVE_SYNONYMS ( 
-            FILTER_STOP.out.seqs,
-            GET_NCBI_TAXONOMY.out.db_path
-        )
+        ch_filter_output = FILTER_STOP.out.seqs
 
     } else {
-        
-        //// resolve taxonomic synonyms
-        RESOLVE_SYNONYMS ( 
-            FILTER_PHMM.out.seqs,
-            GET_NCBI_TAXONOMY.out.db_path
-        )
+
+        ch_filter_output = FILTER_PHMM.out.seqs
+    
     }
+
+    //// resolve taxonomic synonyms
+    RESOLVE_SYNONYMS ( 
+        FILTER_PHMM.out.seqs,
+        GET_NCBI_TAXONOMY.out.db_path
+    )
 
     //// collect chunks into a list
     RESOLVE_SYNONYMS.out.seqs
@@ -207,7 +205,6 @@ workflow TAXRETURN {
             REFORMAT_NAMES.out.seqs,
             GET_NCBI_TAXONOMY.out.db_file
         )
-
     }
     
     //// TODO: add proper model channel handling (with conditions)

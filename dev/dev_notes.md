@@ -38,7 +38,7 @@ Important
     - what format does the name of each sequence need to be in?
     - preferentially retain internal sequences in PRUNE_GROUPS step
 - modify fetch_seqs/fetch_genbank to query taxid directly rather than taxon name to eliminate ambiguity
-
+- add outgroup handling
 - check that chunked alignments (to PHMM) are equivalent to alignments on combined .fasta
 - query ncbi taxdump db for all ranks at certain level, then all ranks not captured etc. -- to produce taxa chunks for fetching sequences
 - find out why some sequences download without a taxid attached (and thus can't have their full taxonomic lineage resolved)
@@ -50,7 +50,8 @@ Less important
 - TRAIN_IDTAXA fails if only one taxonomic group is present (ie. one species)
     - create check for this
 - REMOVE_CONTAM fails when '# testing whole-order (Archaeognatha)' command above is run, possibly due to an "NA" somewhere in a name
-
+- add check in schema that --genetic_code is within Biostrings::GENETIC_CODE_TABLE
+- make public database sourcing optional (ie. can choose Genbank or BOLD or both)
 
 ### NOTES
 
