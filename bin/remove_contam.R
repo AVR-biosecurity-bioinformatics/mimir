@@ -56,6 +56,15 @@ seqs <- ape::read.FASTA(fasta_file, type = "DNA")
 # read ncbi db file
 db <- readRDS(db_file)
 
+## params parsing 
+cluster_rank <- stringr::str_split_1(params.cluster_rank, ",")
+
+cluster_threshold <- as.numeric(params.cluster_threshold)
+
+cluster_confidence <- as.numeric(params.cluster_confidence)
+
+cluster_nstart <- as.numeric(params.cluster_nstart)
+
 ### run code
 
 ## find mixed clusters of sequences
@@ -63,13 +72,13 @@ mixed_clusters <-
     get_mixed_clusters(
         x = seqs, # DNAbin list, names must include NCBI taxid
         db = db, # NCBI taxonomy
-        rank = "species", # taxonomic rank to check clusters, can be a string or a vector of strings
-        threshold = 0.97, # OTU clustering threshold
+        rank = cluster_rank, # taxonomic rank to check clusters, can be a string or a vector of strings
+        threshold = cluster_threshold, # OTU clustering threshold
         rngseed = 1, # sets set.seed before clustering to ensure reproducibility
         return = "consensus", # what to return: "consensus", "all", or "count"
         k = 5, # k-mer size for input matrix
-        confidence = 0.6, # proportion of sequences that need to have different taxonomy (default 0.8)
-        nstart = 20, # random sets chosen for kmeans; higher means more accurate clustering at expense of time 
+        confidence = cluster_confidence, # proportion of sequences that need to have different taxonomy (default 0.8)
+        nstart = cluster_nstart, # random sets chosen for kmeans; higher means more accurate clustering at expense of time 
         quiet = FALSE
     ) 
 

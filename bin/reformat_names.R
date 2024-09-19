@@ -67,10 +67,12 @@ seqs_renamed <-
         quiet = FALSE
     )
 
-# add "Root" to the hierarchy
-names(seqs_renamed) <- 
-  names(seqs_renamed) %>%
-  stringr::str_replace(";",";Root;")
+if ( params.add_root_name == "true" ) {
+    # add "Root" to the hierarchy
+    names(seqs_renamed) <- 
+        names(seqs_renamed) %>%
+        stringr::str_replace(";",";Root;")
+}
 
 # save renamed sequences as .rds file
 saveRDS(seqs_renamed, "seqs_renamed.rds")

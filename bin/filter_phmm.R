@@ -62,9 +62,9 @@ file_basename_noext <-
     stringr::str_remove("\\.fasta$")
 
 ## parameter parsing
-min_score <- as.numeric(params.min_score)
+min_score <- as.numeric(params.phmm_min_score)
 
-min_length <- as.numeric(params.min_length)
+min_length <- as.numeric(params.phmm_min_length)
 
 if ( params.shave_to_phmm == "true" ) {
     shave <- TRUE

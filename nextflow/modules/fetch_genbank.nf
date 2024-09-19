@@ -14,6 +14,7 @@ process FETCH_GENBANK {
         5.m + extraTime
     }
     container "jackscanlan/piperline-multi:0.0.1"
+    maxForks 10
 
     input:
     tuple val(taxon), path(count_file)

@@ -13,7 +13,7 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 29994 --chunk_rank family
 
 # quick test across a small order (Neuroptera)
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7516 --chunk_rank genus
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7516 --chunk_rank family
 
 # testing handling of chunk_rank above target taxon rank (Drosophila melanogaster vs family)
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7227 --chunk_rank family
@@ -52,6 +52,7 @@ Less important
 - REMOVE_CONTAM fails when '# testing whole-order (Archaeognatha)' command above is run, possibly due to an "NA" somewhere in a name
 - add check in schema that --genetic_code is within Biostrings::GENETIC_CODE_TABLE
 - make public database sourcing optional (ie. can choose Genbank or BOLD or both)
+- add ability to merge existing databases together and process them 
 
 ### NOTES
 

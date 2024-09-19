@@ -89,6 +89,7 @@ workflow TAXRETURN {
         GET_NCBI_TAXONOMY.out.db_file
     )
 
+    //// split .fasta into subchunks for processing
     ch_genbank 
         .concat ( FETCH_GENBANK.out.fasta )
         .splitFasta ( 

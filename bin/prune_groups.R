@@ -52,14 +52,19 @@ lapply(nf_vars, nf_var_check)
 # read sequences from file
 seqs <- readRDS(seqs_file)
 
+## parse params
+max_group_size <- as.numeric(params.max_group_size)
+
+prune_method <- params.prune_method
+
 ### run code
 
-#Prune group sizes down to 5, removing all identical sequences first
+## prune groups of sequences with identical taxonomic IDs down to a certain number
 seqs_pruned <- 
     prune_groups(
         x = seqs, # DNAbin or DNAStringset object
-        max_group_size = 5, # max sequences to keep
-        discardby = "length", # 'length': discard smallest sequences first; 'random': discard randomly
+        max_group_size = max_group_size, # max sequences to keep
+        discardby = prune_method, # 'length': discard smallest sequences first; 'random': discard randomly
         dedup = TRUE, # remove sequences with identical taxonomic name and sequence first
         prefer = NULL, # vector of sequence names to prefer (eg. high-quality internal sequences)
         quiet = FALSE
