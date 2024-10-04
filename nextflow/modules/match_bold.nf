@@ -1,19 +1,23 @@
-process GET_NCBI_TAXONOMY {
-    def module_name = "get_ncbi_taxonomy"
+process MATCH_BOLD {
+    def module_name = "match_bold"
     tag "-"
-    label "small"
+    // label "small"
+    time '30.m'
+    memory '8.GB'
+    cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
+    // val(merged_tibble)
+    val(seq_tibble_list)
+    val(ncbi_rankedlineage)
+    val(ncbi_taxidnamerank)
+    val(ncbi_synonyms)
 
     output: 
-    path("ncbi_rankedlineage.rds"),             emit: rankedlineage
-    path("ncbi_nodes.rds"),                     emit: nodes
-    path("ncbi_taxidnames.rds"),                emit: taxidnames
-    path("ncbi_names.rds"),                     emit: names
-    path("ncbi_taxid_name_rank.rds"),           emit: taxidnamerank
-    path("ncbi_synonyms.rds"),                  emit: synonyms
-    path("./ncbi_taxdump"),                     emit: db_path
+    path("matching_taxids.csv"),                emit: matching_taxids
+    path("bold_seqs.fasta"),                    emit: fasta
+    path("synchanges.csv"),                     emit: synchanges
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -26,6 +30,10 @@ process GET_NCBI_TAXONOMY {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
+    seq_tibble_list =             "${seq_tibble_list}"
+    ncbi_rankedlineage =        "${ncbi_rankedlineage}"
+    ncbi_taxidnamerank =        "${ncbi_taxidnamerank}"
+    ncbi_synonyms =             "${ncbi_synonyms}"
 
     ## global variables
     projectDir = "$projectDir"

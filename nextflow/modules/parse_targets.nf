@@ -1,19 +1,21 @@
-process GET_NCBI_TAXONOMY {
-    def module_name = "get_ncbi_taxonomy"
+process PARSE_TARGETS {
+    def module_name = "parse_targets"
     tag "-"
     label "small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
+    val(taxon)
+    val(taxon_rank)
+    val(entrez_key)
+    val(ncbi_synonyms_file)
 
     output: 
-    path("ncbi_rankedlineage.rds"),             emit: rankedlineage
-    path("ncbi_nodes.rds"),                     emit: nodes
-    path("ncbi_taxidnames.rds"),                emit: taxidnames
-    path("ncbi_names.rds"),                     emit: names
-    path("ncbi_taxid_name_rank.rds"),           emit: taxidnamerank
-    path("ncbi_synonyms.rds"),                  emit: synonyms
-    path("./ncbi_taxdump"),                     emit: db_path
+    tuple path("*_name.txt"), val(taxon_rank),                      emit: taxon_name
+    path("*_ncbi_id.txt"),                                          emit: ncbi_id
+    path("*_bold_names.txt"),                                       emit: bold_names
+    path("*_bold_ids.txt"),                                         emit: bold_ids
+    path("*_bold_rank.txt"),                                        emit: bold_rank
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -26,6 +28,10 @@ process GET_NCBI_TAXONOMY {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
+    taxon =                     "${taxon}"
+    taxon_rank =                "${taxon_rank}"
+    entrez_key =                "${entrez_key}"
+    ncbi_synonyms_file =        "${ncbi_synonyms_file}"
 
     ## global variables
     projectDir = "$projectDir"

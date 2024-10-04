@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
-process EDIRECT_TEST {
-    def module_name = "edirect_test"
+process COUNT_ENTREZ {
+    def module_name = "count_entrez"
     tag "-"
     // label "very_high"
     container "emehinovic72/edirect:latest"

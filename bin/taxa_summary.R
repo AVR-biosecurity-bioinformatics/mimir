@@ -52,19 +52,10 @@ lapply(nf_vars, nf_var_check)
 # read sequences from file
 seqs <- readRDS(seqs_file)
 
-### run code
-
-# summarise
-taxa_summary <- 
-    names(seqs) %>%
-    stringr::str_split_fixed(";", n = 9) %>%
-    tibble::as_tibble() %>%
-    tidyr::separate(
-        V1, 
-        into = c("Sequences", "tax_ids"), 
-        sep = "\\|"
-    ) %>%
-    magrittr::set_colnames(
+# params parsing
+if ( params.add_root_name == "true" ) {
+    n_columns <- 9
+    summary_colnames <- 
         c(
             "Sequences", 
             "tax_ids", 
@@ -77,7 +68,35 @@ taxa_summary <-
             "genus", 
             "species"
         )
+} else {
+    n_columns <- 8
+    summary_colnames <- 
+        c(
+            "Sequences", 
+            "tax_ids", 
+            "kingdom", 
+            "phylum",
+            "class", 
+            "order", 
+            "family", 
+            "genus", 
+            "species"
+        )
+}
+
+### run code
+
+## summarise
+taxa_summary <- 
+    names(seqs) %>%
+    stringr::str_split_fixed(";", n = n_columns) %>%
+    tibble::as_tibble() %>%
+    tidyr::separate(
+        V1, 
+        into = c("Sequences", "tax_ids"), 
+        sep = "\\|"
     ) %>%
+    magrittr::set_colnames(summary_colnames) %>%
     dplyr::summarise_all(n_distinct)
 
 # save as .csv
@@ -85,3 +104,5 @@ readr::write_csv(
     x = taxa_summary, 
     file = "taxa_summary.csv"
 )
+
+## TODO: generate csv of ids and taxon ranks per sequence

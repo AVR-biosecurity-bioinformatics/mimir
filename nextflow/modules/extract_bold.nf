@@ -1,19 +1,17 @@
-process GET_NCBI_TAXONOMY {
-    def module_name = "get_ncbi_taxonomy"
+process EXTRACT_BOLD {
+    def module_name = "extract_bold"
     tag "-"
-    label "small"
+    label "very_small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
+    tuple val(db_tsv_file), val(db_meta_file)
+    val(bold_names_file)
+    val(bold_rank_file)
+    // val(marker)
 
     output: 
-    path("ncbi_rankedlineage.rds"),             emit: rankedlineage
-    path("ncbi_nodes.rds"),                     emit: nodes
-    path("ncbi_taxidnames.rds"),                emit: taxidnames
-    path("ncbi_names.rds"),                     emit: names
-    path("ncbi_taxid_name_rank.rds"),           emit: taxidnamerank
-    path("ncbi_synonyms.rds"),                  emit: synonyms
-    path("./ncbi_taxdump"),                     emit: db_path
+    path("bold_db_targets.*.rds"),                  emit: tibble
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -26,6 +24,11 @@ process GET_NCBI_TAXONOMY {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
+    db_tsv_file =                 "${db_tsv_file}"
+    db_meta_file =                "${db_meta_file}"
+    bold_names_file =             "${bold_names_file}"
+    bold_rank_file =              "${bold_rank_file}"
+    marker =                      "COI-5P" # TODO: add channel from PARSE_MARKER
 
     ## global variables
     projectDir = "$projectDir"

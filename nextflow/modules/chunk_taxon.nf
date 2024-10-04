@@ -1,12 +1,13 @@
 process CHUNK_TAXON {
     def module_name = "chunk_taxon"
     tag "-"
-    label "long"
+    label "small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
     val(taxon)
     val(entrez_key)
+    val(db_path)
 
     output: 
     path("tax_list.txt"),                 emit: tax_list
@@ -24,6 +25,7 @@ process CHUNK_TAXON {
     ## input channel variables
     taxon =                 "${taxon}"
     entrez_key =               "${entrez_key}"
+    db_path =               "${db_path}"
 
     ## global variables
     projectDir = "$projectDir"
