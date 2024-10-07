@@ -3,21 +3,19 @@ process MATCH_BOLD {
     tag "-"
     // label "small"
     time '30.m'
-    memory '8.GB'
+    memory '4.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    // val(merged_tibble)
-    val(seq_tibble_list)
-    val(ncbi_rankedlineage)
-    val(ncbi_taxidnamerank)
+    val(seq_tibble)
+    val(ncbi_lineageparents)
     val(ncbi_synonyms)
 
     output: 
-    path("matching_taxids.csv"),                emit: matching_taxids
-    path("bold_seqs.fasta"),                    emit: fasta
-    path("synchanges.csv"),                     emit: synchanges
+    path("matching_taxids.*.csv"),                emit: matching_taxids
+    path("bold_seqs.*.fasta"),                    emit: fasta
+    path("synchanges.*.csv"),                     emit: synchanges
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -30,10 +28,9 @@ process MATCH_BOLD {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    seq_tibble_list =             "${seq_tibble_list}"
-    ncbi_rankedlineage =        "${ncbi_rankedlineage}"
-    ncbi_taxidnamerank =        "${ncbi_taxidnamerank}"
-    ncbi_synonyms =             "${ncbi_synonyms}"
+    seq_tibble =                    "${seq_tibble}"
+    ncbi_lineageparents =           "${ncbi_lineageparents}"
+    ncbi_synonyms =                 "${ncbi_synonyms}"
 
     ## global variables
     projectDir = "$projectDir"

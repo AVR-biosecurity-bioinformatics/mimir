@@ -48,14 +48,25 @@ lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-
+# ranks vector of only ranks we want to keep
+allowed_ranks <-
+    c(
+        "kingdom",
+        "phylum",
+        "class",
+        "order",
+        "family",
+        "genus",
+        "species"
+    )
 
 ### run code
-
 # download ncbi taxonomy files (can be found in new 'ncbi_taxdump' dir)
+message("Downloading NCBI taxdump")
 ncbi_rankedlineage <- get_ncbi_taxonomy() # import rankedlineage.dmp
 
 # import nodes.dmp
+message("Importing nodes.dmp")
 ncbi_nodes <- 
     readr::read_tsv(
         "ncbi_taxdump/nodes.dmp",
@@ -83,6 +94,7 @@ ncbi_nodes <-
     )
 
 # import fullnamelineage.dmp and keep only taxid and name
+message("Importing fullnamelineage.dmp")
 ncbi_taxidnames <-
     readr::read_tsv(
         "ncbi_taxdump/fullnamelineage.dmp",
@@ -92,6 +104,7 @@ ncbi_taxidnames <-
     dplyr::select(tax_id, tax_name)
 
 # import names.dmp
+message("Importing names.dmp")
 ncbi_names <- 
     readr::read_tsv(
         "ncbi_taxdump/names.dmp",
@@ -100,18 +113,77 @@ ncbi_names <-
     )
 
 # create tibble with taxid, name and rank
-ncbi_taxid_name_rank <- 
+message("Creating ncbi_taxnamerank")
+ncbi_taxidnamerank <- 
     ncbi_taxidnames %>%
     dplyr::left_join(., ncbi_nodes, by = "tax_id") %>%
     dplyr::select(tax_id, tax_name, rank)
 
 # create ncbi synonyms tibble
+message("Creating ncbi_synonyms")
 ncbi_synonyms <- 
     ncbi_names %>%
-    dplyr::left_join(., ncbi_taxid_name_rank, by = "tax_id") %>%
+    dplyr::left_join(., ncbi_taxidnamerank, by = "tax_id") %>%
     dplyr::filter(name_class == "synonym")
 
+# create 'ncbi_lineageparents' tibble
+message("Creating ncbi_lineageparents")
+ncbi_lineageparents <- 
+    ncbi_rankedlineage %>%
+    # remove superkingdom as not used
+    dplyr::select(-superkingdom) %>%
+    # remove rows where species is not NA (ie. subspecies)
+    dplyr::filter(is.na(species)) %>%
+    # join to ncbi_taxidnamerank to get rank
+    dplyr::left_join(. ,ncbi_taxidnamerank, by = c("tax_id","tax_name")) %>%
+    # remove taxa that don't have an allowed rank 
+    dplyr::filter(rank %in% allowed_ranks) %>%
+    # mutate to replace the lowest rank with the tax_name (based on 'rank' column value)
+    dplyr::mutate(
+        species = if_else(rank == "species", tax_name, species),
+        genus = if_else(rank == "genus", tax_name, genus),
+        family = if_else(rank == "family", tax_name, family),
+        order = if_else(rank == "order", tax_name, order),
+        class = if_else(rank == "class", tax_name, class),
+        phylum = if_else(rank == "phylum", tax_name, phylum),
+        kingdom = if_else(rank == "kingdom", tax_name, kingdom)
+    ) %>% 
+    # add parent_rank, grandparent_rank
+    dplyr::mutate(
+        parent_rank = case_match(
+            rank,
+            "species" ~ "genus",
+            "genus" ~ "family",
+            "family" ~ "order",
+            "order" ~ "class",
+            "class" ~ "phylum",
+            "phylum" ~ "kingdom",
+            "kingdom" ~ NA
+        ),
+        grandparent_rank = case_match(
+            parent_rank,
+            "species" ~ "genus",
+            "genus" ~ "family",
+            "family" ~ "order",
+            "order" ~ "class",
+            "class" ~ "phylum",
+            "phylum" ~ "kingdom",
+            "kingdom" ~ NA
+        ),
+        `NA` = NA # need this to allow 'get()' below to work if "*_rank" is NA
+    ) %>% 
+    dplyr::rowwise() %>%
+    # get parent_taxon and grandparent_taxon
+    dplyr::mutate(
+        parent_taxon = get(parent_rank),
+        grandparent_taxon = get(grandparent_rank)
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-`NA`)
+
+
 ## save files and objects
+message("Saving .rds files")
 # save rankedlineage db object
 saveRDS(ncbi_rankedlineage, "ncbi_rankedlineage.rds")
 # save nodes object
@@ -121,9 +193,11 @@ saveRDS(ncbi_taxidnames, "ncbi_taxidnames.rds")
 # save names object
 saveRDS(ncbi_names, "ncbi_names.rds")
 # save taxid_name_rank object
-saveRDS(ncbi_taxid_name_rank, "ncbi_taxid_name_rank.rds")
+saveRDS(ncbi_taxidnamerank, "ncbi_taxidnamerank.rds")
 # save synonyms object
 saveRDS(ncbi_synonyms, "ncbi_synonyms.rds")
+# save ncbi_lineageparents object
+saveRDS(ncbi_lineageparents, "ncbi_lineageparents.rds")
 
 
 

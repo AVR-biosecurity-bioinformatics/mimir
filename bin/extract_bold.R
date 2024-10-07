@@ -67,7 +67,6 @@ bold_db <-
 bold_names <- readr::read_lines(bold_names_file)
 bold_rank <- readr::read_lines(bold_rank_file)
 
-
 ### run code
 
 # subset BOLD db
@@ -77,6 +76,8 @@ bold_db_targets <-
     dplyr::filter(get({{bold_rank}}) == {{bold_names}}) %>%
     # get only marker of interest
     dplyr::filter(marker_code == marker) %>%
+    # remove rows where there is no sequence
+    dplyr::filter(!is.na(nuc)) %>%
     # remove sequences mined from GenBank
     dplyr::filter(!stringr::str_detect(sequence_run_site, "GenBank|NCBI")) %>% 
     # conditionally filter out explicitly BOLD-classified sequences
@@ -94,19 +95,19 @@ bold_db_targets <-
         processid, 
         bold_taxid = taxid, 
         kingdom,
-        phylum, 
+        phylum,
         class,
         order,
-        family, # currently don't include 'subfamily' and 'tribe'
+        family,
         genus,
         species,
-        identification,
-        identification_rank,
-        identification_method,
-        nuc, 
-        marker_code
+        nuc
     )
 
-## save subset database as .rds
-saveRDS(bold_db_targets, paste0("bold_db_targets.",chunk_index,".rds")) ### TODO: make this naming work with multiple taxa as pipeline input
+## save subset database as .rds (if data still remains after filtering)
+if ( nrow(bold_db_targets) > 0 ){
+    saveRDS(bold_db_targets, paste0("bold_db_targets.",chunk_index,".rds")) ### TODO: make this naming work with multiple taxa as pipeline input
+} else {
+    message("No sequences matching criteria found -- not saving output .rds file.")
+}
 

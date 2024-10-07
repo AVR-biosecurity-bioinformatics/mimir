@@ -145,10 +145,19 @@ workflow TAXRETURN {
             // ch_marker
         )
 
-        // //// merge BOLD chunks into a single tibble
-        // MERGE_BOLD (
-        //     EXTRACT_BOLD.out.tibble.collect() // collect elements into a list
-        // )
+        //// match BOLD taxon names to NCBI taxon names
+        MATCH_BOLD (
+            EXTRACT_BOLD.out.tibble, 
+            GET_NCBI_TAXONOMY.out.lineageparents,
+            GET_NCBI_TAXONOMY.out.synonyms
+        )
+
+        //// merge BOLD chunks into single .fasta and .csv files
+        MERGE_BOLD (
+            MATCH_BOLD.out.fasta.collect(),
+            MATCH_BOLD.out.matching_taxids.collect(),
+            MATCH_BOLD.out.synchanges.collect()
+        )
 
         // ch_bold_seqs = EXTRACT_BOLD.out.tibble
 
@@ -162,16 +171,7 @@ workflow TAXRETURN {
 
     //// combine BOLD sequences or dataframes into a single object
 
-    //// match BOLD taxon names to NCBI taxon names
-    //// TODO: IMPORTANT! Modify this process so it acts on the individual output elements of EXTRACT_BOLD
-    //// Also move the ncbi db-modification code to the GET_NCBI_TAXONOMY process to avoid duplication
-    MATCH_BOLD (
-        // MERGE_BOLD.out.merged_tibble,
-        EXTRACT_BOLD.out.tibble.collect(), //// TODO: make this a channel so it is safe with above conditional
-        GET_NCBI_TAXONOMY.out.rankedlineage,
-        GET_NCBI_TAXONOMY.out.taxidnamerank,
-        GET_NCBI_TAXONOMY.out.synonyms
-    )
+    
 
 
     // //// fetch count of genbank sequences for each chunk

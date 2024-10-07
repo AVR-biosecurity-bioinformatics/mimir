@@ -11,7 +11,7 @@ process EXTRACT_BOLD {
     // val(marker)
 
     output: 
-    path("bold_db_targets.*.rds"),                  emit: tibble
+    path("bold_db_targets.*.rds"),                  emit: tibble, optional: true
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

@@ -43,43 +43,23 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    # "merged_tibble",
-    "seq_tibble_list",
-    "ncbi_rankedlineage",
-    "ncbi_taxidnamerank",
+    "seq_tibble",
+    "ncbi_lineageparents",
     "ncbi_synonyms"
     )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-# merged_tibble <- readRDS(merged_tibble)
+# get basename chunk for output naming
+chunk_index <- tools::file_path_sans_ext(basename(seq_tibble)) %>% stringr::str_extract("(?<=bold_db_targets\\.).+?$") 
 
 # create bold_db_targets (do in pipe to save memory)
-bold_db_targets <- 
-    seq_tibble_list %>%
-    stringr::str_extract_all(., pattern = "[^\\s,\\[\\]]+") %>% # convert Groovy list to R list
-    unlist() %>%
-    lapply(., readRDS) %>% # read in tibbles and store as list 
-    dplyr::bind_rows() %>% # merge tibbles
-    dplyr::distinct() %>% # remove any duplicate rows
-    dplyr::select( # select only needed columns
-        processid,
-        bold_taxid,
-        kingdom,
-        phylum,
-        class,
-        order,
-        family,
-        genus,
-        species,
-        nuc
-    )            
+bold_db_targets <- readRDS(seq_tibble)  
 
 # read in ncbi db files
-ncbi_rankedlineage <-   readRDS(ncbi_rankedlineage)
-ncbi_taxidnamerank <-   readRDS(ncbi_taxidnamerank)
-ncbi_synonyms <-        readRDS(ncbi_synonyms)
+ncbi_lineageparents <-   readRDS(ncbi_lineageparents)
+ncbi_synonyms <-         readRDS(ncbi_synonyms)
 
 # ranks vector of only ranks we want to keep
 allowed_ranks <-
@@ -94,60 +74,6 @@ allowed_ranks <-
     )
 
 ### run code
-
-## modifying ncbi objects
-ncbi_taxdata <- 
-    ncbi_rankedlineage %>%
-    # remove superkingdom as not used
-    dplyr::select(-superkingdom) %>%
-    # remove rows where species is not NA (which means taxon is subspecies)
-    dplyr::filter(is.na(species)) %>%
-    # join to ncbi_taxidnamerank to get rank
-    dplyr::left_join(. ,ncbi_taxidnamerank, by = c("tax_id","tax_name")) %>%
-    # remove taxa that don't have an allowed rank 
-    dplyr::filter(rank %in% allowed_ranks) %>%
-    # mutate to replace the lowest rank with the tax_name (based on 'rank' column value)
-    dplyr::mutate(
-        species = if_else(rank == "species", tax_name, species),
-        genus = if_else(rank == "genus", tax_name, genus),
-        family = if_else(rank == "family", tax_name, family),
-        order = if_else(rank == "order", tax_name, order),
-        class = if_else(rank == "class", tax_name, class),
-        phylum = if_else(rank == "phylum", tax_name, phylum),
-        kingdom = if_else(rank == "kingdom", tax_name, kingdom)
-    ) %>% 
-    # add parent_rank, grandparent_rank
-    dplyr::mutate(
-        parent_rank = case_match(
-            rank,
-            "species" ~ "genus",
-            "genus" ~ "family",
-            "family" ~ "order",
-            "order" ~ "class",
-            "class" ~ "phylum",
-            "phylum" ~ "kingdom",
-            "kingdom" ~ NA
-        ),
-        grandparent_rank = case_match(
-            parent_rank,
-            "species" ~ "genus",
-            "genus" ~ "family",
-            "family" ~ "order",
-            "order" ~ "class",
-            "class" ~ "phylum",
-            "phylum" ~ "kingdom",
-            "kingdom" ~ NA
-        ),
-        `NA` = NA # need this to allow 'get()' below to work if "*_rank" is NA
-    ) %>% 
-    dplyr::rowwise() %>%
-    # get parent_taxon and grandparent_taxon
-    dplyr::mutate(
-        parent_taxon = get(parent_rank),
-        grandparent_taxon = get(grandparent_rank)
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(-`NA`)
 
 # create a filtered synonyms tibble
 ncbi_synonyms_filtered <- 
@@ -266,12 +192,12 @@ bold_id_tibble <-
     ) %>%  
     dplyr::ungroup()
 
-# join to ncbi_taxdata based on the three identification taxa and their ranks (replace BOLD with NCBI lineage)
+# join to ncbi_lineageparents based on the three identification taxa and their ranks (replace BOLD with NCBI lineage)
 bold_ncbi_joined <- 
     bold_id_tibble %>%
     dplyr::left_join(
         ., 
-        ncbi_taxdata, 
+        ncbi_lineageparents, 
         by = join_by(
             identification_rank == rank, 
             identification == tax_name,
@@ -342,15 +268,15 @@ bold_matched_seqs <-
 
 # combine matched and unmatched
 bold_seqs <- 
-  dplyr::bind_rows(bold_matched_seqs, bold_unmatched_seqs)
+    dplyr::bind_rows(bold_matched_seqs, bold_unmatched_seqs)
 
 ## create FASTA format from sequence tibble
 bold_seqs_prefasta <- 
-  bold_seqs %>%
-  tidyr::unite("id", c(seqid, taxid), sep = "|") %>% # combine ids into a single column
-  tidyr::unite("ranks", kingdom:species, sep = ";") %>% # combine ranks into a single column
-  tidyr::unite("header", id:ranks, sep = ";") %>% # create header column
-  dplyr::mutate(header = stringr::str_replace(header, "^", ">")) # add ">" to start of header
+    bold_seqs %>%
+    tidyr::unite("id", c(seqid, taxid), sep = "|") %>% # combine ids into a single column
+    tidyr::unite("ranks", kingdom:species, sep = ";") %>% # combine ranks into a single column
+    tidyr::unite("header", id:ranks, sep = ";") %>% # create header column
+    dplyr::mutate(header = stringr::str_replace(header, "^", ">")) # add ">" to start of header
   
 bold_seqs_header <- bold_seqs_prefasta %>% dplyr::pull(header) # get header as vector
 bold_seqs_nuc <- bold_seqs_prefasta %>% dplyr::pull(nuc) # get sequence as vector
@@ -361,11 +287,8 @@ attributes(bold_seqs_fasta) <- NULL # unset dim
 
 ### save outputs
 # tibble of changes to BOLD sequence taxonomy by matching to NCBI synonyms
-readr::write_csv(bold_ncbi_synchanges, "synchanges.csv")
+readr::write_csv(bold_ncbi_synchanges, paste0("synchanges.",chunk_index,".csv"))
 # tibble of taxa (from sequences) that can be found in BOLD and NCBI 
-readr::write_csv(matching_taxids, "matching_taxids.csv")
+readr::write_csv(matching_taxids, paste0("matching_taxids.",chunk_index,".csv"))
 # write FASTA of sequences in the correct format
-readr::write_lines(bold_seqs_fasta, "bold_seqs.fasta")
-
-# remove merged_tibble object as it can be large and will slow down R environment saving in debug mode
-rm(merged_tibble)
+readr::write_lines(bold_seqs_fasta, paste0("bold_seqs.",chunk_index,".fasta"))
