@@ -8,12 +8,12 @@ process RESOLVE_SYNONYMS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(seqs_file)
+    tuple val(seqs_file), val(seq_source)
     val(db_path)
 
     output: 
-    path("*_seqs_resolved.rds"),                  emit: seqs
-    path("*.fasta"),                            emit: fasta, optional: true
+    tuple path("*_seqs_resolved.rds"), val(seq_source),         emit: seqs
+    path("*.fasta"),                                            emit: fasta, optional: true
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

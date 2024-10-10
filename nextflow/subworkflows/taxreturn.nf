@@ -259,7 +259,7 @@ workflow TAXRETURN {
     //// collect chunks into a list
     RESOLVE_SYNONYMS.out.seqs
         .concat ( ch_filter_branch.bold )
-        .map { fasta, seq_source -> fasta }// remove seq_source
+        .map { seqs, seq_source -> seqs } // remove seq_source
         .collect()
         .set { ch_chunks }
 
