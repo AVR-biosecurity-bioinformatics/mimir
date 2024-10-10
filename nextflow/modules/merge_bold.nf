@@ -21,7 +21,7 @@ process MERGE_BOLD {
     script:
     def module_script = "${module_name}.R"
     """
-    #!/usr/bin/bash
+    #!/usr/bin/env bash
     
     ### run module code
     bash ${module_name}.sh \

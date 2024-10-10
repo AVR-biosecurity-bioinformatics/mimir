@@ -9,7 +9,7 @@ process COMBINE_CHUNKS {
 
     output: 
     // path("seqs_combined.rds"),                  emit: seqs
-    path("*.fasta"),                            emit: fasta
+    path("*.fasta"),                          emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

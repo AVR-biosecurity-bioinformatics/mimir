@@ -1,15 +1,16 @@
-process REMOVE_EXACT_DUPLICATES {
-    def module_name = "remove_exact_duplicates"
+process RENAME_GENBANK {
+    def module_name = "rename_genbank"
     tag "-"
-    label "very_small"
+    time 5.m
+    cpus 1
+    memory 1.GB
     container "staphb/seqkit:2.8.2"
 
     input:
-    val(fasta_file)
+    tuple path(fasta), path(taxids)
 
     output: 
-    // path("seqs_combined.rds"),                  emit: seqs
-    path("seqs_deduplicated.fasta"),                            emit: fasta
+    path("*renamed.fasta"),                            emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -24,7 +25,8 @@ process REMOVE_EXACT_DUPLICATES {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        ${fasta_file} 
+        ${fasta} \
+        ${taxids}
         
     """
 

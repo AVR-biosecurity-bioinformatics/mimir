@@ -71,6 +71,7 @@ Important
 - modify MATCH_BOLD so it acts on the individual chunk elements output from EXTRACT_BOLD, to avoid serious memory hog issues (if the chunks are merged then acted on, memory can blow out)
     - output .fasta files (as well as the output .csvs) can then easily be concatenated in a new MERGE_BOLD step written in bash which is must less memory intensive
 
+
 Less important
 - add process that tracks the number of sequences at each step of the pipeline
     - count sequences from intermediate .fasta files (once moved to .fasta-only implementation)
@@ -83,6 +84,7 @@ Less important
 - add ability to merge existing databases together and process them 
 - de-align output sequences
 - output .fasta as well as .csv or .tsv for easier post-pipeline taxonomic filtering
+- add parameter for fasta of excluded sequences (eg. known pseudogenes, human COI, wolbachia sequences etc.)
 
 ### NOTES
 

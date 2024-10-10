@@ -1,15 +1,28 @@
-process FILTER_STOP {
-    def module_name = "filter_stop"
-    tag "-"
-    label "very_small"
+process FETCH_GENBANK_OLD {
+    def module_name = "fetch_genbank_old"
+    tag "$taxon"
+    // label "medium"
+    cpus 1
+    memory 2.GB
+    time {
+        int seq_count = count_file.getBaseName() as int
+        if ( params.entrez_key ) {
+            extraTime = Duration.of(seq_count * 105) // add 105 milliseconds per sequence
+        } else {
+            extraTime = Duration.of(seq_count * 340) // add 340 milliseconds per sequence
+        }
+        5.m + extraTime
+    }
     container "jackscanlan/piperline-multi:0.0.1"
+    maxForks 10
 
     input:
-    tuple val(seqs_file), val(seq_source)
+    tuple val(taxon), path(count_file)
+    val(db_file)
 
     output: 
-    tuple path("*_filter_stop.rds"), val(seq_source),         emit: seqs, optional: true
-    tuple path("*.fasta"), val(seq_source),                   emit: fasta, optional: true
+    path("*_genbank.rds"),                  emit: seqs
+    path("*.fasta"),                        emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -22,7 +35,9 @@ process FILTER_STOP {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    seqs_file =              "${seqs_file}"
+    taxon =                 "${taxon}"
+    db_file =               "${db_file}"
+    task_index =            "${task.index}"
 
     ## global variables
     projectDir = "$projectDir"
