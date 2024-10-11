@@ -28,4 +28,4 @@ seqkit replace \
 	--replacement '${1}${2}|{kv}' \
 	--kv-file $TAXIDS \
 	--line-width 0 \
-    > ${NAME_NOEXT}.renamed.fasta
+    > ${NAME_NOEXT}.taxid.fasta

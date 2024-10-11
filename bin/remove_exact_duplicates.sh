@@ -9,6 +9,7 @@ set -u
 # remove 
 seqkit rmdup \
     --by-name \
+    --line-width 0 \
     < $3 \
     > seqs_deduplicated.fasta
 

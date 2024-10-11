@@ -181,6 +181,21 @@ ncbi_lineageparents <-
     dplyr::ungroup() %>%
     dplyr::select(-`NA`)
 
+# create ncbi_rankedlineage_noname
+ncbi_rankedlineage_noname <-
+    ncbi_rankedlineage %>%
+    dplyr::select(-superkingdom) %>%
+    dplyr::left_join(., ncbi_taxidnamerank, by = c("tax_id","tax_name")) %>%
+    dplyr::mutate(
+            species = if_else(rank == "species", tax_name, species),
+            genus = if_else(rank == "genus", tax_name, genus),
+            family = if_else(rank == "family", tax_name, family),
+            order = if_else(rank == "order", tax_name, order),
+            class = if_else(rank == "class", tax_name, class),
+            phylum = if_else(rank == "phylum", tax_name, phylum),
+            kingdom = if_else(rank == "kingdom", tax_name, kingdom)
+        ) %>%
+    dplyr::select(-tax_name, -rank)
 
 ## save files and objects
 message("Saving .rds files")
@@ -198,6 +213,19 @@ saveRDS(ncbi_taxidnamerank, "ncbi_taxidnamerank.rds")
 saveRDS(ncbi_synonyms, "ncbi_synonyms.rds")
 # save ncbi_lineageparents object
 saveRDS(ncbi_lineageparents, "ncbi_lineageparents.rds")
+# save ncbi_rankedlineage_noname object
+saveRDS(ncbi_rankedlineage_noname, "ncbi_rankedlineage_noname.rds")
+
+# remove large objects to make saving R environment faster when there are no errors
+rm(ncbi_rankedlineage)
+rm(ncbi_nodes)
+rm(ncbi_taxidnames)
+rm(ncbi_names)
+rm(ncbi_taxidnamerank)
+rm(ncbi_synonyms)
+rm(ncbi_lineageparents)
+rm(ncbi_rankedlineage_noname)
+
 
 
 

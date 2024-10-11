@@ -9,7 +9,7 @@ process PRUNE_GROUPS {
 
     output: 
     path("seqs_pruned.rds"),                  emit: seqs
-    path("*.fasta"),                            emit: fasta, optional: true
+    path("seqs_pruned.fasta"),                            emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

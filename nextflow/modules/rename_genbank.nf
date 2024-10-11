@@ -1,33 +1,51 @@
 process RENAME_GENBANK {
     def module_name = "rename_genbank"
     tag "-"
-    time 5.m
+    // label "small"
+    time '5.m'
+    memory '4.GB'
     cpus 1
-    memory 1.GB
-    container "staphb/seqkit:2.8.2"
+    container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple path(fasta), path(taxids)
+    val(fasta_file)
+    val(ncbi_rankedlineage_noname)
 
     output: 
-    path("*renamed.fasta"),                            emit: fasta
+    path("*.renamed.fasta"),                    emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
     script:
-    def module_script = "${module_name}.sh"
+    def module_script = "${module_name}.R"
     """
-    #!/usr/bin/env bash
+    #!/usr/bin/env Rscript
+    
+    ### defining Nextflow environment variables as R variables
+    ## input channel variables
+    fasta_file =                    "${fasta_file}"
+    ncbi_rankedlineage_noname =           "${ncbi_rankedlineage_noname}"
+
+    ## global variables
+    projectDir = "$projectDir"
+    params_dict = "$params"
+
+    tryCatch({
+    ### source functions and themes, load packages, and import Nextflow params
+    ### from "bin/process_start.R"
+    sys.source("${projectDir}/bin/process_start.R", envir = .GlobalEnv)
 
     ### run module code
-    bash ${module_name}.sh \
-        ${projectDir} \
-        ${task.cpus} \
-        ${fasta} \
-        ${taxids}
-        
-    """
+    sys.source(
+        "${projectDir}/bin/$module_script", # run script
+        envir = .GlobalEnv # this allows import of existing objects like projectDir
+    )
+    }, finally = {
+    ### save R environment for debugging
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    })
 
+    """
 }

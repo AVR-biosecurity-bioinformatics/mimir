@@ -5,12 +5,12 @@ process FILTER_PHMM {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple val(fasta_file), val(seq_source)
+    val(fasta_file)
     val(phmm_model_file)
 
     output: 
-    tuple path("*_filter_phmm.rds"), val(seq_source),                 emit: seqs, optional: true
-    tuple path("*.fasta"), val(seq_source),                           emit: fasta, optional: true
+    path("*_filter_phmm.rds"),                  emit: seqs, optional: true
+    path("*.fasta"),                            emit: fasta, optional: true
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

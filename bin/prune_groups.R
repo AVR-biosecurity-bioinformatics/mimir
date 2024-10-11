@@ -73,11 +73,9 @@ seqs_pruned <-
 # save filtered sequences as .rds file
 saveRDS(seqs_pruned, "seqs_pruned.rds")
 
-# write fasta for debugging
-if ( params.all_fasta == "true"){
-    write_fasta(
-        seqs_pruned, 
-        file = "seqs_pruned.fasta", 
-        compress = FALSE
-        )
-}
+# write fasta
+write_fasta(
+    seqs_pruned, 
+    file = "seqs_pruned.fasta", 
+    compress = FALSE
+)

@@ -4,6 +4,7 @@
 
 
 //// modules to import
+include { ADD_TAXID_GENBANK                                                 } from '../modules/add_taxid_genbank'
 include { COMBINE_CHUNKS                                                 } from '../modules/combine_chunks'
 include { EXTRACT_BOLD                                                 } from '../modules/extract_bold'
 // include { FETCH_BOLD                                                } from '../modules/fetch_bold'
@@ -114,20 +115,25 @@ workflow TAXRETURN {
         .splitText( by: params.chunk_size, file: true )
         .set { ch_genbank_acc_chunks }
 
-    //// fetch Genbank sequences 
+    //// fetch Genbank sequences as .fasta
     FETCH_GENBANK (
         ch_genbank_acc_chunks,
         ch_entrez_key
     )
 
-    //// rename Genbank sequences to have taxid in the header 
-    RENAME_GENBANK (
+    //// add NCBI taxid to header of Genbank sequences 
+    ADD_TAXID_GENBANK (
         FETCH_GENBANK.out.fetched_seqs
+    )
+
+    //// reformat sequence names to contain taoxnomic lineage
+    RENAME_GENBANK (
+        ADD_TAXID_GENBANK.out.fasta,
+        GET_NCBI_TAXONOMY.out.rankedlineage_noname
     )
 
     //// population ch_genbank_fasta channel
     RENAME_GENBANK.out.fasta
-        .map { fasta -> [ fasta, "genbank" ] }
         .set { ch_genbank_fasta }
 
     
@@ -177,7 +183,6 @@ workflow TAXRETURN {
 
         MERGE_BOLD.out.fasta
             .splitText( by: params.chunk_size, file: true )
-            .map { fasta -> [ fasta, "bold" ] }
             .set { ch_bold_fasta }
 
     } else {
@@ -234,38 +239,39 @@ workflow TAXRETURN {
             FILTER_PHMM.out.seqs
         )
 
-        ch_filter_output = FILTER_STOP.out.seqs
+        ch_filter_output = FILTER_STOP.out.seqs.collect()
 
     } else {
 
-        ch_filter_output = FILTER_PHMM.out.seqs
+        ch_filter_output = FILTER_PHMM.out.seqs.collect()
     
     }
 
-    //// branch channels based on seq_source
-    ch_filter_output
-        .branch {
-            bold: it[1] == "bold"
-            other: true
-        }
-        .set { ch_filter_branch }
+    // //// branch channels based on seq_source
+    // ch_filter_output
+    //     .branch {
+    //         bold: it[1] == "bold"
+    //         other: true
+    //     }
+    //     .set { ch_filter_branch }
 
-    //// resolve taxonomic synonyms
-    RESOLVE_SYNONYMS ( 
-        ch_filter_branch.other,
-        GET_NCBI_TAXONOMY.out.db_path
-    )
+    /// NOTE: Not currently needed as taxids are used
+    // //// resolve taxonomic synonyms
+    // RESOLVE_SYNONYMS ( 
+    //     ch_filter_branch.other,
+    //     GET_NCBI_TAXONOMY.out.db_path
+    // )
 
-    //// collect chunks into a list
-    RESOLVE_SYNONYMS.out.seqs
-        .concat ( ch_filter_branch.bold )
-        .map { seqs, seq_source -> seqs } // remove seq_source
-        .collect()
-        .set { ch_chunks }
+    // //// collect chunks into a list
+    // RESOLVE_SYNONYMS.out.seqs
+    //     .concat ( ch_filter_branch.bold )
+    //     .map { seqs, seq_source -> seqs } // remove seq_source
+    //     .collect()
+    //     .set { ch_chunks }
 
     //// combine sequence chunks together
     COMBINE_CHUNKS ( 
-        ch_chunks
+        ch_filter_output
     )
  
     //// remove exact duplicate sequences if they exist
@@ -284,15 +290,15 @@ workflow TAXRETURN {
         REMOVE_CONTAM.out.seqs
     )
 
-    //// reformat names using taxonomic hierarchy
-    REFORMAT_NAMES (
-        PRUNE_GROUPS.out.seqs,
-        GET_NCBI_TAXONOMY.out.rankedlineage
-    )
+    // //// reformat names using taxonomic hierarchy
+    // REFORMAT_NAMES (
+    //     PRUNE_GROUPS.out.seqs,
+    //     GET_NCBI_TAXONOMY.out.rankedlineage
+    // )
 
     //// summarise number of taxa in database
     TAXA_SUMMARY (
-        REFORMAT_NAMES.out.seqs
+        PRUNE_GROUPS.out.seqs
     )
 
     // //// train IDTAXA model
@@ -312,7 +318,7 @@ workflow TAXRETURN {
 
     // bold_db = GET_BOLD_DATABASE.out.bold_db
     ncbi_taxonomy = GET_NCBI_TAXONOMY.out.rankedlineage
-    // curated_fasta = REFORMAT_NAMES.out.fasta
+    // curated_fasta = PRUNE_GROUPS.out.fasta
     // taxa_summary = TAXA_SUMMARY.out.csv
     // idtaxa_model = TRAIN_IDTAXA.out.model
 

@@ -160,7 +160,7 @@ bold_id_tibble <-
             # function to apply
             .f = ~{
                 tax <- c(...) #vector of all input values
-                names(tax) <- allowed_ranks # make names of vector the ranks
+                names(tax) <- allowed_ranks # make the names of vector the ranks
                 revtax <- rev(tax) # reverse the vector (so starts with 'species')
                 keepvec <- which.max(!is.na(revtax)) # 
                 return(names(keepvec))  # Return the rank name
