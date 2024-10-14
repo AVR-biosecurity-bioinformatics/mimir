@@ -59,18 +59,21 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 
 Questions
 - What do we do with subspecies-level taxonomic resolution? Replace binomial with trinomial? Truncate to binomial?
+    - Currently pipeline retains specific taxids (NCBI, or BOLD if can't be exactly matched) for each sequence, while populating the lineage string with only the specified ranks (ie. kingdom through species). This means a sequence identified to subspecies will have a different taxid to one identified to the same species, but will share the same lineage string. 
 - How do we handle the "identification_method" field in the BOLD datbase?
     - Possibly problematic values are "BIN Taxonomy Match [date]" and "BOLD Sequence Classifier", which use BOLD data to classify the sequence and as such are not necessarily externally validated (can result in overconfidence in assignment, GIGO)
     - Could have a pipeline parameter that removes all sequences that have an ID method containing "BIN", "barcode", "BOLD", "DNA" or "tree" (but retains if tree + morphology was used?)
-- How does PRUNE_GROUPS handle unclassified sequences? ie. does it treat all unclassified in a particular genus as a group, which then gets pruned to a max size? (Seems likely) 
-    - Should the grouping happen at the taxid level instead? 
+- How does PRUNE_GROUPS handle unclassified sequences? ie. does it treat all unclassified in a particular genus as a group, which then gets pruned to a max size? 
+    - ANSWER: prune_groups function uses taxid + lineage string to determine taxonomic grouping, so "Unclassified" sequences will not be grouped together unless they share an identical taxid
+    - It's possible we might want to keep unclassified sequences regardless of grouping, eg. two family-level ID sequences might be grouped but only share 90% seq ID, so are not real duplicates of each other
 
 Important
 - make process that creates a PHMM from a given .fasta of marker sequences
 - add pipeline parameter for marker search query 
     - add this to COUNT_GENBANK and FETCH_GENBANK processes
 - add ability to add internal sequences through .fasta file
-    - what format does the name of each sequence need to be in?
+    - what format does the name of each sequence need to be in? ("accession|taxid")
+        - "taxid" can be NCBI format (eg. "NCBI:11111") if assignment is known, or internal if a new species (eg. "INT:18"); if INT, lineage information must be given in format "kingdom;phylum..."
     - preferentially retain internal sequences in PRUNE_GROUPS step
 - modify fetch_seqs/fetch_genbank to query taxid directly rather than taxon name to eliminate ambiguity
 - add outgroup handling
@@ -85,6 +88,8 @@ Important
 - allow users to skip PHMM, STOP, EXACT, CONTAM and PRUNE steps (mainly to allow quantitative comparisons between filter settings)
 - allow users to input a "fetched, unfiltered" .fasta file (ie. didn't filter anything) to allow quantitative comparisons of the filtering steps
 - add parameter to remove all unclassified sequences from final database
+- add versioning process that tracks version of BOLD db, versions of each container etc. 
+- allow 'prune_groups' function to use internal sequence accessions as the "preferred" sequence names (use stringr matching)
 
 
 Less important
