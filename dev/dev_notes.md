@@ -78,12 +78,6 @@ Important
 - modify fetch_seqs/fetch_genbank to query taxid directly rather than taxon name to eliminate ambiguity
 - add outgroup handling
 - check that chunked alignments (to PHMM) are equivalent to alignments on combined .fasta
-- query ncbi taxdump db for all ranks at certain level, then all ranks not captured etc. -- to produce taxa chunks for fetching sequences
-    - ie. replace CHUNK_TAXON code using taxize with querying the taxdump
-- find out why some sequences download without a taxid attached (and thus can't have their full taxonomic lineage resolved)
-- dereplicate exact sequences before alignment to PHMM (combine .fasta chunks and then remove exact duplicates -- compare taxid as well) -- add counts to table
-- modify MATCH_BOLD so it acts on the individual chunk elements output from EXTRACT_BOLD, to avoid serious memory hog issues (if the chunks are merged then acted on, memory can blow out)
-    - output .fasta files (as well as the output .csvs) can then easily be concatenated in a new MERGE_BOLD step written in bash which is must less memory intensive
 - create "reject" channels that capture sequences that fail the phmm, stop, exact, contam and prune filters, as combined .fasta files
 - allow users to skip PHMM, STOP, EXACT, CONTAM and PRUNE steps (mainly to allow quantitative comparisons between filter settings)
 - allow users to input a "fetched, unfiltered" .fasta file (ie. didn't filter anything) to allow quantitative comparisons of the filtering steps
@@ -93,8 +87,6 @@ Important
 
 
 Less important
-- add process that tracks the number of sequences at each step of the pipeline
-    - count sequences from intermediate .fasta files (once moved to .fasta-only implementation)
 - add option to retrieve a small number of outgroup taxa
 - TRAIN_IDTAXA fails if only one taxonomic group is present (ie. one species)
     - create check for this

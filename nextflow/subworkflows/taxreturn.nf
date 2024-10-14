@@ -434,10 +434,6 @@ workflow TAXRETURN {
     
 
 
-
-    }
-
-
     emit:
 
     // bold_db = GET_BOLD_DATABASE.out.bold_db
