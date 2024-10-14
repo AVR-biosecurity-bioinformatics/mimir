@@ -236,6 +236,15 @@ workflow TAXRETURN {
     //// count number of total input sequences
     ch_count_input = ch_input_seqs.countFasta()      
 
+    //// combine and save all unfiltered input sequences a single .fasta 
+    if ( params.save_input || params.save_intermediate ) {
+        ch_input_seqs
+            .collectFile ( 
+                name: "input_sequences.fasta",
+                storeDir: "./output/results"
+            )
+    }
+
     //// trim model to primer sequences
     if ( params.trim_phmm ) {
         //// throw error if either primer sequence is not supplied
@@ -258,6 +267,15 @@ workflow TAXRETURN {
         ch_phmm
     )
 
+    //// combine and save intermediate file 
+    if ( params.save_intermediate ) {
+        FILTER_PHMM.out.fasta
+            .collectFile ( 
+                name: "filter_phmm.fasta",
+                storeDir: "./output/results"
+            )
+    }
+
     //// count number of sequences passing PHMM filter
     ch_count_filter_phmm = FILTER_PHMM.out.fasta.countFasta() 
 
@@ -267,6 +285,15 @@ workflow TAXRETURN {
         FILTER_STOP (
             FILTER_PHMM.out.seqs
         )
+
+        //// combine and save intermediate file 
+        if ( params.save_intermediate ) {
+            FILTER_STOP.out.fasta
+                .collectFile ( 
+                    name: "filter_stop.fasta",
+                    storeDir: "./output/results"
+                )
+        }
 
         //// count number of sequences passing stop codon filter
         ch_count_filter_stop = FILTER_STOP.out.fasta.countFasta() 
@@ -313,6 +340,15 @@ workflow TAXRETURN {
         COMBINE_CHUNKS.out.fasta
     )
 
+    //// combine and save intermediate file 
+    if ( params.save_intermediate ) {
+        REMOVE_EXACT_DUPLICATES.out.fasta
+            .collectFile ( 
+                name: "remove_exact_duplicates.fasta",
+                storeDir: "./output/results"
+            )
+    }
+
     //// count number of sequences passing exact deduplication
     ch_count_remove_exact = REMOVE_EXACT_DUPLICATES.out.fasta.countFasta()
 
@@ -321,6 +357,15 @@ workflow TAXRETURN {
         REMOVE_EXACT_DUPLICATES.out.fasta,
         GET_NCBI_TAXONOMY.out.rankedlineage
     )
+
+    //// combine and save intermediate file 
+    if ( params.save_intermediate ) {
+        REMOVE_CONTAM.out.fasta
+            .collectFile ( 
+                name: "remove_contam.fasta",
+                storeDir: "./output/results"
+            )
+    }
 
     //// count number of sequences passing taxonomic decontamination
     ch_count_remove_contam = REMOVE_CONTAM.out.fasta.countFasta()
@@ -387,6 +432,11 @@ workflow TAXRETURN {
     // ch_models = 
     //     Channel.empty()
     
+
+
+
+    }
+
 
     emit:
 

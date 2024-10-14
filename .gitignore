@@ -3,6 +3,8 @@
 *.log.[0-9]
 *.slurm
 *.out
-/output/
+/output/modules
+/output/run_info
+/output/results
 /work/
 /trace/
