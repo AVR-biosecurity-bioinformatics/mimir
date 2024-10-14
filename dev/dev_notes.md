@@ -48,6 +48,10 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 # quick test 3 (Apis)
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7459 --target_ranks genus --bold_db_path ./input
 
+# quick test 4 (Embioptera)
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 50657 --target_ranks order --bold_db_path ./input
+
+
 ```
 
 
@@ -58,6 +62,8 @@ Questions
 - How do we handle the "identification_method" field in the BOLD datbase?
     - Possibly problematic values are "BIN Taxonomy Match [date]" and "BOLD Sequence Classifier", which use BOLD data to classify the sequence and as such are not necessarily externally validated (can result in overconfidence in assignment, GIGO)
     - Could have a pipeline parameter that removes all sequences that have an ID method containing "BIN", "barcode", "BOLD", "DNA" or "tree" (but retains if tree + morphology was used?)
+- How does PRUNE_GROUPS handle unclassified sequences? ie. does it treat all unclassified in a particular genus as a group, which then gets pruned to a max size? (Seems likely) 
+    - Should the grouping happen at the taxid level instead? 
 
 Important
 - make process that creates a PHMM from a given .fasta of marker sequences
@@ -75,6 +81,10 @@ Important
 - dereplicate exact sequences before alignment to PHMM (combine .fasta chunks and then remove exact duplicates -- compare taxid as well) -- add counts to table
 - modify MATCH_BOLD so it acts on the individual chunk elements output from EXTRACT_BOLD, to avoid serious memory hog issues (if the chunks are merged then acted on, memory can blow out)
     - output .fasta files (as well as the output .csvs) can then easily be concatenated in a new MERGE_BOLD step written in bash which is must less memory intensive
+- create "reject" channels that capture sequences that fail the phmm, stop, exact, contam and prune filters, as combined .fasta files
+- allow users to skip PHMM, STOP, EXACT, CONTAM and PRUNE steps (mainly to allow quantitative comparisons between filter settings)
+- allow users to input a "fetched, unfiltered" .fasta file (ie. didn't filter anything) to allow quantitative comparisons of the filtering steps
+- add parameter to remove all unclassified sequences from final database
 
 
 Less important

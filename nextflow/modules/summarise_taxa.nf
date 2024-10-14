@@ -1,5 +1,5 @@
-process TAXA_SUMMARY {
-    def module_name = "taxa_summary"
+process SUMMARISE_TAXA {
+    def module_name = "summarise_taxa"
     tag "-"
     label "small"
     container "jackscanlan/piperline-multi:0.0.1"

@@ -25,7 +25,8 @@ include { REMOVE_CONTAM                                                 } from '
 include { REMOVE_EXACT_DUPLICATES                                                 } from '../modules/remove_exact_duplicates'
 include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
-include { TAXA_SUMMARY                                                 } from '../modules/taxa_summary'
+include { SUMMARISE_COUNTS                                                 } from '../modules/summarise_counts'
+include { SUMMARISE_TAXA                                                 } from '../modules/summarise_taxa'
 include { TRAIN_IDTAXA                                                 } from '../modules/train_idtaxa'
 include { TRIM_PHMM                                                 } from '../modules/trim_phmm'
 
@@ -136,6 +137,8 @@ workflow TAXRETURN {
     RENAME_GENBANK.out.fasta
         .set { ch_genbank_fasta }
 
+    //// count number of sequences downloaded from Genbank
+    ch_count_genbank = ch_genbank_fasta.countFasta()
     
     /*
     Getting BOLD sequences and matching them to the NCBI database
@@ -181,9 +184,13 @@ workflow TAXRETURN {
             MATCH_BOLD.out.synchanges.collect()
         )
 
+        //// chunk BOLD sequences into smaller .fasta files for processing
         MERGE_BOLD.out.fasta
             .splitText( by: params.chunk_size, file: true )
             .set { ch_bold_fasta }
+
+        //// count number of sequences extracted from BOLD
+        ch_count_bold = ch_bold_fasta.countFasta()
 
     } else {
         //// extract sequences by querying BOLD API
@@ -199,8 +206,24 @@ workflow TAXRETURN {
 
     // // )
 
+    //// count number of internal sequences 
+    ch_count_mito = ch_mito_fasta.countFasta()    
+
+    //// count number of genome assembly-derived sequences 
+    ch_count_genome = ch_genome_fasta.countFasta()
+
     // //// add internal sequences
 
+
+    //// count number of internal sequences 
+    ch_count_internal = ch_internal_fasta.countFasta()
+
+    //// count number of external input sequences
+    ch_count_external = ch_genbank_fasta
+        .concat ( ch_bold_fasta )
+        .concat ( ch_mito_fasta )
+        .concat ( ch_genome_fasta )
+        .countFasta() 
 
     //// concat output channels into a single channel for PHMM alignment
     ch_genbank_fasta
@@ -208,7 +231,10 @@ workflow TAXRETURN {
         .concat ( ch_mito_fasta )
         .concat ( ch_genome_fasta )
         .concat ( ch_internal_fasta )
-        .set { ch_raw_seqs }        
+        .set { ch_input_seqs }  
+
+    //// count number of total input sequences
+    ch_count_input = ch_input_seqs.countFasta()      
 
     //// trim model to primer sequences
     if ( params.trim_phmm ) {
@@ -228,9 +254,12 @@ workflow TAXRETURN {
 
     //// filter sequences in each chunk using PHMM model
     FILTER_PHMM (
-        ch_raw_seqs,
+        ch_input_seqs,
         ch_phmm
     )
+
+    //// count number of sequences passing PHMM filter
+    ch_count_filter_phmm = FILTER_PHMM.out.fasta.countFasta() 
 
     //// optional: filter for stop codons
     if ( params.coding && params.genetic_code ){
@@ -239,11 +268,16 @@ workflow TAXRETURN {
             FILTER_PHMM.out.seqs
         )
 
+        //// count number of sequences passing stop codon filter
+        ch_count_filter_stop = FILTER_STOP.out.fasta.countFasta() 
+
         ch_filter_output = FILTER_STOP.out.seqs.collect()
 
     } else {
 
         ch_filter_output = FILTER_PHMM.out.seqs.collect()
+
+        ch_count_filter_stop = Channel.empty() // make empty channel as this filter isn't applied
     
     }
 
@@ -269,7 +303,7 @@ workflow TAXRETURN {
     //     .collect()
     //     .set { ch_chunks }
 
-    //// combine sequence chunks together
+    //// combine sequences into one .fasta file
     COMBINE_CHUNKS ( 
         ch_filter_output
     )
@@ -279,16 +313,25 @@ workflow TAXRETURN {
         COMBINE_CHUNKS.out.fasta
     )
 
+    //// count number of sequences passing exact deduplication
+    ch_count_remove_exact = REMOVE_EXACT_DUPLICATES.out.fasta.countFasta()
+
     //// remove contaminating sequences
     REMOVE_CONTAM (
         REMOVE_EXACT_DUPLICATES.out.fasta,
         GET_NCBI_TAXONOMY.out.rankedlineage
     )
 
+    //// count number of sequences passing taxonomic decontamination
+    ch_count_remove_contam = REMOVE_CONTAM.out.fasta.countFasta()
+
     //// prune large groups
     PRUNE_GROUPS (
         REMOVE_CONTAM.out.seqs
     )
+
+    //// count number of sequences passing group pruning
+    ch_count_prune_groups = PRUNE_GROUPS.out.fasta.countFasta()
 
     // //// reformat names using taxonomic hierarchy
     // REFORMAT_NAMES (
@@ -297,9 +340,40 @@ workflow TAXRETURN {
     // )
 
     //// summarise number of taxa in database
-    TAXA_SUMMARY (
+    SUMMARISE_TAXA (
         PRUNE_GROUPS.out.seqs
     )
+/* 
+    //// summarise the counts of sequences at each stage of the pipeline
+    SUMMARISE_COUNTS (
+        ch_count_genbank,
+        ch_count_bold,
+        ch_count_mito,
+        ch_count_genome,
+        ch_count_internal,
+        ch_count_external,
+        ch_count_input,
+        ch_count_filter_phmm,
+        ch_count_filter_stop,
+        ch_count_remove_exact,
+        ch_count_remove_contam,
+        ch_count_prune_groups
+    )
+ */
+
+    //// sequence counts for debugging
+    ch_count_genbank        .view { "ch_count_genbank: $it" }
+    ch_count_bold           .view { "ch_count_bold: $it" }
+    ch_count_mito           .view { "ch_count_mito: $it" }
+    ch_count_genome         .view { "ch_count_genome: $it" }
+    ch_count_internal       .view { "ch_count_internal: $it" }
+    ch_count_external       .view { "ch_count_external: $it" }
+    ch_count_input          .view { "ch_count_input: $it" }
+    ch_count_filter_phmm    .view { "ch_count_filter_phmm: $it" }
+    ch_count_filter_stop    .view { "ch_count_filter_stop: $it" }
+    ch_count_remove_exact   .view { "ch_count_remove_exact: $it" }
+    ch_count_remove_contam  .view { "ch_count_remove_contam: $it" }
+    ch_count_prune_groups   .view { "ch_count_prune_groups: $it" }
 
     // //// train IDTAXA model
     // if ( params.train_idtaxa ) {
