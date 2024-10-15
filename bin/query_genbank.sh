@@ -4,7 +4,7 @@ set -u
 ## args are the following:
 # $1 = projectDir 
 # $2 = threads
-# $3 = taxon_name
+# $3 = taxon_id
 # $4 = taxon_rank
 # $5 = marker
 # $6 = params.min_length
@@ -12,7 +12,7 @@ set -u
 
 ## process variables
 
-TAXON_NAME=${3}
+TAXON_ID=${3}
 
 TAXON_RANK=${4}
 
@@ -22,7 +22,7 @@ MIN_LENGTH=${6}
 
 MAX_LENGTH=${7}
 
-QUERY="${TAXON_NAME}[ORGN] AND (${MARKER}) AND ${MIN_LENGTH}:${MAX_LENGTH}[Sequence Length]"
+QUERY="txid${TAXON_ID}[Organism:exp] AND (${MARKER}) AND ${MIN_LENGTH}:${MAX_LENGTH}[Sequence Length]"
 
 esearch \
     -db nuccore \
@@ -31,4 +31,4 @@ esearch \
     efetch \
     -format acc \
     -mode txt \
-    > ${TAXON_NAME}.txt 
+    > ${TAXON_ID}.txt 

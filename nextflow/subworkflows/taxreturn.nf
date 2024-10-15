@@ -91,10 +91,10 @@ workflow TAXRETURN {
     //// TODO: How does current PARSE_TARGETS implementation work with --target_taxa as a list?
 
     //// convert file text to channel value
-    PARSE_TARGETS.out.taxon_name
-        .map { name, rank -> 
-            [ name.text.trim(), rank ] }
-        .set { ch_taxon_namerank }
+    PARSE_TARGETS.out.taxon_id_rank
+        .map { id, rank -> 
+            [ id.text.trim(), rank ] }
+        .set { ch_taxon_idrank }
 
     // //// parse marker gene into formats understandable for each database
     // PARSE_MARKER (
@@ -107,7 +107,7 @@ workflow TAXRETURN {
 
     //// query GenBank to get list of nucleotide IDs
     QUERY_GENBANK (
-        ch_taxon_namerank,
+        ch_taxon_idrank,
         "COI[GENE] OR COX1[GENE] OR COXI[GENE]"
     )
 

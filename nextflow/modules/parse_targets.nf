@@ -12,6 +12,7 @@ process PARSE_TARGETS {
 
     output: 
     tuple path("*_name.txt"), val(taxon_rank),                      emit: taxon_name
+    tuple path("*_ncbi_id.txt"), val(taxon_rank),                   emit: taxon_id_rank
     path("*_ncbi_id.txt"),                                          emit: ncbi_id
     path("*_bold_names.txt"),                                       emit: bold_names
     path("*_bold_ids.txt"),                                         emit: bold_ids

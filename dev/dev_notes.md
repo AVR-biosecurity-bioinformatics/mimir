@@ -68,6 +68,7 @@ Questions
     - It's possible we might want to keep unclassified sequences regardless of grouping, eg. two family-level ID sequences might be grouped but only share 90% seq ID, so are not real duplicates of each other
 
 Important
+- double-check SUMMARISE_TAXA is working correctly (example is quick test 4 above gives 1 species and 91 genera)
 - make process that creates a PHMM from a given .fasta of marker sequences
 - add pipeline parameter for marker search query 
     - add this to COUNT_GENBANK and FETCH_GENBANK processes

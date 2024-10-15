@@ -6,7 +6,7 @@ process QUERY_GENBANK {
     container "emehinovic72/edirect:latest"
 
     input:
-    tuple val(taxon_name), val(taxon_rank)
+    tuple val(taxon_id), val(taxon_rank)
     val(marker)
 
     output:
@@ -25,7 +25,7 @@ process QUERY_GENBANK {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${taxon_name}" \
+        "${taxon_id}" \
         "${taxon_rank}" \
         "${marker}" \
         "${params.min_length}" \
