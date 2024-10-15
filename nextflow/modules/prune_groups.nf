@@ -5,11 +5,11 @@ process PRUNE_GROUPS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(seqs_file)
+    val(fasta_file)
 
     output: 
     path("seqs_pruned.rds"),                  emit: seqs
-    path("seqs_pruned.fasta"),                            emit: fasta
+    path("seqs_pruned.fasta"),                emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -22,7 +22,7 @@ process PRUNE_GROUPS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    seqs_file =                   "${seqs_file}"
+    fasta_file =                   "${fasta_file}"
 
     ## global variables
     projectDir = "$projectDir"

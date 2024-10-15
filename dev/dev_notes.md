@@ -51,6 +51,16 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 # quick test 4 (Embioptera)
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 50657 --target_ranks order --bold_db_path ./input
 
+# bactrocera test of clustering
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 27456 --target_ranks genus --bold_db_path ./input --cluster_rank species --cluster_threshold 0.99
+
+# Drosophilidae test of clustering
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214 --target_ranks family --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
+
+# Diptera test
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7147 --target_ranks order --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
+
+
 
 ```
 
@@ -68,6 +78,7 @@ Questions
     - It's possible we might want to keep unclassified sequences regardless of grouping, eg. two family-level ID sequences might be grouped but only share 90% seq ID, so are not real duplicates of each other
 
 Important
+- do a retry trick with QUERY_GENBANK in case of server error
 - double-check SUMMARISE_TAXA is working correctly (example is quick test 4 above gives 1 species and 91 genera)
 - make process that creates a PHMM from a given .fasta of marker sequences
 - add pipeline parameter for marker search query 

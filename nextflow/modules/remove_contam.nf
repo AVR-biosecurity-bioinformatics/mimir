@@ -9,8 +9,7 @@ process REMOVE_CONTAM {
     val(db_file)
 
     output: 
-    path("seqs_decontaminated.rds"),                  emit: seqs
-    path("*.fasta"),                            emit: fasta, optional: true
+    path("seqs_decontaminated.fasta"),                                  emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

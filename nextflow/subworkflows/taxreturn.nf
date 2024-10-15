@@ -366,7 +366,7 @@ workflow TAXRETURN {
 
     //// prune large groups
     PRUNE_GROUPS (
-        REMOVE_CONTAM.out.seqs
+        REMOVE_CONTAM.out.fasta
     )
 
     //// count number of sequences passing group pruning
