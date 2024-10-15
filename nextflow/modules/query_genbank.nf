@@ -10,7 +10,7 @@ process QUERY_GENBANK {
     val(marker)
 
     output:
-    path("*.txt"),              emit: seq_acc
+    path("*_seqs.txt"),              emit: seq_acc
 
     publishDir "${projectDir}/output/modules/${module_name}", mode: 'copy'
 
@@ -29,7 +29,8 @@ process QUERY_GENBANK {
         "${taxon_rank}" \
         "${marker}" \
         "${params.min_length}" \
-        "${params.max_length}"
+        "${params.max_length}" \
+        "${params.use_mito}"
     
     """
 

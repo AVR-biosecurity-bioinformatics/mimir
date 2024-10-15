@@ -105,13 +105,13 @@ workflow TAXRETURN {
     Getting Genbank sequences
     */
 
-    //// query GenBank to get list of nucleotide IDs
+    //// query GenBank to get list of nucleotide IDs (including mitochondrial genomes if requested)
     QUERY_GENBANK (
         ch_taxon_idrank,
         "COI[GENE] OR COX1[GENE] OR COXI[GENE]"
     )
 
-    //// chunk list of accessions to 1000 for fetching
+    //// chunk list of accessions for fetching
     QUERY_GENBANK.out.seq_acc
         .splitText( by: params.chunk_size, file: true )
         .set { ch_genbank_acc_chunks }
@@ -133,7 +133,7 @@ workflow TAXRETURN {
         GET_NCBI_TAXONOMY.out.rankedlineage_noname
     )
 
-    //// population ch_genbank_fasta channel
+    //// populate ch_genbank_fasta channel
     RENAME_GENBANK.out.fasta
         .set { ch_genbank_fasta }
 
@@ -199,12 +199,6 @@ workflow TAXRETURN {
         // )
         //// TODO: Need to make sure this outputs same tibble format as EXTRACT_BOLD
     }
-
-
-    // // //// fetch mitochondrial genomes from NCBI for each chunk
-    // // FETCH_MITO (
-
-    // // )
 
     //// count number of internal sequences 
     ch_count_mito = ch_mito_fasta.countFasta()    
