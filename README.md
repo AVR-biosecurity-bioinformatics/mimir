@@ -15,7 +15,7 @@ This pipeline is being developed by a team at [Agriculture Victoria Research](ht
 
 #### BOLD database 
 
-Best way to access Barcode of Life Data ([BOLD](https://www.boldsystems.org/index.php)) data at the moment is with a direct link to the latest [complete database package](https://www.boldsystems.org/index.php/datapackages/Latest). You'll need to [create an account](https://www.boldsystems.org/index.php/MAS_Management_NewUserApp) with BOLD, which will allow you to generate a URL that will download the complete database package (>2 GB compressed) for 24 hours. Input an active URL into the pipeline in the following format, making sure to wrap the URL in quotes: `--bold_db_url "https://www.boldsystems.org/index.php/API_Datapackage?id=BOLD_Public.06-Sep-2024&uid=166f4b93030986"`
+Best way to access Barcode of Life Data ([BOLD](https://www.boldsystems.org/index.php)) data at the moment is with a direct link to the latest [complete database package](https://bench.boldsystems.org/index.php/datapackages/Latest). You'll need to [create an account](https://bench.boldsystems.org/index.php/MAS_Management_NewUserApp) with BOLD, which will allow you to generate a URL that will download the complete database package (>2 GB compressed) for 24 hours. Input an active URL into the pipeline in the following format, making sure to wrap the URL in quotes: `--bold_db_url "https://www.boldsystems.org/index.php/API_Datapackage?id=BOLD_Public.06-Sep-2024&uid=166f4b93030986"`
 
 If you have already downloaded a complete BOLD data package, either from a previous pipeline run or a manual download, you can supply a path to either the compressed `.tar.gz` file itself or a directory where the compressed or uncompressed file(s) are found, using the `--bold_db_path` flag. 
 
