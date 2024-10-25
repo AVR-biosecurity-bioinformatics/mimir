@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 process FETCH_GENBANK {
     def module_name = "fetch_genbank"
-    tag "-"
+    tag "$acc_list"
     time 10.m
     cpus 1
     memory 1.GB

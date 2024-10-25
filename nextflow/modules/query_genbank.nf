@@ -2,7 +2,9 @@
 process QUERY_GENBANK {
     def module_name = "query_genbank"
     tag "-"
-    // label "very_high"
+    cpus 1
+    time 2.h
+    memory 4.GB
     container "emehinovic72/edirect:latest"
 
     input:

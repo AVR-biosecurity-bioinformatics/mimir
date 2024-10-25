@@ -1,6 +1,6 @@
 process ADD_TAXID_GENBANK {
     def module_name = "add_taxid_genbank"
-    tag "-"
+    tag "$fasta"
     time 5.m
     cpus 1
     memory 1.GB

@@ -43,7 +43,10 @@ cat $ACC_LIST \
 	-element Caption,TaxId \
 	> ${NAME_NOEXT}.taxids.txt
 
-exit 0
-
-# reformat taxids list 
-
+if [ -s ${NAME_NOEXT}.taxids.txt ]; then 
+	# if file is not empty
+	exit 0
+else 
+	# if file is empty 
+	exit 140
+fi

@@ -57,8 +57,11 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 # Drosophilidae test of clustering
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214 --target_ranks family --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
 
-# Diptera test
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7147 --target_ranks order --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
+# Orthoptera test
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 6993 --target_ranks order --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
+
+# Acrididae test for NA taxids in input sequences (example KU184830.1)
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7002 --target_ranks family --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
 
 
 
@@ -78,6 +81,7 @@ Questions
     - It's possible we might want to keep unclassified sequences regardless of grouping, eg. two family-level ID sequences might be grouped but only share 90% seq ID, so are not real duplicates of each other
 
 Important
+- change REMOVE_CONTAM code so unclassified sequences at particular rank are removed before OTU clustering, then added at the end (this should speed up clustering)
 - do a retry trick with QUERY_GENBANK in case of server error
 - double-check SUMMARISE_TAXA is working correctly (example is quick test 4 above gives 1 species and 91 genera)
 - make process that creates a PHMM from a given .fasta of marker sequences
@@ -87,7 +91,6 @@ Important
     - what format does the name of each sequence need to be in? ("accession|taxid")
         - "taxid" can be NCBI format (eg. "NCBI:11111") if assignment is known, or internal if a new species (eg. "INT:18"); if INT, lineage information must be given in format "kingdom;phylum..."
     - preferentially retain internal sequences in PRUNE_GROUPS step
-- modify fetch_seqs/fetch_genbank to query taxid directly rather than taxon name to eliminate ambiguity
 - add outgroup handling
 - check that chunked alignments (to PHMM) are equivalent to alignments on combined .fasta
 - create "reject" channels that capture sequences that fail the phmm, stop, exact, contam and prune filters, as combined .fasta files

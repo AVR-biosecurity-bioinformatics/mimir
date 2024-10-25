@@ -369,6 +369,13 @@ workflow TAXRETURN {
         REMOVE_CONTAM.out.fasta
     )
 
+    //// save PRUNE_GROUPS output
+    PRUNE_GROUPS.out.fasta
+        .collectFile ( 
+            name: "prune_groups.fasta",
+            storeDir: "./output/results"
+        )
+
     //// count number of sequences passing group pruning
     ch_count_prune_groups = PRUNE_GROUPS.out.fasta.countFasta()
 
