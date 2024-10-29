@@ -16,7 +16,7 @@ include { GET_BOLD_DATABASE                                         } from '../m
 include { GET_NCBI_TAXONOMY                                         } from '../modules/get_ncbi_taxonomy'
 include { MATCH_BOLD                                                 } from '../modules/match_bold'
 include { MERGE_BOLD                                                 } from '../modules/merge_bold'
-// include { PARSE_MARKER                                                 } from '../modules/parse_marker'
+include { PARSE_MARKER                                                 } from '../modules/parse_marker'
 include { PARSE_TARGETS                                                 } from '../modules/parse_targets'
 include { PRUNE_GROUPS                                                 } from '../modules/prune_groups'
 include { QUERY_GENBANK                                                 } from '../modules/query_genbank'
@@ -54,6 +54,13 @@ workflow TAXRETURN {
     }
 
     ch_target_ranks = params.target_ranks ?: Channel.of("no_ranks")
+
+    //// marker channel parsing
+    if ( params.marker ) {
+        ch_marker = params.marker
+    } else {
+        error "*** '--marker' must be specified ***"
+    }
 
     //// ENTREZ key channel parsing
     ch_entrez_key = params.entrez_key ?: "no_key"
@@ -96,10 +103,10 @@ workflow TAXRETURN {
             [ id.text.trim(), rank ] }
         .set { ch_taxon_idrank }
 
-    // //// parse marker gene into formats understandable for each database
-    // PARSE_MARKER (
-
-    // )
+    //// parse marker gene into formats understandable for each database
+    PARSE_MARKER (
+        ch_marker
+    )
 
     /*
     Getting Genbank sequences
@@ -108,7 +115,7 @@ workflow TAXRETURN {
     //// query GenBank to get list of nucleotide IDs (including mitochondrial genomes if requested)
     QUERY_GENBANK (
         ch_taxon_idrank,
-        "COI[GENE] OR COX1[GENE] OR COXI[GENE]"
+        PARSE_MARKER.out.genbank_query
     )
 
     //// chunk list of accessions for fetching
@@ -166,8 +173,8 @@ workflow TAXRETURN {
         EXTRACT_BOLD (
             ch_bold_db_chunks,
             PARSE_TARGETS.out.bold_names,
-            PARSE_TARGETS.out.bold_rank
-            // ch_marker
+            PARSE_TARGETS.out.bold_rank,
+            PARSE_MARKER.out.bold_query
         )
 
         //// match BOLD taxon names to NCBI taxon names
@@ -274,7 +281,7 @@ workflow TAXRETURN {
     ch_count_filter_phmm = FILTER_PHMM.out.fasta.countFasta() 
 
     //// optional: filter for stop codons
-    if ( params.coding && params.genetic_code ){
+    if ( PARSE_MARKER.out.coding == "true" && params.genetic_code ){
 
         FILTER_STOP (
             FILTER_PHMM.out.seqs

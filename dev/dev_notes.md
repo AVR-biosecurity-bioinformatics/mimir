@@ -63,6 +63,8 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 # Acrididae test for NA taxids in input sequences (example KU184830.1)
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7002 --target_ranks family --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
 
+### testing markers
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI
 
 
 ```

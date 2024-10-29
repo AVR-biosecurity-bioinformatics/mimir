@@ -8,7 +8,7 @@ process EXTRACT_BOLD {
     tuple val(db_tsv_file), val(db_meta_file)
     val(bold_names_file)
     val(bold_rank_file)
-    // val(marker)
+    val(marker)
 
     output: 
     path("bold_db_targets.*.rds"),                  emit: tibble, optional: true
@@ -28,7 +28,8 @@ process EXTRACT_BOLD {
     db_meta_file =                "${db_meta_file}"
     bold_names_file =             "${bold_names_file}"
     bold_rank_file =              "${bold_rank_file}"
-    marker =                      "COI-5P" # TODO: add channel from PARSE_MARKER
+    marker =                      "${marker}"
+    #marker =                      "COI-5P" # TODO: add channel from PARSE_MARKER
 
     ## global variables
     projectDir = "$projectDir"
