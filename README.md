@@ -28,3 +28,9 @@ We are also looking into ways of downloading sequence data from BOLD using the [
 For the best compatibility between source databases (ie. Genbank and BOLD), only taxa from the following ranks should be used as `--target_taxa`: kingdom, phylum, class, order, family, genus, or species. This is because intermediate ranks, like "subfamily" and "tribe", are not available for all sequences. If a database comprising only an intermediate rank is needed, we recommend filtering a larger database using a known list of component taxa, or using such a list as the input to the pipeline. 
 
 Currently, the pipeline parses input taxa through the NCBI taxonomy, so `--target_taxa` must be a recognised NCBI taxon name (eg. "Insecta"), or even better, an NCBI taxid number (eg. "50557"). Taxids are preferred as they are unambiguous, while taxon names are sometimes shared between different taxa (a good example is "Drosophila" belonging to three taxids: 7215, 32281 and 2081351). To assist with (but not completely solve) taxon name disambiguation, `--target_rank` must also be used to supply the taxonomic rank of the taxon name (eg. "class" for "Insecta"); this also helps taxonomic harmonisation between the NCBI and BOLD taxonomies. 
+
+#### Markers/barcodes
+
+At the moment, only two markers are supported: COI and 28S. More markers will be available soon. 
+
+A key input into the pipeline is a profile hidden Markov model (PHMM) of your marker of interest, which is used to distinguish between 'on-target' and erroneous sequences in external (and internal) data sources. A model for insect COI is contained in this repository at `./assets/folmer_fullength_model.rds`, but models for other markers need to be provided by the user. A method to generate a PHMM from high-quality internal sequences will be available soon. 
