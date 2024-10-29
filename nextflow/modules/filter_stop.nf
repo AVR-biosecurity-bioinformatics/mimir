@@ -6,6 +6,7 @@ process FILTER_STOP {
 
     input:
     val(seqs_file)
+    val(coding)
 
     output: 
     path("*_filter_stop.rds"),           emit: seqs, optional: true
@@ -23,6 +24,7 @@ process FILTER_STOP {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     seqs_file =              "${seqs_file}"
+    coding =                 "${coding}"
 
     ## global variables
     projectDir = "$projectDir"

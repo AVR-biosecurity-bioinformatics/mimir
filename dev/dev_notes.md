@@ -55,7 +55,7 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 27456 --target_ranks genus --bold_db_path ./input --cluster_rank species --cluster_threshold 0.99
 
 # Drosophilidae test of clustering
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214 --target_ranks family --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214 --target_ranks family --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97 --marker COI
 
 # Orthoptera test
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 6993 --target_ranks order --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97

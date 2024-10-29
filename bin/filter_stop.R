@@ -43,7 +43,8 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "seqs_file"
+    "seqs_file",
+    "coding"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -59,14 +60,21 @@ file_basename_noext <-
 
 ### run code
 
-## filter out sequences with stop codons
-seqs_filtered <- 
-    codon_filter(
-        x = seqs, 
-        genetic_code = params.genetic_code, 
-        tryrc = TRUE, 
-        resolve_draws = "majority"
-    )
+## run filter only if marker is a coding sequence
+if ( coding == "true" ){
+    ## filter out sequences with stop codons
+    seqs_filtered <- 
+        codon_filter(
+            x = seqs, 
+            genetic_code = params.genetic_code, 
+            tryrc = TRUE, 
+            resolve_draws = "majority"
+        )
+} else if ( coding == "false" ) {
+    seqs_filtered <- seqs
+} else {
+    stop("ERROR: 'coding' must be 'true' or 'false'")
+}
 
 # save filtered sequences as .rds file
 if ( !is.null(seqs_filtered)) {

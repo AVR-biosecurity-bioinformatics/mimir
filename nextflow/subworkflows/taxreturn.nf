@@ -62,6 +62,9 @@ workflow TAXRETURN {
         error "*** '--marker' must be specified ***"
     }
 
+    //// genetic code
+    if ( !params.genetic_code ){ error "*** '--genetic_code' must be specified ***" }
+
     //// ENTREZ key channel parsing
     ch_entrez_key = params.entrez_key ?: "no_key"
 
@@ -103,13 +106,10 @@ workflow TAXRETURN {
             [ id.text.trim(), rank ] }
         .set { ch_taxon_idrank }
 
-    //// parse marker gene into formats understandable for each database
+    //// parse marker gene into formats understandable for each database/process
     PARSE_MARKER (
         ch_marker
     )
-
-    //// coding channel
-    ch_coding = PARSE_MARKER.out.coding
 
     /*
     Getting Genbank sequences
@@ -269,7 +269,7 @@ workflow TAXRETURN {
     FILTER_PHMM (
         ch_input_seqs,
         ch_phmm,
-        ch_coding
+        PARSE_MARKER.out.coding
     )
 
     //// combine and save intermediate file 
@@ -284,34 +284,25 @@ workflow TAXRETURN {
     //// count number of sequences passing PHMM filter
     ch_count_filter_phmm = FILTER_PHMM.out.fasta.countFasta() 
 
-    //// optional: filter for stop codons
-    if ( ch_coding == "true" && params.genetic_code ){
+    //// filter for stop codons (depending on marker)
+    FILTER_STOP (
+        FILTER_PHMM.out.seqs,
+        PARSE_MARKER.out.coding
+    )
 
-        FILTER_STOP (
-            FILTER_PHMM.out.seqs
-        )
-
-        //// combine and save intermediate file 
-        if ( params.save_intermediate ) {
-            FILTER_STOP.out.fasta
-                .collectFile ( 
-                    name: "filter_stop.fasta",
-                    storeDir: "./output/results"
-                )
-        }
-
-        //// count number of sequences passing stop codon filter
-        ch_count_filter_stop = FILTER_STOP.out.fasta.countFasta() 
-
-        ch_filter_output = FILTER_STOP.out.seqs.collect()
-
-    } else {
-
-        ch_filter_output = FILTER_PHMM.out.seqs.collect()
-
-        ch_count_filter_stop = Channel.empty() // make empty channel as this filter isn't applied
-    
+    //// combine and save intermediate file 
+    if ( params.save_intermediate ) {
+        FILTER_STOP.out.fasta
+            .collectFile ( 
+                name: "filter_stop.fasta",
+                storeDir: "./output/results"
+            )
     }
+
+    //// count number of sequences passing stop codon filter
+    ch_count_filter_stop = FILTER_STOP.out.fasta.countFasta() 
+
+    ch_filter_output = FILTER_STOP.out.seqs.collect()
 
     // //// branch channels based on seq_source
     // ch_filter_output
