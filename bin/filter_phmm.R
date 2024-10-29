@@ -44,7 +44,8 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "fasta_file",
-    "phmm_model_file"
+    "phmm_model_file",
+    "coding"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -72,7 +73,7 @@ if ( params.shave_to_phmm == "true" ) {
     shave <- FALSE
 }
 
-if ( params.coding == "true" ) { 
+if ( coding == "true" ) { 
     check_frame <- TRUE 
 } else {
     check_frame <- FALSE

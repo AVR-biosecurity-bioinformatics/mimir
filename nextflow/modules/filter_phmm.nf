@@ -7,6 +7,7 @@ process FILTER_PHMM {
     input:
     val(fasta_file)
     val(phmm_model_file)
+    val(coding)
 
     output: 
     path("*_filter_phmm.rds"),                  emit: seqs, optional: true
@@ -25,6 +26,7 @@ process FILTER_PHMM {
     ## input channel variables
     fasta_file =             "${fasta_file}"
     phmm_model_file =        "${phmm_model_file}"
+    coding =                 "${coding}"
 
     ## global variables
     projectDir = "$projectDir"

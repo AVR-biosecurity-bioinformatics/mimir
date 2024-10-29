@@ -108,6 +108,9 @@ workflow TAXRETURN {
         ch_marker
     )
 
+    //// coding channel
+    ch_coding = PARSE_MARKER.out.coding
+
     /*
     Getting Genbank sequences
     */
@@ -265,7 +268,8 @@ workflow TAXRETURN {
     //// filter sequences in each chunk using PHMM model
     FILTER_PHMM (
         ch_input_seqs,
-        ch_phmm
+        ch_phmm,
+        ch_coding
     )
 
     //// combine and save intermediate file 
@@ -281,7 +285,7 @@ workflow TAXRETURN {
     ch_count_filter_phmm = FILTER_PHMM.out.fasta.countFasta() 
 
     //// optional: filter for stop codons
-    if ( PARSE_MARKER.out.coding == "true" && params.genetic_code ){
+    if ( ch_coding == "true" && params.genetic_code ){
 
         FILTER_STOP (
             FILTER_PHMM.out.seqs
