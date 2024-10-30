@@ -6,6 +6,7 @@ process PRUNE_GROUPS {
 
     input:
     val(fasta_file)
+    val(internal_names_file)
 
     output: 
     path("seqs_pruned.rds"),                  emit: seqs
@@ -23,6 +24,7 @@ process PRUNE_GROUPS {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     fasta_file =                   "${fasta_file}"
+    internal_names_file =                   "${internal_names_file}"
 
     ## global variables
     projectDir = "$projectDir"

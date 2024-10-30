@@ -96,6 +96,7 @@ workflow TAXRETURN {
     ch_mito_fasta             = Channel.empty()
     ch_genome_fasta           = Channel.empty()
     ch_internal_fasta         = Channel.empty()
+    ch_internal_names         = Channel.empty()
 
     //// parse file path parameters as channels
     ch_phmm             = channel.fromPath( params.phmm_model, checkIfExists: true ).first()
@@ -138,12 +139,12 @@ workflow TAXRETURN {
         PARSE_MARKER.out.genbank_query
     )
 
-    //// chunk list of accessions for fetching
+    //// split list of accessions for fetching in chunks
     QUERY_GENBANK.out.seq_acc
         .splitText( by: params.chunk_size, file: true )
         .set { ch_genbank_acc_chunks }
 
-    //// fetch Genbank sequences as .fasta
+    //// fetch Genbank sequences as .fasta + taxid list
     FETCH_GENBANK (
         ch_genbank_acc_chunks,
         ch_entrez_key
@@ -160,7 +161,7 @@ workflow TAXRETURN {
         GET_NCBI_TAXONOMY.out.rankedlineage_noname
     )
 
-    //// populate ch_genbank_fasta channel
+    //// populate empty ch_genbank_fasta channel
     RENAME_GENBANK.out.fasta
         .set { ch_genbank_fasta }
 
@@ -227,11 +228,15 @@ workflow TAXRETURN {
         //// TODO: Need to make sure this outputs same tibble format as EXTRACT_BOLD
     }
 
+
+
     //// count number of mitochondrial sequences 
     ch_count_mito = ch_mito_fasta.countFasta()    
 
     //// count number of genome assembly-derived sequences 
     ch_count_genome = ch_genome_fasta.countFasta()
+
+
 
     /*
     Import and format internal sequences
@@ -254,9 +259,20 @@ workflow TAXRETURN {
             .set { ch_internal_fasta }
     }
     
+    //// get internal sequence names for preferencing
+    ch_internal_fasta
+        .splitFasta( record: [ header:true ] )
+        .map { record -> record.header }
+        .collectFile ( name: 'internal_names.txt', newLine: true )
+        .set { ch_internal_names }
 
+    //// fill internal names channel if no internal sequences exist
+    ch_internal_names = ch_internal_names.ifEmpty('no_file')
+    
     //// count number of internal sequences 
     ch_count_internal = ch_internal_fasta.countFasta()
+
+
 
     //// count number of external input sequences
     ch_count_external = ch_genbank_fasta
@@ -404,7 +420,8 @@ workflow TAXRETURN {
 
     //// prune large groups
     PRUNE_GROUPS (
-        REMOVE_CONTAM.out.fasta
+        REMOVE_CONTAM.out.fasta,
+        ch_internal_names
     )
 
     //// save PRUNE_GROUPS output

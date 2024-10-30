@@ -43,7 +43,8 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "fasta_file"
+    "fasta_file",
+    "internal_names_file"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -51,6 +52,13 @@ lapply(nf_vars, nf_var_check)
 
 # read sequences from file
 seqs <- ape::read.FASTA(fasta_file)
+
+# read txt file of internal sequence names to preference, if it exists
+if (internal_names_file == "no_file" ){
+    internal_names <- NULL
+} else {
+    internal_names <- scan(file = internal_names_file, what = character(), sep = "\n", quote = "")
+}
 
 ## parse params
 max_group_size <- as.numeric(params.max_group_size)
@@ -237,7 +245,7 @@ seqs_pruned <-
         max_group_size = max_group_size, # max sequences to keep
         discardby = prune_method, # 'length': discard smallest sequences first; 'random': discard randomly
         dedup = TRUE, # remove sequences with identical taxonomic name and sequence first
-        prefer = NULL, # vector of sequence names to prefer (eg. high-quality internal sequences)
+        prefer = internal_names, # vector of sequence names to prefer (eg. high-quality internal sequences)
         quiet = FALSE,
         remove_unclassified = remove_unclassified # remove sequences with unclassified taxonomic ranks 
     )
