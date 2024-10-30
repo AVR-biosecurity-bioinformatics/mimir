@@ -14,7 +14,9 @@ include { FILTER_PHMM                                                 } from '..
 include { FILTER_STOP                                                 } from '../modules/filter_stop'
 include { GET_BOLD_DATABASE                                         } from '../modules/get_bold_database'
 include { GET_NCBI_TAXONOMY                                         } from '../modules/get_ncbi_taxonomy'
+include { IMPORT_INTERNAL                                                 } from '../modules/import_internal'
 include { MATCH_BOLD                                                 } from '../modules/match_bold'
+// include { MATCH_INTERNAL                                                 } from '../modules/match_internal'
 include { MERGE_BOLD                                                 } from '../modules/merge_bold'
 include { PARSE_MARKER                                                 } from '../modules/parse_marker'
 include { PARSE_TARGETS                                                 } from '../modules/parse_targets'
@@ -40,6 +42,10 @@ workflow TAXRETURN {
 
 
     main:
+
+    /*
+    Define channels
+    */
 
     //// channel of taxon to test
     if ( params.target_taxa ) {
@@ -77,6 +83,13 @@ workflow TAXRETURN {
 
     ch_bold_db_url = params.bold_db_url ?: "no_url"
 
+    //// internal sequence channel parsing
+    if ( params.internal_seqs ) {
+        ch_internal_seqs = channel.fromPath ( params.internal_seqs, checkIfExists: true, type: 'file').first()
+    } else {
+        ch_internal_seqs = Channel.empty()
+    }
+
     //// make empty channels
     ch_genbank_fasta          = Channel.empty()
     ch_bold_fasta             = Channel.empty()
@@ -86,6 +99,10 @@ workflow TAXRETURN {
 
     //// parse file path parameters as channels
     ch_phmm             = channel.fromPath( params.phmm_model, checkIfExists: true ).first()
+
+    /*
+    Set up pipeline
+    */
 
     //// get NCBI taxonomy file
     GET_NCBI_TAXONOMY ()
@@ -112,7 +129,7 @@ workflow TAXRETURN {
     )
 
     /*
-    Getting Genbank sequences
+    Get Genbank sequences
     */
 
     //// query GenBank to get list of nucleotide IDs (including mitochondrial genomes if requested)
@@ -137,7 +154,7 @@ workflow TAXRETURN {
         FETCH_GENBANK.out.fetched_seqs
     )
 
-    //// reformat sequence names to contain taoxnomic lineage
+    //// reformat sequence names to contain taxonomic lineage
     RENAME_GENBANK (
         ADD_TAXID_GENBANK.out.fasta,
         GET_NCBI_TAXONOMY.out.rankedlineage_noname
@@ -210,14 +227,33 @@ workflow TAXRETURN {
         //// TODO: Need to make sure this outputs same tibble format as EXTRACT_BOLD
     }
 
-    //// count number of internal sequences 
+    //// count number of mitochondrial sequences 
     ch_count_mito = ch_mito_fasta.countFasta()    
 
     //// count number of genome assembly-derived sequences 
     ch_count_genome = ch_genome_fasta.countFasta()
 
-    // //// add internal sequences
+    /*
+    Import and format internal sequences
+    */
 
+    if ( ch_internal_seqs ){
+        //// import internal sequences from file and check format
+        IMPORT_INTERNAL (
+            ch_internal_seqs
+        )
+
+    //     //// match the taxonomy of internal sequences to NCBI taxonomy
+    //     MATCH_INTERNAL (
+    //         IMPORT_INTERNAL.out.fasta
+    //     )
+        
+        //// populate and chunk internal channel
+        IMPORT_INTERNAL.out.fasta
+            .splitText( by: params.chunk_size, file: true )
+            .set { ch_internal_fasta }
+    }
+    
 
     //// count number of internal sequences 
     ch_count_internal = ch_internal_fasta.countFasta()
