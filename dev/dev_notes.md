@@ -67,6 +67,12 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI
 
 
+### testing internal sequences (correct formatting)
+
+# Drosophila melanogaster + internal
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal assets/internal_fake.fasta
+
+
 ```
 
 

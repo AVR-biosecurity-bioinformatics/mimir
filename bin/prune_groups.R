@@ -57,11 +57,11 @@ max_group_size <- as.numeric(params.max_group_size)
 
 prune_method <- params.prune_method
 
-if (params.remove_unclassified == "true") {
-    remove_unclassified <- TRUE
+if (params.remove_unclassified %in% c("any_ranks", "all_ranks","none")) {
+    remove_unclassified <- params.remove_unclassified
 } else {
-    remove_unclassified <- FALSE
-} 
+    stop("ERROR: '--remove_unclassified' should be 'any_ranks', 'all_ranks' or 'none'.")
+}
 
 ### run code
 
@@ -79,7 +79,7 @@ if (params.remove_unclassified == "true") {
 #     )
 
 ### new function
-prune_groups_alt <- function(x, max_group_size = 5, dedup = TRUE, discardby = "length", prefer=NULL, quiet = FALSE, remove_unclassified = FALSE) {
+prune_groups_alt <- function(x, max_group_size = 5, dedup = TRUE, discardby = "length", prefer=NULL, quiet = FALSE, remove_unclassified = "none") {
   # Convert to DNAbin
   if (!methods::is(x, "DNAbin")) {
     x <- ape::as.DNAbin(x)
@@ -120,18 +120,30 @@ prune_groups_alt <- function(x, max_group_size = 5, dedup = TRUE, discardby = "l
     if (!quiet) cat(paste0((dup - length(x)), " duplicate sequences removed \n"))
   }
 
-  ## remove sequences with "Unclassified" within its lineage string
-  #### TODO: make sure this checks for preferred sequences first and doesn't remove them
-  if (remove_unclassified) {
-    # get lineage string
-    lineage_string <- names(x) %>% stringr::str_remove("^.+?;")
-    # find lineage strings that contain "Unclassified"
-    remove <- lineage_string %>% stringr::str_detect("Unclassified")
-    # remove sequences
-    x <- x[!remove]
-    if (!quiet) cat(paste0(sum(remove), " sequences pruned with unclassified taxonomy \n"))
-
-  }
+    ## remove sequences with "Unclassified" within its lineage string
+    #### TODO: make sure this checks for preferred sequences first and doesn't remove them
+    if (remove_unclassified == "any_ranks") {
+        ## remove sequences where any rank is 'Unclassified'
+        # get lineage string
+        lineage_string <- names(x) %>% stringr::str_remove("^.+?;")
+        # find lineage strings that contain "Unclassified"
+        remove <- lineage_string %>% stringr::str_detect("Unclassified")
+        # remove sequences
+        x <- x[!remove]
+        if (!quiet) cat(paste0(sum(remove), " sequences pruned with fully or partially unclassified taxonomy \n"))
+    } else if (remove_unclassified == "all_ranks") {
+        ## remove sequences where all ranks are 'Unclassified'
+        # get lineage string
+        lineage_string <- names(x) %>% stringr::str_remove("^.+?;")
+        # find lineage strings that contain only "Unclassified"
+        remove <- lineage_string %>% stringr::str_detect("^Unclassified;Unclassified;Unclassified;Unclassified;Unclassified;Unclassified;Unclassified$")
+        # remove sequences
+        x <- x[!remove]
+        if (!quiet) cat(paste0(sum(remove), " sequences pruned with fully unclassified taxonomy \n"))
+    } else {
+        # don't remove any sequences
+        if (!quiet) cat(paste0("All sequences retained regardless of unclassified taxonomy \n"))
+    }
   
   # Remove sequences from groups where more species names than max_group_size
   # "acc" is considered seqid + taxid, while "taxon" is the lineage string
@@ -227,7 +239,7 @@ seqs_pruned <-
         dedup = TRUE, # remove sequences with identical taxonomic name and sequence first
         prefer = NULL, # vector of sequence names to prefer (eg. high-quality internal sequences)
         quiet = FALSE,
-        remove_unclassified = remove_unclassified # remove sequences with any unclassified taxonomic rank
+        remove_unclassified = remove_unclassified # remove sequences with unclassified taxonomic ranks 
     )
 
 
