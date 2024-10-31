@@ -53,7 +53,7 @@ lapply(nf_vars, nf_var_check)
 seqs <- readRDS(seqs_file)
 
 # params parsing
-if ( params.add_root_name == "true" ) {
+if ( params.add_root == "true" ) {
     n_columns <- 9
     summary_colnames <- 
         c(

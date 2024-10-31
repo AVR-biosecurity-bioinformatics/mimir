@@ -5,6 +5,7 @@
 
 //// modules to import
 include { ADD_TAXID_GENBANK                                                 } from '../modules/add_taxid_genbank'
+include { ALIGN_CLUSTALO                                                 } from '../modules/align_clustalo'
 include { COMBINE_CHUNKS                                                 } from '../modules/combine_chunks'
 include { EXTRACT_BOLD                                                 } from '../modules/extract_bold'
 // include { FETCH_BOLD                                                } from '../modules/fetch_bold'
@@ -12,6 +13,7 @@ include { FETCH_GENBANK                                             } from '../m
 // include { FETCH_MITO                                                } from '../modules/fetch_mito'
 include { FILTER_PHMM                                                 } from '../modules/filter_phmm'
 include { FILTER_STOP                                                 } from '../modules/filter_stop'
+include { FORMAT_OUTPUT                                         } from '../modules/format_output'
 include { GET_BOLD_DATABASE                                         } from '../modules/get_bold_database'
 include { GET_NCBI_TAXONOMY                                         } from '../modules/get_ncbi_taxonomy'
 include { IMPORT_INTERNAL                                                 } from '../modules/import_internal'
@@ -434,11 +436,27 @@ workflow TAXRETURN {
     //// count number of sequences passing group pruning
     ch_count_prune_groups = PRUNE_GROUPS.out.fasta.countFasta()
 
-    // //// reformat names using taxonomic hierarchy
-    // REFORMAT_NAMES (
-    //     PRUNE_GROUPS.out.seqs,
-    //     GET_NCBI_TAXONOMY.out.rankedlineage
-    // )
+    /*
+    Database output
+    */
+
+    //// optional: align final database
+    if ( params.aligned_output ) {
+    
+        ALIGN_CLUSTALO (
+            PRUNE_GROUPS.out.fasta
+        )
+
+        ch_formatting_input = ALIGN_CLUSTALO.out.aligned_fasta
+
+    } else {
+        ch_formatting_input = PRUNE_GROUPS.out.fasta
+    }
+
+    //// format database output
+    FORMAT_OUTPUT (
+        ch_formatting_input
+    )
 
     //// summarise number of taxa in database
     SUMMARISE_TAXA (
