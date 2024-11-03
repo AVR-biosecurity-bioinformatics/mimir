@@ -134,38 +134,40 @@ workflow TAXRETURN {
     /*
     Get Genbank sequences
     */
+    if ( params.use_genbank ) {
+        //// query GenBank to get list of nucleotide IDs (including mitochondrial genomes if requested)
+        QUERY_GENBANK (
+            ch_taxon_idrank,
+            PARSE_MARKER.out.genbank_query
+        )
 
-    //// query GenBank to get list of nucleotide IDs (including mitochondrial genomes if requested)
-    QUERY_GENBANK (
-        ch_taxon_idrank,
-        PARSE_MARKER.out.genbank_query
-    )
+        //// split list of accessions for fetching in chunks
+        QUERY_GENBANK.out.seq_acc
+            .splitText( by: params.chunk_size, file: true )
+            .set { ch_genbank_acc_chunks }
 
-    //// split list of accessions for fetching in chunks
-    QUERY_GENBANK.out.seq_acc
-        .splitText( by: params.chunk_size, file: true )
-        .set { ch_genbank_acc_chunks }
+        //// fetch Genbank sequences as .fasta + taxid list
+        FETCH_GENBANK (
+            ch_genbank_acc_chunks,
+            ch_entrez_key
+        )
 
-    //// fetch Genbank sequences as .fasta + taxid list
-    FETCH_GENBANK (
-        ch_genbank_acc_chunks,
-        ch_entrez_key
-    )
+        //// add NCBI taxid to header of Genbank sequences 
+        ADD_TAXID_GENBANK (
+            FETCH_GENBANK.out.fetched_seqs
+        )
 
-    //// add NCBI taxid to header of Genbank sequences 
-    ADD_TAXID_GENBANK (
-        FETCH_GENBANK.out.fetched_seqs
-    )
+        //// reformat sequence names to contain taxonomic lineage
+        RENAME_GENBANK (
+            ADD_TAXID_GENBANK.out.fasta,
+            GET_NCBI_TAXONOMY.out.rankedlineage_noname
+        )
 
-    //// reformat sequence names to contain taxonomic lineage
-    RENAME_GENBANK (
-        ADD_TAXID_GENBANK.out.fasta,
-        GET_NCBI_TAXONOMY.out.rankedlineage_noname
-    )
-
-    //// populate empty ch_genbank_fasta channel
-    RENAME_GENBANK.out.fasta
-        .set { ch_genbank_fasta }
+        //// populate empty ch_genbank_fasta channel
+        RENAME_GENBANK.out.fasta
+            .set { ch_genbank_fasta }
+    }
+    
 
     //// count number of sequences downloaded from Genbank
     ch_count_genbank = ch_genbank_fasta.countFasta()
@@ -174,7 +176,7 @@ workflow TAXRETURN {
     Getting BOLD sequences and matching them to the NCBI database
     */
 
-    if ( params.bold_db_path || params.bold_db_url ) {
+    if ( ( params.bold_db_path || params.bold_db_url ) && params.use_bold ) {
         
         //// get BOLD database files
         GET_BOLD_DATABASE (
