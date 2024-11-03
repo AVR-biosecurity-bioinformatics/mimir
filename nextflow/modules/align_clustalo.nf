@@ -1,7 +1,7 @@
 process ALIGN_CLUSTALO {
     def module_name = "align_clustalo"
     tag "-"
-    label "very_large"
+    label "very_high"
     container "staphb/clustalo:1.2.4"
 
     input:
