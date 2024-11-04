@@ -67,6 +67,8 @@ if (!all(name_check)) {
 
 # replace pure ID with "INTERNAL:ID" (if NCBI: not detected)
 seq_names_new <- stringr::str_replace(seq_names, "\\|(?!INTERNAL:|NCBI:)", "\\|INTERNAL:")
+# replace spaces in sequence name (.fasta header) if they exist
+seq_names_new <- stringr::str_replace_all(seq_names_new, " ", "_")
 
 # update names
 names(seqs) <- seq_names_new

@@ -276,7 +276,10 @@ bold_seqs_prefasta <-
     tidyr::unite("id", c(seqid, taxid), sep = "|") %>% # combine ids into a single column
     tidyr::unite("ranks", kingdom:species, sep = ";") %>% # combine ranks into a single column
     tidyr::unite("header", id:ranks, sep = ";") %>% # create header column
-    dplyr::mutate(header = stringr::str_replace(header, "^", ">")) # add ">" to start of header
+    dplyr::mutate(
+        header = stringr::str_replace(header, "^", ">"), # add ">" to start of header
+        header = stringr::str_replace_all(header, " ", "_") # replace spaces with underscores in header
+    )
   
 bold_seqs_header <- bold_seqs_prefasta %>% dplyr::pull(header) # get header as vector
 bold_seqs_nuc <- bold_seqs_prefasta %>% dplyr::pull(nuc) # get sequence as vector

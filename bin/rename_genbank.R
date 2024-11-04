@@ -83,6 +83,7 @@ seq_names_header <-
     dplyr::left_join(., ncbi_rankedlineage_noname, by = dplyr::join_by(taxid == tax_id)) %>%
     dplyr::mutate(
         dplyr::across(species:kingdom, .fns = ~replace(., is.na(.), "Unclassified")), # replace NA in ranks columns with "Unclassifed"
+        dplyr::across(tidyselect::everything(), .fns = ~stringr::str_replace_all(., " ", "_")), # replace all spaces with underscores
         taxid = stringr::str_replace(taxid, "^", "NCBI:") # reformat taxid to have NCBI-specific prefix
     ) %>%
     dplyr::relocate( # reorder columns
