@@ -358,7 +358,7 @@ workflow TAXRETURN {
     //// count number of sequences passing stop codon filter
     ch_count_filter_stop = FILTER_STOP.out.fasta.countFasta() 
 
-    ch_filter_output = FILTER_STOP.out.seqs.collect()
+    ch_filter_output = FILTER_STOP.out.fasta.collect()
 
     // //// branch channels based on seq_source
     // ch_filter_output
@@ -407,7 +407,7 @@ workflow TAXRETURN {
     //// remove contaminating sequences
     REMOVE_CONTAM (
         REMOVE_EXACT_DUPLICATES.out.fasta,
-        GET_NCBI_TAXONOMY.out.rankedlineage
+        GET_NCBI_TAXONOMY.out.rankedlineage // NOTE: remove this channel and update process, as not needed
     )
 
     //// combine and save intermediate file 

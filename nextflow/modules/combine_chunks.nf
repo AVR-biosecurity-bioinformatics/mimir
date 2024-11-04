@@ -2,46 +2,29 @@ process COMBINE_CHUNKS {
     def module_name = "combine_chunks"
     tag "-"
     label "small"
-    container "jackscanlan/piperline-multi:0.0.1"
+    container "staphb/seqkit:2.8.2"
 
     input:
-    val(seqs_list)
+    path(fasta_file)
 
     output: 
-    // path("seqs_combined.rds"),                  emit: seqs
-    path("*.fasta"),                          emit: fasta
+    path("chunks_combined_dealigned.fasta"),                            emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
     script:
-    def module_script = "${module_name}.R"
+    def module_script = "${module_name}.sh"
     """
-    #!/usr/bin/env Rscript
-    
-    ### defining Nextflow environment variables as R variables
-    ## input channel variables
-    seqs_list =              "${seqs_list}"
-
-    ## global variables
-    projectDir = "$projectDir"
-    params_dict = "$params"
-
-    tryCatch({
-    ### source functions and themes, load packages, and import Nextflow params
-    ### from "bin/process_start.R"
-    sys.source("${projectDir}/bin/process_start.R", envir = .GlobalEnv)
+    #!/usr/bin/env bash
 
     ### run module code
-    sys.source(
-        "${projectDir}/bin/$module_script", # run script
-        envir = .GlobalEnv # this allows import of existing objects like projectDir
-    )
-    }, finally = {
-    ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
-    })
-
+    bash ${module_name}.sh \
+        ${projectDir} \
+        ${task.cpus} \
+        ${fasta_file} 
+        
     """
+
 }

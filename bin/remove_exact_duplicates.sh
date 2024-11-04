@@ -6,7 +6,7 @@ set -u
 # $2 = threads
 # $3 = fasta_file
 
-# remove 
+# remove exact duplocates
 seqkit rmdup \
     --by-name \
     --line-width 0 \
