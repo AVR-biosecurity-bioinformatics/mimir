@@ -75,6 +75,38 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 # test alignment on small 
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --add_root --aligned_output
 
+# test alignment on Neuroptera 
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --add_root --aligned_output
+
+## big tests
+
+# lepidoptera test, no internal (1 day requested) - 2111104 input
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root 
+
+# hemiptera test, no internal (1 day requested) - 741137 input - used 23.6G memory for REMOV_CONTAM for 696767 seqs
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root 
+
+# hemiptera BOLD only - 554389 input
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false
+
+# bold only insecta - 10629784 input
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Insecta --target_ranks class --bold_db_path ./input --marker COI --add_root --use_genbank false
+
+## memory tests for REMOVE_CONTAM
+
+# hemiptera test, no internal (1 day requested) - 741137 input - used 23.6G memory in REMOV_CONTAM for 696767 seqs
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root 
+
+# drosophila melanogaster - used 0.440G memory in REMOV_CONTAM for 137 seqs
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
+
+# drosophila genus - used 1.105G memory in REMOV_CONTAM for 19539 seqs
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7215  --target_ranks genus --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
+
+# Drosophilidae family - used 2.89G memory in REMOV_CONTAM for 68469 seqs
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214  --target_ranks family --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
+
+
 ```
 
 
