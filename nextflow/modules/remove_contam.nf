@@ -1,11 +1,15 @@
 process REMOVE_CONTAM {
     def module_name = "remove_contam"
     tag "-"
-    label "medium"
+    // label "medium"
+    time '1.h'
+    memory '8.GB'
+    cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
     val(fasta_file)
+    val(cluster_tsv)
     val(db_file)
 
     output: 
@@ -23,6 +27,7 @@ process REMOVE_CONTAM {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     fasta_file =                   "${fasta_file}"
+    cluster_tsv =                   "${cluster_tsv}"
     db_file =                     "${db_file}"
 
     ## global variables

@@ -6,6 +6,7 @@
 //// modules to import
 include { ADD_TAXID_GENBANK                                                 } from '../modules/add_taxid_genbank'
 include { ALIGN_CLUSTALO                                                 } from '../modules/align_clustalo'
+include { CLUSTER_SEQUENCES                                                 } from '../modules/cluster_sequences'
 include { COMBINE_CHUNKS                                                 } from '../modules/combine_chunks'
 include { EXTRACT_BOLD                                                 } from '../modules/extract_bold'
 // include { FETCH_BOLD                                                } from '../modules/fetch_bold'
@@ -404,9 +405,15 @@ workflow TAXRETURN {
     //// count number of sequences passing exact deduplication
     ch_count_remove_exact = REMOVE_EXACT_DUPLICATES.out.fasta.countFasta()
 
+    //// cluster sequences into OTUs with mmseqs2
+    CLUSTER_SEQUENCES (
+        REMOVE_EXACT_DUPLICATES.out.fasta
+    )
+
     //// remove contaminating sequences
     REMOVE_CONTAM (
         REMOVE_EXACT_DUPLICATES.out.fasta,
+        CLUSTER_SEQUENCES.out.tsv,
         GET_NCBI_TAXONOMY.out.rankedlineage // NOTE: remove this channel and update process, as not needed
     )
 
