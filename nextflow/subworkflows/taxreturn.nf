@@ -30,6 +30,7 @@ include { REMOVE_CONTAM                                                 } from '
 include { REMOVE_EXACT_DUPLICATES                                                 } from '../modules/remove_exact_duplicates'
 include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
+include { SPLIT_BY_LINEAGE                                                 } from '../modules/split_by_lineage'
 include { SUMMARISE_COUNTS                                                 } from '../modules/summarise_counts'
 include { SUMMARISE_TAXA                                                 } from '../modules/summarise_taxa'
 include { TRAIN_IDTAXA                                                 } from '../modules/train_idtaxa'
@@ -272,7 +273,7 @@ workflow TAXRETURN {
         .set { ch_internal_names }
 
     //// fill internal names channel if no internal sequences exist
-    ch_internal_names = ch_internal_names.ifEmpty('no_file')
+    ch_internal_names = ch_internal_names.ifEmpty('no_file').first()
     
     //// count number of internal sequences 
     ch_count_internal = ch_internal_fasta.countFasta()
@@ -429,9 +430,16 @@ workflow TAXRETURN {
     //// count number of sequences passing taxonomic decontamination
     ch_count_remove_contam = REMOVE_CONTAM.out.fasta.countFasta()
 
-    //// prune large groups
+    //// split .fasta by taxonomic lineage down to a particular rank
+    SPLIT_BY_LINEAGE (
+        REMOVE_CONTAM.out.fasta
+    )
+
+    ch_split = SPLIT_BY_LINEAGE.out.split_fasta.flatten() // flatten to run each .fasta in separate process
+
+    //// prune large groups, preferentially retaining internal sequences
     PRUNE_GROUPS (
-        REMOVE_CONTAM.out.fasta,
+        ch_split, 
         ch_internal_names
     )
 
@@ -445,6 +453,11 @@ workflow TAXRETURN {
     //// count number of sequences passing group pruning
     ch_count_prune_groups = PRUNE_GROUPS.out.fasta.countFasta()
 
+    //// collect split and pruned .fasta into a single file
+    ch_pruned = 
+        PRUNE_GROUPS.out.fasta
+        .collectFile ()
+
     /*
     Database output
     */
@@ -453,13 +466,13 @@ workflow TAXRETURN {
     if ( params.aligned_output ) {
     
         ALIGN_CLUSTALO (
-            PRUNE_GROUPS.out.fasta
+            ch_pruned
         )
 
         ch_formatting_input = ALIGN_CLUSTALO.out.aligned_fasta
 
     } else {
-        ch_formatting_input = PRUNE_GROUPS.out.fasta
+        ch_formatting_input = ch_pruned
     }
 
     //// format database output
@@ -469,7 +482,7 @@ workflow TAXRETURN {
 
     //// summarise number of taxa in database
     SUMMARISE_TAXA (
-        PRUNE_GROUPS.out.seqs
+        ch_pruned
     )
 /* 
     //// summarise the counts of sequences at each stage of the pipeline

@@ -43,14 +43,14 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "seqs_file"
+    "fasta_file"
     )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
 # read sequences from file
-seqs <- readRDS(seqs_file)
+seqs <- ape::read.FASTA(fasta_file)
 
 # params parsing
 if ( params.add_root == "true" ) {

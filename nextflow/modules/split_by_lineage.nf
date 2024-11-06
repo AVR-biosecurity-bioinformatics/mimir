@@ -1,14 +1,17 @@
-process SUMMARISE_TAXA {
-    def module_name = "summarise_taxa"
+process SPLIT_BY_LINEAGE {
+    def module_name = "split_by_lineage"
     tag "-"
-    label "small"
+    // label "medium"
+    time '30.m'
+    memory '8.GB'
+    cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
     val(fasta_file)
 
     output: 
-    path("taxa_summary.csv"),                  emit: csv
+    path("*.grouped.fasta"),                                  emit: split_fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

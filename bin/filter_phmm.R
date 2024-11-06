@@ -79,6 +79,12 @@ if ( coding == "true" ) {
     check_frame <- FALSE
 }
 
+if ( params.remove_ambiguous == "true" ) {
+    max_N <- 0
+} else {
+    max_N <- Inf 
+}
+
 ### run code
 
 ## filter using PHMM model
@@ -88,7 +94,7 @@ seqs_filtered <-
         model = phmm_model, # PHMM, as a PHMM object
         min_score = min_score, # minimum specificity of match for retention (see ?aphid::Viterbi)
         min_length = min_length, # minimum length of match for retention 
-        max_N = Inf, # max ambiguous bases to allow 
+        max_N = max_N, # max ambiguous bases to allow 
         max_gap = Inf, # max gaps to allow
         shave = shave, # whether to remove bases outside match to PHMM
         check_frame = check_frame, # check if indels are in multiples of three
