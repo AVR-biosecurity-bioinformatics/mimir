@@ -43,7 +43,8 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "fasta_file"
+    "fasta_file",
+    "split_rank_input"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -53,7 +54,7 @@ lapply(nf_vars, nf_var_check)
 seqs <- ape::read.FASTA(fasta_file)
 
 # parse split_rank parameter
-split_rank <- params.split_rank
+split_rank <- split_rank_input
 
 # get index of split_rank for grouping below
 rank_cols <- c("kingdom","phylum", "class", "order", "family", "genus", "species")

@@ -9,6 +9,7 @@ process SPLIT_BY_LINEAGE {
 
     input:
     val(fasta_file)
+    val(split_rank_input)
 
     output: 
     path("*.grouped.fasta"),                                  emit: split_fasta
@@ -25,6 +26,7 @@ process SPLIT_BY_LINEAGE {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     fasta_file =                   "${fasta_file}"
+    split_rank_input =                   "${split_rank_input}"
 
     ## global variables
     projectDir = "$projectDir"

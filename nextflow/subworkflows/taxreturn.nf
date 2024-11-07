@@ -30,7 +30,8 @@ include { REMOVE_CONTAM                                                 } from '
 include { REMOVE_EXACT_DUPLICATES                                                 } from '../modules/remove_exact_duplicates'
 include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
-include { SPLIT_BY_LINEAGE                                                 } from '../modules/split_by_lineage'
+include { SPLIT_BY_LINEAGE as SPLIT_BY_RANK                                                } from '../modules/split_by_lineage'
+include { SPLIT_BY_LINEAGE as SPLIT_BY_ORDER                                                } from '../modules/split_by_lineage'
 include { SUMMARISE_COUNTS                                                 } from '../modules/summarise_counts'
 include { SUMMARISE_TAXA                                                 } from '../modules/summarise_taxa'
 include { TRAIN_IDTAXA                                                 } from '../modules/train_idtaxa'
@@ -430,12 +431,19 @@ workflow TAXRETURN {
     //// count number of sequences passing taxonomic decontamination
     ch_count_remove_contam = REMOVE_CONTAM.out.fasta.countFasta()
 
-    //// split .fasta by taxonomic lineage down to a particular rank
-    SPLIT_BY_LINEAGE (
-        REMOVE_CONTAM.out.fasta
+    //// split .fasta by taxonomic lineage down to order level
+    SPLIT_BY_ORDER (
+        REMOVE_CONTAM.out.fasta,
+        "order"
     )
 
-    ch_split = SPLIT_BY_LINEAGE.out.split_fasta.flatten() // flatten to run each .fasta in separate process
+    //// split .fasta by taxonomic lineage down to specified rank (--split_rank)
+    SPLIT_BY_RANK (
+        SPLIT_BY_ORDER.out.split_fasta.flatten(),
+        params.split_rank
+    )
+
+    ch_split = SPLIT_BY_RANK.out.split_fasta.flatten() // flatten to run each .fasta in separate process
 
     //// prune large groups, preferentially retaining internal sequences
     PRUNE_GROUPS (
