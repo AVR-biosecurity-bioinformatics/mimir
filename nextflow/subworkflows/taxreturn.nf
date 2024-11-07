@@ -516,13 +516,12 @@ workflow TAXRETURN {
     ch_count_remove_contam  .view { "ch_count_remove_contam: $it" }
     ch_count_prune_groups   .view { "ch_count_prune_groups: $it" }
 
-    // //// train IDTAXA model
-    // if ( params.train_idtaxa ) {
-    //     TRAIN_IDTAXA (
-    //         REFORMAT_NAMES.out.seqs,
-    //         GET_NCBI_TAXONOMY.out.rankedlineage
-    //     )
-    // }
+    //// train IDTAXA model
+    if ( params.train_idtaxa ) {
+        TRAIN_IDTAXA (
+            FORMAT_OUTPUT.out.fasta
+        )
+    }
     
     // //// TODO: add proper model channel handling (with conditions)
     // ch_models = 

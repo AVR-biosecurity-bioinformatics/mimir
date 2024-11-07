@@ -5,8 +5,7 @@ process TRAIN_IDTAXA {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(seqs_file)
-    val(db_file)
+    val(fasta_file)
 
     output: 
     path("idtaxa_model.rds"),                  emit: model
@@ -22,8 +21,7 @@ process TRAIN_IDTAXA {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    seqs_file =                   "${seqs_file}"
-    db_file =                     "${db_file}"
+    fasta_file =                   "${fasta_file}"
 
     ## global variables
     projectDir = "$projectDir"
