@@ -78,6 +78,12 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 # test alignment on Neuroptera 
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --add_root --aligned_output
 
+## small tests
+
+# neuroptera, bold only
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --train_idtaxa
+
+
 ## big tests
 
 # lepidoptera test, no internal (1 day requested) - 2111104 input

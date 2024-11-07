@@ -2,7 +2,7 @@ process SPLIT_BY_LINEAGE {
     def module_name = "split_by_lineage"
     tag "-"
     // label "medium"
-    time '30.m'
+    time '1.h'
     memory '8.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"

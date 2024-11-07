@@ -117,13 +117,17 @@ seqs_subsets <-
     USE.NAMES = TRUE
     )
 
+rm(split_list) # remove unneeded object
+
 # save fasta of each subset
-purrr::imap(
-  seqs_subsets,
-  function(x, y) {
-    ape::write.FASTA(
-      x = x,
-      file = paste0(y,".grouped.fasta")
-    )
-  }
+sapply(
+    names(seqs_subsets),
+    function (name) {
+        ape::write.FASTA(
+            x = seqs_subsets[[name]],
+            file = paste0(name,".grouped.fasta")
+        )
+    },
+    simplify = FALSE, 
+    USE.NAMES = TRUE
 )
