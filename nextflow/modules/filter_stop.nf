@@ -7,6 +7,8 @@ process FILTER_STOP {
     input:
     val(seqs_file)
     val(coding)
+    val(marker_type)
+    val(ncbi_gencodes)
 
     output: 
     path("*_filter_stop.rds"),           emit: seqs, optional: true
@@ -25,6 +27,8 @@ process FILTER_STOP {
     ## input channel variables
     seqs_file =              "${seqs_file}"
     coding =                 "${coding}"
+    marker_type =            "${marker_type}"
+    ncbi_gencodes =          "${ncbi_gencodes}"
 
     ## global variables
     projectDir = "$projectDir"

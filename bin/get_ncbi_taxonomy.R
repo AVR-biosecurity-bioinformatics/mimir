@@ -197,6 +197,49 @@ ncbi_rankedlineage_noname <-
         ) %>%
     dplyr::select(-tax_name, -rank)
 
+# create ncbi_gencodes (genetic codes per taxid)
+ncbi_gencodes <- 
+    ncbi_rankedlineage %>%
+    # remove superkingdom rank
+    dplyr::select(-superkingdom) %>%
+    # replace NA with "Unclassified"
+    dplyr::mutate(
+        dplyr::across(
+            species:kingdom, 
+            .fns = ~replace(., is.na(.), "Unclassified"))
+    ) %>%
+    # join to nodes data
+    dplyr::left_join(., ncbi_nodes, by = "tax_id") %>%
+    # retain columns of interest
+    dplyr::select(
+        tax_id,
+        tax_name,
+        rank,
+        kingdom,
+        phylum, 
+        class,
+        order,
+        family,
+        genus,
+        species,
+        gencode, 
+        mtgencode,
+        plgencode,
+        hdgencode
+    ) %>%
+    # filter to typical ranks
+    dplyr::filter(rank %in% c("kingdom","phylum", "class", "order", "family", "genus", "species")) %>%
+    # populate lowest rank with name
+    dplyr::mutate(
+        species = if_else(rank == "species", tax_name, species),
+        genus = if_else(rank == "genus", tax_name, genus),
+        family = if_else(rank == "family", tax_name, family),
+        order = if_else(rank == "order", tax_name, order),
+        class = if_else(rank == "class", tax_name, class),
+        phylum = if_else(rank == "phylum", tax_name, phylum),
+        kingdom = if_else(rank == "kingdom", tax_name, kingdom)
+    )
+
 ## save files and objects
 message("Saving .rds files")
 # save rankedlineage db object
@@ -215,6 +258,8 @@ saveRDS(ncbi_synonyms, "ncbi_synonyms.rds")
 saveRDS(ncbi_lineageparents, "ncbi_lineageparents.rds")
 # save ncbi_rankedlineage_noname object
 saveRDS(ncbi_rankedlineage_noname, "ncbi_rankedlineage_noname.rds")
+# save ncbi_gencodes object
+saveRDS(ncbi_gencodes, "ncbi_gencodes.rds")
 
 # remove large objects to make saving R environment faster when there are no errors
 rm(ncbi_rankedlineage)
@@ -225,6 +270,7 @@ rm(ncbi_taxidnamerank)
 rm(ncbi_synonyms)
 rm(ncbi_lineageparents)
 rm(ncbi_rankedlineage_noname)
+rm(ncbi_gencodes)
 
 
 

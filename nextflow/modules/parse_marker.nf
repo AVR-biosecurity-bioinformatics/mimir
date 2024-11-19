@@ -11,6 +11,7 @@ process PARSE_MARKER {
     env(GENBANK),               emit: genbank_query
     env(BOLD),                  emit: bold_query
     env(CODING),                emit: coding
+    env(TYPE),                  emit: type
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

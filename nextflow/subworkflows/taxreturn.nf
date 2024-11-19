@@ -346,7 +346,9 @@ workflow TAXRETURN {
     //// filter for stop codons (depending on marker)
     FILTER_STOP (
         FILTER_PHMM.out.seqs,
-        PARSE_MARKER.out.coding
+        PARSE_MARKER.out.coding,
+        PARSE_MARKER.out.type,
+        GET_NCBI_TAXONOMY.out.ncbi_gencodes
     )
 
     //// combine and save intermediate file 

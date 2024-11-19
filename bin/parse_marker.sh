@@ -12,12 +12,14 @@ case ${3} in
         GENBANK="COI[GENE] OR COX1[GENE] OR COXI[GENE]"
         BOLD="COI-5P"
         CODING="true"
+        TYPE="mitochondrial"
         ;;
     
     "28S")
         GENBANK="28S[TI] OR LSU[TI] OR large ribosomal subunit[TI]"
         BOLD="28S"
         CODING="false"
+        TYPE="nuclear"
         ;;
     
     #"ITS")

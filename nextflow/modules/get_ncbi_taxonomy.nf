@@ -19,6 +19,7 @@ process GET_NCBI_TAXONOMY {
     path("ncbi_synonyms.rds"),                  emit: synonyms
     path("ncbi_lineageparents.rds"),            emit: lineageparents
     path("ncbi_rankedlineage_noname.rds"),      emit: rankedlineage_noname
+    path("ncbi_gencodes.rds"),                  emit: ncbi_gencodes
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
