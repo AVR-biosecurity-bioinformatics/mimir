@@ -1,5 +1,5 @@
-process REMOVE_CONTAM {
-    def module_name = "remove_contam"
+process REMOVE_TAX_OUTLIERS {
+    def module_name = "remove_tax_outliers"
     tag "-"
     // label "medium"
     time '1.h'

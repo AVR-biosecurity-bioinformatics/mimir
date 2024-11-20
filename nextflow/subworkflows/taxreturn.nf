@@ -26,8 +26,8 @@ include { PARSE_TARGETS                                                 } from '
 include { PRUNE_GROUPS                                                 } from '../modules/prune_groups'
 include { QUERY_GENBANK                                                 } from '../modules/query_genbank'
 include { REFORMAT_NAMES                                                 } from '../modules/reformat_names'
-include { REMOVE_CONTAM                                                 } from '../modules/remove_contam'
 include { REMOVE_EXACT_DUPLICATES                                                 } from '../modules/remove_exact_duplicates'
+include { REMOVE_TAX_OUTLIERS                                                 } from '../modules/remove_tax_outliers'
 include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
 include { SPLIT_BY_LINEAGE as SPLIT_BY_RANK                                                } from '../modules/split_by_lineage'
@@ -415,7 +415,7 @@ workflow TAXRETURN {
     )
 
     //// remove contaminating sequences
-    REMOVE_CONTAM (
+    REMOVE_TAX_OUTLIERS (
         REMOVE_EXACT_DUPLICATES.out.fasta,
         CLUSTER_SEQUENCES.out.tsv,
         GET_NCBI_TAXONOMY.out.rankedlineage // NOTE: remove this channel and update process, as not needed
@@ -423,19 +423,19 @@ workflow TAXRETURN {
 
     //// combine and save intermediate file 
     if ( params.save_intermediate ) {
-        REMOVE_CONTAM.out.fasta
+        REMOVE_TAX_OUTLIERS.out.fasta
             .collectFile ( 
-                name: "remove_contam.fasta",
+                name: "remove_tax_outliers.fasta",
                 storeDir: "./output/results"
             )
     }
 
     //// count number of sequences passing taxonomic decontamination
-    ch_count_remove_contam = REMOVE_CONTAM.out.fasta.countFasta()
+    ch_count_remove_tax_outliers = REMOVE_TAX_OUTLIERS.out.fasta.countFasta()
 
     //// split .fasta by taxonomic lineage down to order level
     SPLIT_BY_ORDER (
-        REMOVE_CONTAM.out.fasta,
+        REMOVE_TAX_OUTLIERS.out.fasta,
         "order"
     )
 
@@ -507,7 +507,7 @@ workflow TAXRETURN {
         ch_count_filter_phmm,
         ch_count_filter_stop,
         ch_count_remove_exact,
-        ch_count_remove_contam,
+        ch_count_remove_tax_outliers,
         ch_count_prune_groups
     )
  */
@@ -523,7 +523,7 @@ workflow TAXRETURN {
     ch_count_filter_phmm    .view { "ch_count_filter_phmm: $it" }
     ch_count_filter_stop    .view { "ch_count_filter_stop: $it" }
     ch_count_remove_exact   .view { "ch_count_remove_exact: $it" }
-    ch_count_remove_contam  .view { "ch_count_remove_contam: $it" }
+    ch_count_remove_tax_outliers  .view { "ch_count_remove_tax_outliers: $it" }
     ch_count_prune_groups   .view { "ch_count_prune_groups: $it" }
 
     //// train IDTAXA model

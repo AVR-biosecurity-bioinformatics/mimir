@@ -2,8 +2,8 @@ process PRUNE_GROUPS {
     def module_name = "prune_groups"
     tag "-"
     // label "medium"
-    time '1.h'
-    memory '16.GB'
+    time '30.m'
+    memory '8.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
