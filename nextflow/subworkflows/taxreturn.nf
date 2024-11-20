@@ -231,7 +231,12 @@ workflow TAXRETURN {
         //// extract sequences by querying BOLD API
         // FETCH_BOLD (
 
+
+
         // )
+        
+        ch_count_bold = Channel.empty()
+        
         //// TODO: Need to make sure this outputs same tibble format as EXTRACT_BOLD
     }
 
