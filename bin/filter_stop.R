@@ -68,7 +68,12 @@ if ( coding == "true" ){
     ## get genetic code per sequence
     
     # read in ncbi_gencodes from file
-    ncbi_gencodes <- readRDS(ncbi_gencodes)
+    ncbi_gencodes <- 
+        readRDS(ncbi_gencodes) %>%
+        dplyr::mutate(
+            species = stringr::str_replace_all(species, " ", "_") # replace spaces with underscores
+        )
+
 
     allowed_ranks <- c("kingdom","phylum", "class", "order", "family", "genus", "species")
 
@@ -228,7 +233,7 @@ if ( coding == "true" ){
 
     # check length of seqs is the same as genetic_code_v
     if ( length(seqs) != length(genetic_code_v) ){
-    stop("Number of sequences in input .fasta does not match number of returned genetic codes")
+        stop("Number of sequences in input .fasta does not match number of returned genetic codes")
     }
 
     ## do filtering of sequences containing stop codons
