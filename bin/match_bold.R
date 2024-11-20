@@ -79,14 +79,19 @@ allowed_ranks <-
 ncbi_synonyms_filtered <- 
     ncbi_synonyms %>% 
     dplyr::filter(rank %in% allowed_ranks) %>% # only keep synonyms for allowed ranks
-    dplyr::select(synonym = name_txt, tax_name, rank) # only keep three columns
+    dplyr::left_join( # add parent_taxon to verify synonym 
+        ., 
+        ncbi_lineageparents %>% dplyr::select(tax_id, parent_taxon),
+        by = join_by(tax_id)
+    ) %>%
+    dplyr::select(synonym = name_txt, tax_name, rank, parent_taxon) # only keep four columns
     ## NOTE: 'synonym' is the taxon name synonymous with the valid taxon name 'tax_name', 'rank' is the rank of the taxon
 
 ### TODO: manually add in known synonyms between BOLD and NCBI
 ## for example: family "Xylophagaidae" in NCBI is called "Xylophagidae" in BOLD
 
 
-## replace BOLD taxon name with NCBI name if they're the same rank and an NCBI synonym
+## replace BOLD taxon name with NCBI name if they're the same rank, an NCBI synonym and parent_taxon name also matches (should still work if both are synonyms as gets replaced progressively down the hierarchy)
 # do this while tracking replacement - create columns that contain old names if they're replaced
 bold_db_targets_syns <- 
     bold_db_targets %>%
@@ -95,29 +100,29 @@ bold_db_targets_syns <-
     # kingdom
     dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "kingdom"), by = join_by(kingdom == synonym)) %>%
     dplyr::mutate(kingdom_old = if_else(!is.na(tax_name), kingdom, NA), kingdom = if_else(!is.na(tax_name), tax_name, kingdom)) %>% 
-    dplyr::select(-tax_name, -rank) %>%
+    dplyr::select(-tax_name, -rank, -parent_taxon) %>%
     # phylum
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "phylum"), by = join_by(phylum == synonym)) %>%
+    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "phylum"), by = join_by(phylum == synonym, kingdom == parent_taxon)) %>%
     dplyr::mutate(phylum_old = if_else(!is.na(tax_name), phylum, NA), phylum = if_else(!is.na(tax_name), tax_name, phylum)) %>% 
     dplyr::select(-tax_name, -rank) %>%
     # class
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "class"), by = join_by(class == synonym)) %>%
+    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "class"), by = join_by(class == synonym, phylum == parent_taxon)) %>%
     dplyr::mutate(class_old = if_else(!is.na(tax_name), class, NA), class = if_else(!is.na(tax_name), tax_name, class)) %>% 
     dplyr::select(-tax_name, -rank) %>%
     # order
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "order"), by = join_by(order == synonym)) %>%
+    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "order"), by = join_by(order == synonym, class == parent_taxon)) %>%
     dplyr::mutate(order_old = if_else(!is.na(tax_name), order, NA), order = if_else(!is.na(tax_name), tax_name, order)) %>% 
     dplyr::select(-tax_name, -rank) %>%
     # family
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "family"), by = join_by(family == synonym)) %>%
+    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "family"), by = join_by(family == synonym, order == parent_taxon)) %>%
     dplyr::mutate(family_old = if_else(!is.na(tax_name), family, NA), family = if_else(!is.na(tax_name), tax_name, family)) %>% 
     dplyr::select(-tax_name, -rank) %>%
     # genus
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "genus"), by = join_by(genus == synonym)) %>%
+    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "genus"), by = join_by(genus == synonym, family == parent_taxon)) %>%
     dplyr::mutate(genus_old = if_else(!is.na(tax_name), genus, NA), genus = if_else(!is.na(tax_name), tax_name, genus)) %>% 
     dplyr::select(-tax_name, -rank) %>%
     # species
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "species"), by = join_by(species == synonym)) %>%
+    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "species"), by = join_by(species == synonym, genus == parent_taxon)) %>%
     dplyr::mutate(species_old = if_else(!is.na(tax_name), species, NA), species = if_else(!is.na(tax_name), tax_name, species)) %>% 
     dplyr::select(-tax_name, -rank) %>%
     ## if species was replaced but not the genus, use species name to correct genus name
@@ -135,6 +140,10 @@ bold_db_targets_syns <-
     )
     ### TODO: Do some proper testing of the above code to check it is handling the resolution correctly - check the "synchanges.csv" output file
 
+# check no rows have been added or removed
+if (nrow(bold_db_targets_syns) != nrow(bold_db_targets)) {
+    stop(paste0("ERROR: Number of rows in 'bold_db_targets' (",nrow(bold_db_targets),") and 'bold_db_targets_syns (",nrow(bold_db_targets_syns),") doesn't match."))
+}
 
 # record which taxa names were changed from BOLD to NCBI
 ### TODO: add explicit counting of these as a summary table
