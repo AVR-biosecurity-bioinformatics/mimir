@@ -8,12 +8,12 @@ process PRUNE_GROUPS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
+    path(fasta_file)
     val(internal_names_file)
 
     output: 
-    path("seqs_pruned.rds"),                  emit: seqs
-    path("seqs_pruned.fasta"),                emit: fasta
+    // path("seqs_pruned.rds"),                  emit: seqs
+    path("seqs_pruned.*.fasta"),                emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -28,6 +28,7 @@ process PRUNE_GROUPS {
     ## input channel variables
     fasta_file =                   "${fasta_file}"
     internal_names_file =                   "${internal_names_file}"
+    task_index =                   "${task.index}""
 
     ## global variables
     projectDir = "$projectDir"

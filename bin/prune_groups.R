@@ -44,7 +44,8 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "fasta_file",
-    "internal_names_file"
+    "internal_names_file",
+    "task_index"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -250,13 +251,12 @@ seqs_pruned <-
         remove_unclassified = remove_unclassified # remove sequences with unclassified taxonomic ranks 
     )
 
-
 # save filtered sequences as .rds file
-saveRDS(seqs_pruned, "seqs_pruned.rds")
+# saveRDS(seqs_pruned, "seqs_pruned.rds")
 
 # write fasta
 write_fasta(
     seqs_pruned, 
-    file = "seqs_pruned.fasta", 
+    file = paste0("seqs_pruned.",task_index,".fasta"), 
     compress = FALSE
 )
