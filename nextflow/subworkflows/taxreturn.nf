@@ -5,7 +5,7 @@
 
 //// modules to import
 include { ADD_TAXID_GENBANK                                                 } from '../modules/add_taxid_genbank'
-include { ALIGN_CLUSTALO                                                 } from '../modules/align_clustalo'
+include { ALIGN_SINGLE as ALIGN_PRUNED                                                 } from '../modules/align_single'
 include { CLUSTER_SEQUENCES                                                 } from '../modules/cluster_sequences'
 include { COMBINE_CHUNKS                                                 } from '../modules/combine_chunks'
 include { EXTRACT_BOLD                                                 } from '../modules/extract_bold'
@@ -475,11 +475,11 @@ workflow TAXRETURN {
     //// optional: align final database
     if ( params.aligned_output ) {
     
-        ALIGN_CLUSTALO (
+        ALIGN_PRUNED (
             ch_pruned
         )
 
-        ch_formatting_input = ALIGN_CLUSTALO.out.aligned_fasta
+        ch_formatting_input = ALIGN_PRUNED.out.aligned_fasta
 
     } else {
         ch_formatting_input = ch_pruned
