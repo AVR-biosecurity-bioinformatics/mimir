@@ -30,8 +30,7 @@ include { REMOVE_EXACT_DUPLICATES                                               
 include { REMOVE_TAX_OUTLIERS                                                 } from '../modules/remove_tax_outliers'
 include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
-include { SPLIT_BY_LINEAGE as SPLIT_BY_RANK                                                } from '../modules/split_by_lineage'
-include { SPLIT_BY_LINEAGE as SPLIT_BY_ORDER                                                } from '../modules/split_by_lineage'
+include { SPLIT_BY_RANK as SPLIT_BY_SPECIES                                                } from '../modules/split_by_rank'
 include { SUMMARISE_COUNTS                                                 } from '../modules/summarise_counts'
 include { SUMMARISE_TAXA                                                 } from '../modules/summarise_taxa'
 include { TRAIN_IDTAXA                                                 } from '../modules/train_idtaxa'
@@ -438,19 +437,15 @@ workflow TAXRETURN {
     //// count number of sequences passing taxonomic decontamination
     ch_count_remove_tax_outliers = REMOVE_TAX_OUTLIERS.out.fasta.countFasta()
 
-    //// split .fasta by taxonomic lineage down to order level
-    SPLIT_BY_ORDER (
+    //// split .fasta by taxonomic lineage down to species level
+    SPLIT_BY_SPECIES (
         REMOVE_TAX_OUTLIERS.out.fasta,
-        "order"
+        "species"
     )
-
-    //// split .fasta by taxonomic lineage down to specified rank (--split_rank)
-    SPLIT_BY_RANK (
-        SPLIT_BY_ORDER.out.split_fasta.flatten(),
-        params.split_rank
-    )
-
-    ch_split = SPLIT_BY_RANK.out.split_fasta.flatten() // flatten to run each .fasta in separate process
+    // group species-level .fasta into groups of 20
+    ch_split = SPLIT_BY_SPECIES.out.fasta
+        .flatten()
+        // .collate( size: 20, remainder: true ) 
 
     //// prune large groups, preferentially retaining internal sequences
     PRUNE_GROUPS (
@@ -494,6 +489,13 @@ workflow TAXRETURN {
     FORMAT_OUTPUT (
         ch_formatting_input
     )
+
+    //// save final output
+    FORMAT_OUTPUT.out.fasta
+        .collectFile ( 
+            name: "format_output.fasta",
+            storeDir: "./output/results"
+        )
 
     //// summarise number of taxa in database
     SUMMARISE_TAXA (

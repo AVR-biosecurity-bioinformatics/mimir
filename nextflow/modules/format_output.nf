@@ -9,7 +9,7 @@ process FORMAT_OUTPUT {
 
     output: 
     path("final_database.rds"),                              emit: seqs
-    path("final_database.fasta*"),                           emit: fasta
+    path("final_database.fasta"),                           emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
