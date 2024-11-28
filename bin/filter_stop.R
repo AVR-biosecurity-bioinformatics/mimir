@@ -331,10 +331,12 @@ if ( !is.null(seqs_filtered)) {
 }
 
 # write fasta for debugging
-if ( params.all_fasta == "true" && !is.null(seqs_filtered) ){
+if ( !is.null(seqs_filtered) ){
     write_fasta(
         seqs_filtered, 
         file = paste0(file_basename_noext,"_filter_stop.fasta"), 
         compress = FALSE
         )
+} else {
+    file.create(paste0(file_basename_noext,"_filter_stop.fasta"))
 }
