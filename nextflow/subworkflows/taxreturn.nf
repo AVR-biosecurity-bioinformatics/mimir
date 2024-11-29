@@ -450,10 +450,10 @@ workflow TAXRETURN {
         "species"
     )
 
-    // group species-level .fasta into groups of 20
+    // group species-level .fasta into groups of 50 for aligning and pruning
     ch_split = SPLIT_BY_SPECIES.out.fasta
         .flatten()
-        // .collate( size: 20, remainder: true ) 
+        .buffer( size: 50, remainder: true ) 
 
     //// prune large groups, preferentially retaining internal sequences
     PRUNE_GROUPS (

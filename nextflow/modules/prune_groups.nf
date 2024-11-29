@@ -8,7 +8,7 @@ process PRUNE_GROUPS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(fasta_file)
+    path(fasta_files)
     val(internal_names_file)
 
     output: 
@@ -26,7 +26,7 @@ process PRUNE_GROUPS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
+    fasta_files =                   "${fasta_files}"
     internal_names_file =                   "${internal_names_file}"
     task_index =                   "${task.index}"
 

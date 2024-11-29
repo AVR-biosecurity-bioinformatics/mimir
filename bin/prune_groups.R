@@ -43,7 +43,7 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "fasta_file",
+    "fasta_files",
     "internal_names_file",
     "task_index"
     )
@@ -51,8 +51,14 @@ lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-# read sequences from file
-seqs <- ape::read.FASTA(fasta_file)
+# read in list of sequences
+fasta_list <- # convert Groovy to R list format
+    stringr::str_extract_all(fasta_files, pattern = "[^\\s,\\[\\]]+") %>% unlist()
+
+seqs_list <- lapply(fasta_list, ape::read.FASTA) 
+
+# combine sequences
+seqs <- concat_DNAbin(seqs_list)
 
 # read txt file of internal sequence names to preference, if it exists
 if (internal_names_file == "no_file" ){
