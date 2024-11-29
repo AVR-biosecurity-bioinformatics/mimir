@@ -3,7 +3,7 @@ process GET_BOLD_DATABASE {
     def module_name = "get_bold_database"
     tag "-"
     label "small"
-    // container "emehinovic72/edirect:latest"
+    container "cicirello/gnu-on-alpine:3.20.3"
 
     input:
     val(bold_db_path)
