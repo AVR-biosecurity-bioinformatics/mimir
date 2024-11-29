@@ -8,13 +8,17 @@ set -u
 
 # concat chunked .fasta files together
 # NOTE: Needs all files to be staged with "path()" process input
-cat *.fasta > chunks_combined.fasta
+cat *.fasta > chunks_combined_pre.fasta
 
-# dealign sequences
-seqkit seq \
-    --gap-letters "-" \
-    --remove-gaps \
-    --line-width 0 \
-    < chunks_combined.fasta \
-    > chunks_combined_dealigned.fasta
+if [ "$4" == "true" ]; then
+    # dealign sequences
+    seqkit seq \
+        --gap-letters "-" \
+        --remove-gaps \
+        --line-width 0 \
+        < chunks_combined_pre.fasta \
+        > chunks_combined.fasta
+else 
+    mv chunks_combined_pre.fasta chunks_combined.fasta
+fi
 

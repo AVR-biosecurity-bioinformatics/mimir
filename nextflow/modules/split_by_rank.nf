@@ -2,11 +2,11 @@ process SPLIT_BY_RANK {
     def module_name = "split_by_rank"
     tag "-"
     // label "medium"
-    time '30.m'
-    memory '4.GB'
+    time '1.h'
+    memory '2.GB'
     // memory { 1.GB + ( 1.KB *  ) }
     cpus 1
-    container "staphb/seqkit:2.8.2"
+    container "cicirello/gnu-on-alpine:3.20.3"
 
     input:
     path(fasta_file)

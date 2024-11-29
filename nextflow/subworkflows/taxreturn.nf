@@ -5,9 +5,10 @@
 
 //// modules to import
 include { ADD_TAXID_GENBANK                                                 } from '../modules/add_taxid_genbank'
-include { ALIGN_SINGLE as ALIGN_PRUNED                                                 } from '../modules/align_single'
+include { ALIGN_SINGLE as ALIGN_OUTPUT                                                 } from '../modules/align_single'
 include { CLUSTER_SEQUENCES                                                 } from '../modules/cluster_sequences'
-include { COMBINE_CHUNKS                                                 } from '../modules/combine_chunks'
+include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                            } from '../modules/combine_chunks'
+include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                           } from '../modules/combine_chunks'
 include { EXTRACT_BOLD                                                 } from '../modules/extract_bold'
 // include { FETCH_BOLD                                                } from '../modules/fetch_bold'
 include { FETCH_GENBANK                                             } from '../modules/fetch_genbank'
@@ -391,14 +392,15 @@ workflow TAXRETURN {
     //     .collect()
     //     .set { ch_chunks }
 
-    //// combine sequences into one .fasta file
-    COMBINE_CHUNKS ( 
-        ch_filter_output
+    //// combine sequences into one .fasta file and dealign
+    COMBINE_CHUNKS_1 ( 
+        ch_filter_output,
+        "true"
     )
  
     //// remove exact duplicate sequences if they exist
     REMOVE_EXACT_DUPLICATES (
-        COMBINE_CHUNKS.out.fasta
+        COMBINE_CHUNKS_1.out.fasta
     )
 
     //// combine and save intermediate file 
@@ -437,11 +439,17 @@ workflow TAXRETURN {
     //// count number of sequences passing taxonomic decontamination
     ch_count_remove_tax_outliers = REMOVE_TAX_OUTLIERS.out.fasta.countFasta()
 
+    //// chunk input into SPLIT_BY_SPECIES to parallelise
+    REMOVE_TAX_OUTLIERS.out.fasta
+        // .splitFasta ( by: 20000, file: true )
+        .set { ch_split_species_input }
+
     //// split .fasta by taxonomic lineage down to species level
     SPLIT_BY_SPECIES (
-        REMOVE_TAX_OUTLIERS.out.fasta,
+        ch_split_species_input,
         "species"
     )
+
     // group species-level .fasta into groups of 20
     ch_split = SPLIT_BY_SPECIES.out.fasta
         .flatten()
@@ -463,10 +471,11 @@ workflow TAXRETURN {
     //// count number of sequences passing group pruning
     ch_count_prune_groups = PRUNE_GROUPS.out.fasta.countFasta()
 
-    //// collect split and pruned .fasta into a single file
-    ch_pruned = 
-        PRUNE_GROUPS.out.fasta
-        .collectFile ()
+    //// combine pruned .fasta files into a single file
+    COMBINE_CHUNKS_2 ( 
+        PRUNE_GROUPS.out.fasta.collect(),
+        "false"
+    )
 
     /*
     Database output
@@ -475,14 +484,14 @@ workflow TAXRETURN {
     //// optional: align final database
     if ( params.aligned_output ) {
     
-        ALIGN_PRUNED (
-            ch_pruned
+        ALIGN_OUTPUT (
+            COMBINE_CHUNKS_2.out.fasta
         )
 
-        ch_formatting_input = ALIGN_PRUNED.out.aligned_fasta
+        ch_formatting_input = ALIGN_OUTPUT.out.aligned_fasta
 
     } else {
-        ch_formatting_input = ch_pruned
+        ch_formatting_input = COMBINE_CHUNKS_2.out.fasta
     }
 
     //// format database output
@@ -499,7 +508,7 @@ workflow TAXRETURN {
 
     //// summarise number of taxa in database
     SUMMARISE_TAXA (
-        ch_pruned
+        COMBINE_CHUNKS_2.out.fasta
     )
 /* 
     //// summarise the counts of sequences at each stage of the pipeline

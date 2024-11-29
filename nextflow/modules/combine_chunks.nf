@@ -6,9 +6,10 @@ process COMBINE_CHUNKS {
 
     input:
     path(fasta_file)
+    val(dealign)
 
     output: 
-    path("chunks_combined_dealigned.fasta"),                            emit: fasta
+    path("chunks_combined.fasta"),                            emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,7 +24,8 @@ process COMBINE_CHUNKS {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        ${fasta_file} 
+        ${fasta_file} \
+        ${dealign}
         
     """
 

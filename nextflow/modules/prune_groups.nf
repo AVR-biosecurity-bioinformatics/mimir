@@ -28,7 +28,7 @@ process PRUNE_GROUPS {
     ## input channel variables
     fasta_file =                   "${fasta_file}"
     internal_names_file =                   "${internal_names_file}"
-    task_index =                   "${task.index}""
+    task_index =                   "${task.index}"
 
     ## global variables
     projectDir = "$projectDir"
