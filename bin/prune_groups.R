@@ -261,7 +261,7 @@ seqs_pruned <-
 # saveRDS(seqs_pruned, "seqs_pruned.rds")
 
 # write fasta (empty if no sequences left)
-if ( !is.null(seqs_pruned) ){
+if ( !length(seqs_pruned) == 0 ){
     write_fasta(
         seqs_pruned, 
         file = paste0("seqs_pruned.",task_index,".fasta"), 
