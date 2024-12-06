@@ -260,9 +260,13 @@ seqs_pruned <-
 # save filtered sequences as .rds file
 # saveRDS(seqs_pruned, "seqs_pruned.rds")
 
-# write fasta
-write_fasta(
-    seqs_pruned, 
-    file = paste0("seqs_pruned.",task_index,".fasta"), 
-    compress = FALSE
-)
+# write fasta (empty if no sequences left)
+if ( !is.null(seqs_pruned) ){
+    write_fasta(
+        seqs_pruned, 
+        file = paste0("seqs_pruned.",task_index,".fasta"), 
+        compress = FALSE
+    )
+} else {
+    file.create(paste0("seqs_pruned.",task_index,".fasta"))
+}
