@@ -146,7 +146,7 @@ if ( stringr::str_detect(taxon, "^\\d+$") ) { # if string of only digits...
     name_from_ncbi_id <- taxize::id2name(ncbi_id, db = "ncbi")
     # check id is valid
     if ( identical(name_from_ncbi_id[[1]]$name, character(0) ) ){
-        stop (paste0( "ERROR: --target_taxa value '",ncbi_id,"' is not a valid NCBI taxid." ))
+        stop (paste0( "ERROR: --target_taxa value '",ncbi_id,"' is not a valid NCBI taxid (or there is an issue with NCBI)." ))
     } else {
         taxon_name <- name_from_ncbi_id[[1]]$name
     }
@@ -170,7 +170,7 @@ if ( stringr::str_detect(taxon, "^\\d+$") ) { # if string of only digits...
         )[1] 
     # check supplied taxon name returns valid uid
     if (is.na(ncbi_id)){
-        stop ( paste0("ERROR: '--target_taxa' value ('",taxon,"') cannot be found in the NCBI Taxonomy database."))
+        stop ( paste0("ERROR: '--target_taxa' value ('",taxon,"') cannot be found in the NCBI Taxonomy database (or there is an issue with NCBI)."))
     } else {
         ncbi_id <- as.numeric(ncbi_id) # force numeric class
     }
@@ -203,6 +203,7 @@ if (!taxon_rank %in% bold_validranks){
             id =  ncbi_id,
             downto = downstream_valid_rank
         )
+    if (length(rank_chunks) == 0){stop("Retrieving downstream NCBI ids failed; check ENTREZ key (or there is an issue with NCBI).")}
     # create search pattern from NCBI ids
     rank_chunk_pattern <- 
         rank_chunks$childtaxa_id %>%
