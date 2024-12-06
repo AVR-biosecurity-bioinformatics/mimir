@@ -68,12 +68,7 @@ if ( coding == "true" ){
     ## get genetic code per sequence
     
     # read in ncbi_gencodes from file
-    ncbi_gencodes <- 
-        readRDS(ncbi_gencodes) %>%
-        dplyr::mutate(
-            species = stringr::str_replace_all(species, " ", "_") # replace spaces with underscores
-        )
-
+    ncbi_gencodes <- readRDS(ncbi_gencodes) 
 
     allowed_ranks <- c("kingdom","phylum", "class", "order", "family", "genus", "species")
 

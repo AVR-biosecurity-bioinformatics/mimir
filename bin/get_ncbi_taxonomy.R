@@ -202,11 +202,11 @@ ncbi_gencodes <-
     ncbi_rankedlineage %>%
     # remove superkingdom rank
     dplyr::select(-superkingdom) %>%
-    # replace NA with "Unclassified"
+    # make lineage information consistent with those found in imported sequences (ie. problematic characters replaced with underscores)
     dplyr::mutate(
-        dplyr::across(
-            species:kingdom, 
-            .fns = ~replace(., is.na(.), "Unclassified"))
+        dplyr::across(species:kingdom, .fns = ~replace(., is.na(.), "Unclassified")), # replace NA with "Unclassified"
+        dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "[ \\/:\\(\\)&,]", "_")), # replace problematic characters in lineage string with underscores
+        dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "_+", "_")) # replace two or more underscores in a row with a single underscore in lineage string
     ) %>%
     # join to nodes data
     dplyr::left_join(., ncbi_nodes, by = "tax_id") %>%
