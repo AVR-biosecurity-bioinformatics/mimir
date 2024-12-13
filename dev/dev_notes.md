@@ -80,13 +80,48 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 
 ## small tests
 
-# neuroptera, bold only
+# Neuroptera (order), bold only
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --train_idtaxa
 
 # Drosophila melanogaster + internal, bold only
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
 
+# Aphis (genus), bold only
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 80764 --target_ranks genus --bold_db_path ./input --marker COI --use_genbank false
+
+# Schizaphis (genus), internal only
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 13261 --target_ranks genus --bold_db_path ./input --marker COI --use_genbank false --use_bold false --internal_seqs assets/schizaphis_bold_input.fasta
+
 ## big tests
+
+# all aphids for aphid prey data (retain unclassified)
+NXF_VER=23.04.5 nextflow run . \
+	-profile basc_slurm,debug \
+	--phmm_model assets/folmer_fullength_model.rds \
+	--entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 \
+	--target_taxa 33385 \
+	--target_ranks superfamily \
+    --bold_db_path ./input \
+    --min_length 100 \
+	--max_length 1500 \
+	--marker COI \
+	--add_root \
+	--train_idtaxa
+
+# all aphids for aphid prey data (remove unclassified)
+NXF_VER=23.04.5 nextflow run . \
+	-profile basc_slurm,debug \
+	--phmm_model assets/folmer_fullength_model.rds \
+	--entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 \
+	--target_taxa 33385 \
+	--target_ranks superfamily \
+    --bold_db_path ./input \
+    --min_length 100 \
+	--max_length 1500 \
+	--marker COI \
+	--add_root \
+	--train_idtaxa \
+    --remove_unclassified any_ranks
 
 # lepidoptera test, no internal (1 day requested) - 2111104 input
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root 
