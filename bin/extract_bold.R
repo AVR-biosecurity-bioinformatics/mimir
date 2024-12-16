@@ -90,6 +90,8 @@ bold_db_targets <-
         else 
             . 
     } %>%
+    # dealign nucleotides
+    dplyr::mutate(nuc = stringr::str_remove_all(nuc, "\\-")) %>%
     # select only columns of interest
     dplyr::select(
         processid, 
