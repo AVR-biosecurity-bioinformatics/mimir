@@ -5,6 +5,7 @@
 
 //// modules to import
 include { ADD_TAXID_GENBANK                                                 } from '../modules/add_taxid_genbank'
+include { ALIGN_BATCH as ALIGN_SPECIES                                                 } from '../modules/align_batch'
 include { ALIGN_SINGLE as ALIGN_OUTPUT                                                 } from '../modules/align_single'
 include { CLUSTER_SEQUENCES                                                 } from '../modules/cluster_sequences'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                            } from '../modules/combine_chunks'
@@ -28,6 +29,7 @@ include { PRUNE_GROUPS                                                 } from '.
 include { QUERY_GENBANK                                                 } from '../modules/query_genbank'
 include { REFORMAT_NAMES                                                 } from '../modules/reformat_names'
 include { REMOVE_EXACT_DUPLICATES                                                 } from '../modules/remove_exact_duplicates'
+include { REMOVE_SEQ_OUTLIERS                                                 } from '../modules/remove_seq_outliers'
 include { REMOVE_TAX_OUTLIERS                                                 } from '../modules/remove_tax_outliers'
 include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
@@ -420,7 +422,7 @@ workflow TAXRETURN {
         REMOVE_EXACT_DUPLICATES.out.fasta
     )
 
-    //// remove contaminating sequences
+    //// remove taxonomic outliers from sequence clusters
     REMOVE_TAX_OUTLIERS (
         REMOVE_EXACT_DUPLICATES.out.fasta,
         CLUSTER_SEQUENCES.out.tsv,
@@ -450,30 +452,56 @@ workflow TAXRETURN {
         "species"
     )
 
-    // group species-level .fasta into groups of 50 for aligning and pruning
+    //// group species-level .fasta into batches for aligning and pruning
     ch_split = SPLIT_BY_SPECIES.out.fasta
         .flatten()
         .buffer( size: 50, remainder: true ) 
 
+    //// align species-level .fasta in batches
+    ALIGN_SPECIES (
+        ch_split
+    )
+
+    //// remove sequence outliers from species clusters
+    REMOVE_SEQ_OUTLIERS (
+        ALIGN_SPECIES.out.aligned_fasta,
+        params.dist_threshold
+    )
+
+    //// combine and save intermediate file 
+    if ( params.save_intermediate ) {
+        REMOVE_SEQ_OUTLIERS.out.retained_fasta
+            .flatten()
+            .collectFile ( 
+                name: "remove_seq_outliers.fasta",
+                storeDir: "./output/results"
+            )
+    }
+
+    //// count number of sequences passing taxonomic decontamination
+    ch_count_remove_seq_outliers = REMOVE_SEQ_OUTLIERS.out.retained_fasta.flatten().countFasta()
+
     //// prune large groups, preferentially retaining internal sequences
     PRUNE_GROUPS (
-        ch_split, 
+        REMOVE_SEQ_OUTLIERS.out.retained_fasta,
+        // ALIGN_SPECIES.out.aligned_fasta,
         ch_internal_names
     )
 
     //// save PRUNE_GROUPS output
     PRUNE_GROUPS.out.fasta
+        .flatten()
         .collectFile ( 
             name: "prune_groups.fasta",
             storeDir: "./output/results"
         )
 
     //// count number of sequences passing group pruning
-    ch_count_prune_groups = PRUNE_GROUPS.out.fasta.countFasta()
+    ch_count_prune_groups = PRUNE_GROUPS.out.fasta.flatten().countFasta()
 
     //// combine pruned .fasta files into a single file
     COMBINE_CHUNKS_2 ( 
-        PRUNE_GROUPS.out.fasta.collect(),
+        PRUNE_GROUPS.out.fasta.flatten().collect(),
         "false"
     )
 
@@ -524,6 +552,7 @@ workflow TAXRETURN {
         ch_count_filter_stop,
         ch_count_remove_exact,
         ch_count_remove_tax_outliers,
+        ch_count_remove_seq_outliers,
         ch_count_prune_groups
     )
  */
@@ -540,6 +569,7 @@ workflow TAXRETURN {
     ch_count_filter_stop    .view { "ch_count_filter_stop: $it" }
     ch_count_remove_exact   .view { "ch_count_remove_exact: $it" }
     ch_count_remove_tax_outliers  .view { "ch_count_remove_tax_outliers: $it" }
+    ch_count_remove_seq_outliers  .view { "ch_count_remove_seq_outliers: $it" }
     ch_count_prune_groups   .view { "ch_count_prune_groups: $it" }
 
     //// train IDTAXA model

@@ -59,7 +59,7 @@ seqs <- ape::read.FASTA(fasta_file)
 seq_names <- names(seqs)
 
 # check names are in format "[accession]|[internal taxid];[lineage string]"
-name_check <- stringr::str_detect(seq_names, "^[A-Za-z0-9_.]+?\\|\\w+?;\\w+?;\\w+?;\\w+?;\\w+?;\\w+?;\\w+?;[A-Za-z0-9_ .]+?$")
+name_check <- stringr::str_detect(seq_names, "^[A-Za-z0-9_\\-.]+?\\|\\w+?;\\w+?;\\w+?;\\w+?;\\w+?;\\w+?;\\w+?;[A-Za-z0-9_ .]+?$")
 
 if (!all(name_check)) {
   stop("ERROR: Not all sequence headers in '--internal_seqs' .fasta are formatted correctly.")

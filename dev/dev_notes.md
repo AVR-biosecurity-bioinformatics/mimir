@@ -89,8 +89,8 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 # Aphis (genus), bold only
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 80764 --target_ranks genus --bold_db_path ./input --marker COI --use_genbank false
 
-# Schizaphis (genus), internal only
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 13261 --target_ranks genus --bold_db_path ./input --marker COI --use_genbank false --use_bold false --internal_seqs assets/schizaphis_bold_input.fasta
+# Schizaphis (genus), bold only
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 13261 --target_ranks genus --bold_db_path ./input --marker COI --use_genbank false 
 
 ## big tests
 
