@@ -165,6 +165,7 @@ prune_groups_alt <- function(x, max_group_size = 5, dedup = TRUE, discardby = "l
   groups <- names(x) %>%
     stringr::str_split_fixed(";", n = 2) %>%
     tibble::as_tibble(.name_repair = ~ c("acc", "taxon")) %>%
+    dplyr::filter(!stringr::str_detect(taxon, ";Unclassified$")) %>% # remove terminally unclassified sequences from consideration
     dplyr::pull(taxon) %>%
     openssl::md5()
   groupCounts <- table(groups) # Count number of seqs per group
