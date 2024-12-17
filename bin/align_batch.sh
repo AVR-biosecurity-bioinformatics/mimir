@@ -12,8 +12,8 @@ for FILE in $3
 do
     # get basename of file
     BASE=$( basename "$FILE" .fasta )
-    # do alignment only if number of sequences is >1 AND sequence headers don't contain ";Unclassified"
-    if [[ $( grep -c "^>" $FILE ) > 1 ]] && [[ $( head $FILE -n1 | grep ";Unclassified" | wc -l ) = 0 ]]; then
+    # do alignment only if number of sequences is >1 AND sequence headers don't contain ";Unclassified" at the end
+    if [[ $( grep -c "^>" $FILE ) > 1 ]] && [[ $( head $FILE -n1 | grep -E ";Unclassified$" | wc -l ) = 0 ]]; then
         clustalo \
             -i $FILE \
             -o ${BASE}.aligned.fasta \
