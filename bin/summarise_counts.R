@@ -115,6 +115,7 @@ readr::write_csv(counts_summary, "counts_summary.csv")
 ggplot2::ggplot(counts_summary, aes(x = sequences, y = step)) +
   geom_col() +
   geom_text(aes(label = sequences, x = sequences + (max(sequences)* 0.02)), hjust = 0) + # label 5% past end of column 
-  scale_y_discrete(limits = rev)
+  scale_y_discrete(limits = rev) +
+  scale_x_continuous(limits = c(0,max(counts_summary$sequences) * 1.1))
 
 ggsave("counts_summary.pdf", width = 4, height = 6)
