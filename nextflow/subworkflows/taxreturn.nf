@@ -538,7 +538,7 @@ workflow TAXRETURN {
     SUMMARISE_TAXA (
         COMBINE_CHUNKS_2.out.fasta
     )
-/* 
+
     //// summarise the counts of sequences at each stage of the pipeline
     SUMMARISE_COUNTS (
         ch_count_genbank,
@@ -555,22 +555,24 @@ workflow TAXRETURN {
         ch_count_remove_seq_outliers,
         ch_count_prune_groups
     )
- */
+
+    //// channel map for sequence counts
+    
 
     //// sequence counts for debugging
-    ch_count_genbank        .view { "ch_count_genbank: $it" }
-    ch_count_bold           .view { "ch_count_bold: $it" }
-    ch_count_mito           .view { "ch_count_mito: $it" }
-    ch_count_genome         .view { "ch_count_genome: $it" }
-    ch_count_internal       .view { "ch_count_internal: $it" }
-    ch_count_external       .view { "ch_count_external: $it" }
-    ch_count_input          .view { "ch_count_input: $it" }
-    ch_count_filter_phmm    .view { "ch_count_filter_phmm: $it" }
-    ch_count_filter_stop    .view { "ch_count_filter_stop: $it" }
-    ch_count_remove_exact   .view { "ch_count_remove_exact: $it" }
-    ch_count_remove_tax_outliers  .view { "ch_count_remove_tax_outliers: $it" }
-    ch_count_remove_seq_outliers  .view { "ch_count_remove_seq_outliers: $it" }
-    ch_count_prune_groups   .view { "ch_count_prune_groups: $it" }
+    ch_count_genbank                .view { "ch_count_genbank: $it" }
+    ch_count_bold                   .view { "ch_count_bold: $it" }
+    ch_count_mito                   .view { "ch_count_mito: $it" }
+    ch_count_genome                 .view { "ch_count_genome: $it" }
+    ch_count_internal               .view { "ch_count_internal: $it" }
+    ch_count_external               .view { "ch_count_external: $it" }
+    ch_count_input                  .view { "ch_count_input: $it" }
+    ch_count_filter_phmm            .view { "ch_count_filter_phmm: $it" }
+    ch_count_filter_stop            .view { "ch_count_filter_stop: $it" }
+    ch_count_remove_exact           .view { "ch_count_remove_exact: $it" }
+    ch_count_remove_tax_outliers    .view { "ch_count_remove_tax_outliers: $it" }
+    ch_count_remove_seq_outliers    .view { "ch_count_remove_seq_outliers: $it" }
+    ch_count_prune_groups           .view { "ch_count_prune_groups: $it" }
 
     //// train IDTAXA model
     if ( params.train_idtaxa ) {

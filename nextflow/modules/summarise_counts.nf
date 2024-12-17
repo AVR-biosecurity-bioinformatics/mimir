@@ -15,11 +15,13 @@ process SUMMARISE_COUNTS {
     val(count_filter_phmm)
     val(count_filter_stop)
     val(count_remove_exact)
-    val(count_remove_contam)
+    val(count_remove_tax_outliers)
+    val(count_remove_seq_outliers)
     val(count_prune_groups)
 
     output: 
-    path("taxa_summary.csv"),                  emit: csv
+    path("*.csv"),                  emit: csv
+    path("*.pdf"),                  emit: pdf
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -42,7 +44,8 @@ process SUMMARISE_COUNTS {
     count_filter_phmm = "${count_filter_phmm}"
     count_filter_stop = "${count_filter_stop}"
     count_remove_exact = "${count_remove_exact}"
-    count_remove_contam = "${count_remove_contam}"
+    count_remove_tax_outliers = "${count_remove_tax_outliers}"
+    count_remove_seq_outliers = "${count_remove_seq_outliers}"
     count_prune_groups = "${count_prune_groups}"
 
     ## global variables
