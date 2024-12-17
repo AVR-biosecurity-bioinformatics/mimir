@@ -61,6 +61,9 @@ allowed_ranks <-
     )
 
 ### run code
+# increase timeout 
+options(timeout = max(300, getOption("timeout")))
+
 # download ncbi taxonomy files (can be found in new 'ncbi_taxdump' dir)
 message("Downloading NCBI taxdump")
 ncbi_rankedlineage <- get_ncbi_taxonomy() # import rankedlineage.dmp
