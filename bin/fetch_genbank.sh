@@ -45,8 +45,20 @@ cat $ACC_LIST \
 
 if [ -s ${NAME_NOEXT}.taxids.txt ]; then 
 	# if file is not empty
-	exit 0
+
+	# check number of .fasta sequences and number of rows in taxid file are the same
+	N_SEQS=$( grep -c "^>" ${NAME_NOEXT}.fasta )
+	N_TAXIDS=$( cat ${NAME_NOEXT}.taxids.txt | wc -l )
+
+	if [[ $N_SEQS != $N_TAXIDS ]]; then
+		echo "ERROR: number of .fasta sequences ($N_SEQS) and number of fetched taxids ($N_TAXIDS) is not equal"
+		exit 140 # do this to retry process
+	else 
+		exit 0
+	fi 
+
 else 
 	# if file is empty 
-	exit 140
+	echo "ERROR: ${NAME_NOEXT}.taxids.txt is empty"
+	exit 140 # do this to retry process
 fi

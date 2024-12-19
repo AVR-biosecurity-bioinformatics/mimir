@@ -225,7 +225,7 @@ workflow TAXRETURN {
 
         //// chunk BOLD sequences into smaller .fasta files for processing
         MERGE_BOLD.out.fasta
-            .splitText( by: params.chunk_size, file: true )
+            .splitFasta( by: params.chunk_size, file: true )
             .set { ch_bold_fasta }
 
         //// count number of sequences extracted from BOLD
