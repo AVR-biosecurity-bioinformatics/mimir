@@ -5,7 +5,7 @@ process COMBINE_CHUNKS {
     container "staphb/seqkit:2.8.2"
 
     input:
-    path(fasta_file)
+    path('seq???????.fasta')
     val(dealign)
 
     output: 
@@ -24,7 +24,7 @@ process COMBINE_CHUNKS {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        ${fasta_file} \
+        'seq*.fasta' \
         ${dealign}
         
     """

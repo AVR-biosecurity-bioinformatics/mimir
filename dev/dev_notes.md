@@ -133,7 +133,7 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false
 
 # lepidoptera test, bold only -  input
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --split_rank family
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false 
 
 # bold only insecta - 10629784 input
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Insecta --target_ranks class --bold_db_path ./input --marker COI --add_root --use_genbank false

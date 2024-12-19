@@ -51,6 +51,7 @@ nf_vars <- c(
     "count_internal",
     "count_external",
     "count_input",
+    "count_remove_unclassified",
     "count_filter_phmm",
     "count_filter_stop",
     "count_remove_exact",
@@ -75,6 +76,7 @@ counts_summary <-
         internal = count_internal,
         external = count_external,
         input = count_input,
+        remove_unclassified = count_remove_unclassified,
         filter_phmm = count_filter_phmm,
         filter_stop = count_filter_stop,
         remove_exact = count_remove_exact,
@@ -99,6 +101,7 @@ counts_summary <-
                 "internal",
                 "external",
                 "input",
+                "remove_unclassified",
                 "filter_phmm",
                 "filter_stop",
                 "remove_exact",
@@ -114,7 +117,7 @@ readr::write_csv(counts_summary, "counts_summary.csv")
 # plot
 ggplot2::ggplot(counts_summary, aes(x = sequences, y = step)) +
   geom_col() +
-  geom_text(aes(label = sequences, x = sequences + (max(sequences)* 0.02)), hjust = 0) + # label 5% past end of column 
+  geom_text(aes(label = sequences, x = sequences + (max(sequences)* 0.02)), hjust = 0, size = 2) + # label 2% past end of column 
   scale_y_discrete(limits = rev) +
   scale_x_continuous(limits = c(0,max(counts_summary$sequences) * 1.1))
 

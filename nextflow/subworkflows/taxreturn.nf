@@ -31,6 +31,7 @@ include { REFORMAT_NAMES                                                 } from 
 include { REMOVE_EXACT_DUPLICATES                                                 } from '../modules/remove_exact_duplicates'
 include { REMOVE_SEQ_OUTLIERS                                                 } from '../modules/remove_seq_outliers'
 include { REMOVE_TAX_OUTLIERS                                                 } from '../modules/remove_tax_outliers'
+include { REMOVE_UNCLASSIFIED                                                 } from '../modules/remove_unclassified'
 include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
 include { SPLIT_BY_RANK as SPLIT_BY_SPECIES                                                } from '../modules/split_by_rank'
@@ -104,6 +105,7 @@ workflow TAXRETURN {
     ch_genome_fasta           = Channel.empty()
     ch_internal_fasta         = Channel.empty()
     ch_internal_names         = Channel.empty()
+    ch_input_seqs             = Channel.empty()
 
     //// parse file path parameters as channels
     ch_phmm             = channel.fromPath( params.phmm_model, checkIfExists: true ).first()
@@ -296,7 +298,8 @@ workflow TAXRETURN {
         .countFasta() 
 
     //// concat output channels into a single channel for PHMM alignment
-    ch_genbank_fasta
+    ch_input_seqs
+        .concat ( ch_genbank_fasta )
         .concat ( ch_bold_fasta )
         .concat ( ch_mito_fasta )
         .concat ( ch_genome_fasta )
@@ -331,9 +334,36 @@ workflow TAXRETURN {
         )        
     }
 
+    ch_count_remove_unclassified = Channel.empty()
+
+    //// remove unclassified sequences
+    if ( params.remove_unclassified == "all_ranks" || params.remove_unclassified == "any_ranks" || params.remove_unclassified == "terminal" ) {
+        REMOVE_UNCLASSIFIED (
+            ch_input_seqs,
+            params.remove_unclassified
+        )        
+
+        ch_filter_phmm_input = REMOVE_UNCLASSIFIED.out.fasta
+            .filter{ it.size()>0 } // remove empty files
+
+        ch_count_remove_unclassified = REMOVE_UNCLASSIFIED.out.fasta.countFasta()
+
+        //// combine and save intermediate file 
+        if ( params.save_intermediate ) {
+            REMOVE_UNCLASSIFIED.out.fasta
+                .collectFile ( 
+                    name: "remove_unclassified.fasta",
+                    storeDir: "./output/results"
+                )
+        }
+
+    } else {
+        ch_filter_phmm_input = ch_input_seqs
+    }
+
     //// filter sequences in each chunk using PHMM model
     FILTER_PHMM (
-        ch_input_seqs,
+        ch_filter_phmm_input,
         ch_phmm,
         PARSE_MARKER.out.coding
     )
@@ -548,6 +578,7 @@ workflow TAXRETURN {
         ch_count_internal,
         ch_count_external,
         ch_count_input,
+        ch_count_remove_unclassified,
         ch_count_filter_phmm,
         ch_count_filter_stop,
         ch_count_remove_exact,
@@ -567,6 +598,7 @@ workflow TAXRETURN {
     ch_count_internal               .view { "ch_count_internal: $it" }
     ch_count_external               .view { "ch_count_external: $it" }
     ch_count_input                  .view { "ch_count_input: $it" }
+    ch_count_remove_unclassified    .view { "ch_count_remove_unclassified: $it" }
     ch_count_filter_phmm            .view { "ch_count_filter_phmm: $it" }
     ch_count_filter_stop            .view { "ch_count_filter_stop: $it" }
     ch_count_remove_exact           .view { "ch_count_remove_exact: $it" }

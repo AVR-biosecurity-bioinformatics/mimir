@@ -12,6 +12,7 @@ process SUMMARISE_COUNTS {
     val(count_internal)
     val(count_external)
     val(count_input)
+    val(count_remove_unclassified)
     val(count_filter_phmm)
     val(count_filter_stop)
     val(count_remove_exact)
@@ -41,6 +42,7 @@ process SUMMARISE_COUNTS {
     count_internal = "${count_internal}"
     count_external = "${count_external}"
     count_input = "${count_input}"
+    count_remove_unclassified = "${count_remove_unclassified}"
     count_filter_phmm = "${count_filter_phmm}"
     count_filter_stop = "${count_filter_stop}"
     count_remove_exact = "${count_remove_exact}"
