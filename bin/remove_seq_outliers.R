@@ -82,7 +82,7 @@ remove_intraspp_dist_outliers <- function(seqs, removal_threshold = 0.05) {
         dplyr::pull(species) %>%
         unique()
     # check only one species name
-    if (length(spp_name) > 1) {stop(paste0("Multiple species detected when one needed: '",stringr::str_c(spp_name, sep = ",")))}
+    if (length(spp_name) > 1) {stop(paste0("Multiple species detected when one needed: '",stringr::str_c(spp_name, sep = ","),"'"))}
     # calculate intraspecific distance (only if alignment is of classified sequences and >1 sequences)
     if (spp_name != "Unclassified" && length(seqs) > 1) {
         # check sequences are aligned by comparing lengths
