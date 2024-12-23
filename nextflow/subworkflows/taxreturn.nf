@@ -382,7 +382,7 @@ workflow TAXRETURN {
 
     //// filter for stop codons (depending on marker)
     FILTER_STOP (
-        FILTER_PHMM.out.seqs,
+        FILTER_PHMM.out.fasta.filter{ it.size()>0 }, // remove empty files
         PARSE_MARKER.out.coding,
         PARSE_MARKER.out.type,
         GET_NCBI_TAXONOMY.out.ncbi_gencodes
@@ -400,7 +400,9 @@ workflow TAXRETURN {
     //// count number of sequences passing stop codon filter
     ch_count_filter_stop = FILTER_STOP.out.fasta.countFasta() 
 
-    ch_filter_output = FILTER_STOP.out.fasta.collect()
+    ch_filter_output = FILTER_STOP.out.fasta
+        .filter{ it.size()>0 } // remove empty files
+        .collect()
 
     // //// branch channels based on seq_source
     // ch_filter_output
@@ -485,7 +487,7 @@ workflow TAXRETURN {
     //// group species-level .fasta into batches for aligning and pruning
     ch_split = SPLIT_BY_SPECIES.out.fasta
         .flatten()
-        .buffer( size: 50, remainder: true ) 
+        .buffer( size: 100, remainder: true ) 
 
     //// align species-level .fasta in batches
     ALIGN_SPECIES (

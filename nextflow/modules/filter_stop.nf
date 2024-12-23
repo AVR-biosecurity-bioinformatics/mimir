@@ -5,14 +5,13 @@ process FILTER_STOP {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(seqs_file)
+    val(fasta_file)
     val(coding)
     val(marker_type)
     val(ncbi_gencodes)
 
     output: 
-    path("*_filter_stop.rds"),           emit: seqs, optional: true
-    path("*.fasta"),                    emit: fasta, optional: true
+    path("filter_stop.*.fasta"),                emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -25,10 +24,11 @@ process FILTER_STOP {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    seqs_file =              "${seqs_file}"
+    fasta_file =             "${fasta_file}"
     coding =                 "${coding}"
     marker_type =            "${marker_type}"
     ncbi_gencodes =          "${ncbi_gencodes}"
+    task_index =             "${task.index}"
 
     ## global variables
     projectDir = "$projectDir"

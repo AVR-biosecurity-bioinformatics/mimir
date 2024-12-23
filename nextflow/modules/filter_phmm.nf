@@ -10,8 +10,7 @@ process FILTER_PHMM {
     val(coding)
 
     output: 
-    path("*_filter_phmm.rds"),                  emit: seqs, optional: true
-    path("*.fasta"),                            emit: fasta, optional: true
+    path("filter_phmm.*.fasta"),                            emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -27,6 +26,7 @@ process FILTER_PHMM {
     fasta_file =             "${fasta_file}"
     phmm_model_file =        "${phmm_model_file}"
     coding =                 "${coding}"
+    task_index =             "${task.index}"
 
     ## global variables
     projectDir = "$projectDir"

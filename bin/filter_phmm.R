@@ -45,7 +45,8 @@ nf_vars <- c(
     "params_dict",
     "fasta_file",
     "phmm_model_file",
-    "coding"
+    "coding",
+    "task_index"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -56,11 +57,6 @@ phmm_model <- readRDS(phmm_model_file)
 
 # convert fasta to DNAbin
 seqs <- ape::read.FASTA(fasta_file, type = "DNA")
-
-# get basename
-file_basename_noext <- 
-    basename(fasta_file) %>%
-    stringr::str_remove("\\.fasta$")
 
 ## parameter parsing
 min_score <- as.numeric(params.phmm_min_score)
@@ -104,16 +100,13 @@ seqs_filtered <-
         quiet = FALSE
     )
 
-# save filtered sequences as .rds file
-if ( !is.null(seqs_filtered)) {
-    saveRDS(seqs_filtered, paste0(file_basename_noext,"_filter_phmm.rds"))
-}
-
-# write fasta for debugging
-if ( params.all_fasta == "true" && !is.null(seqs_filtered) ){
+# write fasta
+if ( !is.null(seqs_filtered) ){
     write_fasta(
         seqs_filtered, 
-        file = paste0(file_basename_noext,"_filter_phmm.fasta"), 
+        file = paste0("filter_phmm.",task_index,".fasta"), 
         compress = FALSE
         )
+} else {
+    file.create(paste0("filter_phmm.",task_index,".fasta"))
 }

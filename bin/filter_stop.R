@@ -43,22 +43,19 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "seqs_file",
+    "fasta_file",
     "coding",
     "marker_type",
-    "ncbi_gencodes"
+    "ncbi_gencodes",
+    "task_index"
     )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
 # read in seqs from file
-seqs <- readRDS(seqs_file)
-
-# get basename
-    file_basename_noext <- 
-        basename(seqs_file) %>%
-        stringr::str_remove("_filter_phmm\\.rds$")
+# seqs <- readRDS(seqs_file)
+seqs <- ape::read.FASTA(fasta_file)
 
 ### run code
 
@@ -320,18 +317,13 @@ if ( coding == "true" ){
     stop("ERROR: 'coding' must be 'true' or 'false'")
 }
 
-# save filtered sequences as .rds file
-if ( !is.null(seqs_filtered)) {
-    saveRDS(seqs_filtered, paste0(file_basename_noext,"_filter_stop.rds"))
-}
-
-# write fasta for debugging
+# write fasta
 if ( !is.null(seqs_filtered) ){
     write_fasta(
         seqs_filtered, 
-        file = paste0(file_basename_noext,"_filter_stop.fasta"), 
+        file = paste0("filter_stop.",task_index,".fasta"), 
         compress = FALSE
         )
 } else {
-    file.create(paste0(file_basename_noext,"_filter_stop.fasta"))
+    file.create(paste0("filter_stop.",task_index,".fasta"))
 }
