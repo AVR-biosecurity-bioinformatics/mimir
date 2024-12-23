@@ -1,7 +1,7 @@
 process EXTRACT_BOLD {
     def module_name = "extract_bold"
     tag "-"
-    label "very_small"
+    label "small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
