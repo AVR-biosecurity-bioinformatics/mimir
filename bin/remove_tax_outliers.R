@@ -178,10 +178,10 @@ mixedtab <- lapply(splitlist, find_mixed_new)
 # remove lists where the function returned NULL
 mixedtab <- mixedtab[!vapply(mixedtab, is.null, logical(1))]
 
-if (length(mixedtab) == 0) {
+if ( lapply(mixedtab,nrow) %>% unlist %>% sum == 0 ) { # handle list output or data.frame formats
       if (!quiet) {cat("No mixed clusters at", cluster_rank,   "rank \n")}
     mixed_clusters <- NULL
-} else if (length(mixedtab) > 0){
+} else if ( lapply(mixedtab,nrow) %>% unlist %>% sum > 0 ){
     mixedtab <- dplyr::bind_rows(mixedtab, .id="cluster")
     mixedtab <- mixedtab[mixedtab$confidence >= cluster_confidence, ]
     mixedtab <- mixedtab[order(mixedtab$confidence, decreasing = TRUE), ]
@@ -195,7 +195,12 @@ if (length(mixedtab) == 0) {
         dplyr::mutate_if(is.factor, as.character)
 }
 
+# handle case where mixed_clusters is a df with 0 rows instead of NULL (can't explain code causing this)
+if (nrow(mixed_clusters) == 0){
+    mixed_clusters <- NULL
+}
 
+# remove mixed cluster seqs
 if (!is.null(mixed_clusters)){
     # Get accession numbers to remove
     rem <- mixed_clusters$Acc
