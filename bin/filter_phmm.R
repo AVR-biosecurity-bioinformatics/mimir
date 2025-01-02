@@ -101,7 +101,7 @@ seqs_filtered <-
     )
 
 # write fasta
-if ( !is.null(seqs_filtered) ){
+if ( !is.null(seqs_filtered) && length(seqs_filtered) > 0 ){
     write_fasta(
         seqs_filtered, 
         file = paste0("filter_phmm.",task_index,".fasta"), 
