@@ -3,7 +3,7 @@ process REMOVE_TAX_OUTLIERS {
     tag "-"
     // label "medium"
     time '1.h'
-    memory '8.GB'
+    memory '16.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 

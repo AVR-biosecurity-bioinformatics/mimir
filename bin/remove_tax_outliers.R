@@ -99,24 +99,23 @@ cluster_reps <- clusters$representative %>% unique
 names(cluster_reps) <- seq(from = 1, to = length(cluster_reps))
 # make tibble
 cluster_info <- tibble::enframe(cluster_reps, name = "cluster", value = "representative")
+rm(cluster_reps)
 # join to clusters tibble
 clusters_joined <- 
     dplyr::left_join(clusters, cluster_info, by = "representative") %>% 
     dplyr::select(-representative)
+rm(clusters)
+rm(cluster_info)
 # join seq_names to cluster_joined to get otus info
 clustered_seqs <- 
     seq_names %>%
     dplyr::left_join(., clusters_joined, by = "sequence_name")
+rm(seq_names)
+rm(clusters_joined)
 # create new named vector ala. old code
 otus <- clustered_seqs$cluster
 names(otus) <- clustered_seqs$sequence_name
-# remove unneeded objects
-rm(clusters)
 rm(clustered_seqs)
-rm(clusters_joined)
-rm(cluster_info)
-rm(cluster_reps)
-rm(seq_names)
 ## make sure 'clusters' and 'seqs' are in the same order
 # get the taxonomic lineage of each sequence as a tibble/df
 lineage <- 
@@ -133,15 +132,17 @@ names(rank_taxa) <- lineage$seqid
 rm(lineage)
 # get a vector of clusters + seq names where the rank of interest is not "Unclassified" (unclassified breaks mixed cluster detection)
 f <- as.factor(otus[!rank_taxa %>% stringr::str_detect("^Unclassified$")])
+rm(otus)
 # vector of taxon names at the given rank for classified sequences
 rank_classified <- rank_taxa[!rank_taxa %>% stringr::str_detect("^Unclassified$")]
+rm(rank_taxa)
 # make list where each element is an otu cluster, with the members are the accessions and the taxa 
 splitlist <- split(rank_classified, f)
 # keep lists where there are more than two members (otherwise can't determine consensus (n = 2) or it is unnecessary (n = 1))
 splitlist <- splitlist[tabulate(f) > 2]
 # remove unneeded
-rm(rank_taxa)
 rm(rank_classified)
+rm(f)
 # define new function to find mixed clusters, returns a df where "Acc" column is the accession of a potentially bad sequence
 find_mixed_new <- function(y) {
     hashes <- paste0(gsub("\\|.*$", "\\1", names(y)), y)
@@ -175,6 +176,7 @@ find_mixed_new <- function(y) {
 }
 # apply find_mixed_new to list of clusters
 mixedtab <- lapply(splitlist, find_mixed_new)
+rm(splitlist)
 # remove lists where the function returned NULL
 mixedtab <- mixedtab[!vapply(mixedtab, is.null, logical(1))]
 
