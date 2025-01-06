@@ -1,7 +1,10 @@
 process ALIGN_BATCH {
     def module_name = "align_batch"
     tag "-"
-    label "medium"
+    // label "medium"
+    time '1.h'
+    memory '4.GB'
+    cpus 1
     container "staphb/clustalo:1.2.4"
 
     input:

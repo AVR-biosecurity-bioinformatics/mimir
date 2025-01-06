@@ -44,6 +44,7 @@ do
         # truncate headers to seqid + taxid
         cat $FILE | sed 's/;.*//' > ${BASE}.trunc.fasta
         # align file with truncated headers, keeping original order
+        echo "Aligning $FILE"
         clustalo \
             -i ${BASE}.trunc.fasta \
             -o ${BASE}.aligned.trunc.fasta \
@@ -58,6 +59,7 @@ do
         awk 'NR==FNR{a[NR]=$0;next}FNR%2{$0=">"a[int(FNR/2+1)]}1' ${BASE}.headers.txt ${BASE}.aligned.trunc.fasta > ${BASE}.aligned.fasta
     else 
         # else rename input file as output file (no alignment needed)
+        echo "No alignment required for $FILE"
         cp $FILE ${BASE}.aligned.fasta
     fi
 done
