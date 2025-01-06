@@ -57,6 +57,9 @@ fasta_vector <- # convert Groovy to R vector format
 # read into list
 seqs_list <- lapply(fasta_vector, ape::read.FASTA) 
 
+# name DNAbin objects in list based on .fasta names
+names(seqs_list) <- fasta_vector %>% stringr::str_remove(., "\\.aligned\\.fasta") %>% stringr::str_remove(., "^.*/")
+
 # check all files are .fasta 
 for (i in 1:length(fasta_vector)) {
     if(!stringr::str_detect(fasta_vector[i], "\\.fa(sta)$")){stop(paste0("Sequence file '",fasta_vector[i],"' does not appear to be a FASTA file"))}
@@ -88,6 +91,7 @@ remove_intraspp_dist_outliers <- function(seqs, removal_threshold = 0.05) {
         # check sequences are aligned by comparing lengths
         if(length(table(lengths(seqs))) > 1){ stop(paste0("Sequences for species '",spp_name,"' don't appear to be aligned"))} 
         # get distance matrix
+        message(paste0("Calculating distance matrix for species '",spp_name,"'"))
         distmat <- 
             DECIPHER::DistanceMatrix(
                 seqs, 
@@ -118,46 +122,87 @@ remove_intraspp_dist_outliers <- function(seqs, removal_threshold = 0.05) {
     # output list of removed and retained sequences
     out <- list(removed, retained)
     names(out) <- c("removed","retained")
+    message(paste0("Finished species '",spp_name,"'"))
     return(out)
 }
 
-## run function on input fasta files
-intraspp_output <- 
-    lapply(
-        seqs_list, 
-        remove_intraspp_dist_outliers, 
-        removal_threshold = dist_threshold
-    )
-
-# name output based on lineage
-names(intraspp_output) <- 
-    fasta_vector %>% 
-    stringr::str_remove(., "\\.aligned\\.fasta") %>%
-    stringr::str_remove(., "^.*/")
-
-# save removed and retained sequences as .fasta files
+## loop through each DNAbin in seqs_list, calculating distance matrix and saving removed and retained sequences as .fasta files
 purrr::imap(
-  .x = intraspp_output,
-  .f = \(x, idx){
-    # save removed seq as .fasta (empty file if not present)
-    if (!is.null(x[[1]])){
-      write_fasta(
-        x[[1]],
-        file = paste0(idx,".removed.fasta")
+  .x = seqs_list,
+  .f = \(
+    x, # element of seqs_list
+    idx, # name of element (ie. lineage name)
+    removal_threshold = dist_threshold
+  ){
+    # get distance matrix and output removed and retained sequences
+    intraspp_out <- remove_intraspp_dist_outliers(x, removal_threshold)
+
+    # write sequences to file
+    if (!is.null(intraspp_out$removed)){
+      suppressMessages(
+        write_fasta(
+          intraspp_out$removed,
+          file = paste0(idx,".removed.fasta")
+        )
       )
     } else {
       file.create(paste0(idx,".removed.fasta"))
     }
     # save retained seq as .fasta (empty file if not present)
-    if (!is.null(x[[2]])){
-      write_fasta(
-        x[[2]],
-        file = paste0(idx,".retained.fasta")
+    if (!is.null(intraspp_out$retained)){
+      suppressMessages(
+          write_fasta(
+              intraspp_out$retained,
+              file = paste0(idx,".retained.fasta")
+          )
       )
     } else {
       file.create(paste0(idx,".retained.fasta"))
     }
-    return(message(paste0("Removed and retained sequences from '",idx,"' saved to file")))
+    message(paste0("Removed (",intraspp_out$removed %>% length,") and retained (",intraspp_out$retained %>% length,") sequences from '",idx,"' saved to file"))
   }
 )
+
+
+
+
+# ## run function on input fasta files
+# intraspp_output <- 
+#     lapply(
+#         seqs_list, 
+#         remove_intraspp_dist_outliers, 
+#         removal_threshold = dist_threshold
+#     )
+
+# # name output based on lineage
+# names(intraspp_output) <- 
+#     fasta_vector %>% 
+#     stringr::str_remove(., "\\.aligned\\.fasta") %>%
+#     stringr::str_remove(., "^.*/")
+
+# # save removed and retained sequences as .fasta files
+# purrr::imap(
+#   .x = intraspp_output,
+#   .f = \(x, idx){
+#     # save removed seq as .fasta (empty file if not present)
+#     if (!is.null(x[[1]])){
+#       write_fasta(
+#         x[[1]],
+#         file = paste0(idx,".removed.fasta")
+#       )
+#     } else {
+#       file.create(paste0(idx,".removed.fasta"))
+#     }
+#     # save retained seq as .fasta (empty file if not present)
+#     if (!is.null(x[[2]])){
+#       write_fasta(
+#         x[[2]],
+#         file = paste0(idx,".retained.fasta")
+#       )
+#     } else {
+#       file.create(paste0(idx,".retained.fasta"))
+#     }
+#     return(message(paste0("Removed and retained sequences from '",idx,"' saved to file")))
+#   }
+# )
 
