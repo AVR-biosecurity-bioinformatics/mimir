@@ -104,8 +104,12 @@ remove_intraspp_dist_outliers <- function(seqs, removal_threshold = 0.05) {
             )
         # find index of most central element
         center <- which.min(apply(distmat,1,median))
+        gc() # clean memory
         # distance from each element to most central element
         dd <- distmat[center,]
+        # remove distance matrix from memory
+        rm(distmat)
+        gc()
         # remove sequences above threshold
         if(any(dd > removal_threshold)){
             removed <- ape::as.DNAbin(seqs[dd > removal_threshold]) %>% ape::del.gaps() # remove alignment
@@ -123,6 +127,7 @@ remove_intraspp_dist_outliers <- function(seqs, removal_threshold = 0.05) {
     out <- list(removed, retained)
     names(out) <- c("removed","retained")
     message(paste0("Finished species '",spp_name,"'"))
+    gc() # clean memory
     return(out)
 }
 
@@ -136,7 +141,7 @@ purrr::imap(
   ){
     # get distance matrix and output removed and retained sequences
     intraspp_out <- remove_intraspp_dist_outliers(x, removal_threshold)
-
+    gc() # clean memory if needed
     # write sequences to file
     if (!is.null(intraspp_out$removed)){
       suppressMessages(
