@@ -13,7 +13,7 @@ process ALIGN_BATCH {
     output: 
     path("*.aligned.fasta"),             emit: aligned_fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

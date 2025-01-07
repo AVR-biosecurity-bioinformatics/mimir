@@ -11,7 +11,7 @@ process COMBINE_CHUNKS {
     output: 
     path("chunks_combined.fasta"),                            emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

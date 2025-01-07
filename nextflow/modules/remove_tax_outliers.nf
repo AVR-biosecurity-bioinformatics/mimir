@@ -15,7 +15,7 @@ process REMOVE_TAX_OUTLIERS {
     output: 
     path("seqs_decontaminated.fasta"),                                  emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

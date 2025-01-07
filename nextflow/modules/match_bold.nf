@@ -17,7 +17,7 @@ process MATCH_BOLD {
     path("bold_seqs.*.fasta"),                    emit: fasta
     path("synchanges.*.csv"),                     emit: synchanges
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

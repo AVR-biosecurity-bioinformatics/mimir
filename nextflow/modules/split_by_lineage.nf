@@ -14,7 +14,7 @@ process SPLIT_BY_LINEAGE {
     output: 
     path("*.grouped.fasta"),                                  emit: split_fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

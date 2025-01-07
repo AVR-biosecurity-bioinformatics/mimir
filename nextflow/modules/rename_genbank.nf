@@ -14,7 +14,7 @@ process RENAME_GENBANK {
     output: 
     path("*.renamed.fasta"),                    emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

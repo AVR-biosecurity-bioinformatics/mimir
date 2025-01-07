@@ -15,7 +15,7 @@ process PRUNE_GROUPS {
     // path("seqs_pruned.rds"),                  emit: seqs
     path("seqs_pruned.*.fasta"),                emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

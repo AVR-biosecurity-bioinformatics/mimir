@@ -14,7 +14,7 @@ process MERGE_BOLD {
     path("matching_taxids.merged.csv"),              emit: matching_taxids
     path("synchanges.merged.csv"),                   emit: synchanges
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

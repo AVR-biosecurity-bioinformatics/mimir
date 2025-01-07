@@ -12,7 +12,7 @@ process FILTER_PHMM {
     output: 
     path("filter_phmm.*.fasta"),                            emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

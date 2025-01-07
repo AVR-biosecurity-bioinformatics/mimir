@@ -13,7 +13,7 @@ process TRIM_PHMM {
     output: 
     path("phmm_model_trimmed.rds"),                  emit: trimmed_model
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

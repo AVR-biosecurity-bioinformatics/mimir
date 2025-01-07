@@ -11,7 +11,7 @@ process REMOVE_UNCLASSIFIED {
     output: 
     path("remove_unclassified.*.fasta"),      emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

@@ -15,7 +15,7 @@ process REMOVE_SEQ_OUTLIERS {
     path("*.retained.fasta"),                                  emit: retained_fasta
     path("*.removed.fasta"),                                  emit: removed_fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

@@ -15,7 +15,7 @@ process FETCH_GENBANK {
     output:
     tuple path("*.fasta"), path("*.taxids.txt"),                  emit: fetched_seqs
 
-    publishDir "${projectDir}/output/modules/${module_name}", mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}", mode: 'copy'
 
     // when: 
 

@@ -14,7 +14,7 @@ process QUERY_GENBANK {
     output:
     path("*_seqs.txt"),              emit: seq_acc
 
-    publishDir "${projectDir}/output/modules/${module_name}", mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}", mode: 'copy'
 
     // when: 
 

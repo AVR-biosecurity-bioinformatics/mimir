@@ -11,7 +11,7 @@ process REMOVE_EXACT_DUPLICATES {
     // path("seqs_combined.rds"),                  emit: seqs
     path("seqs_deduplicated.fasta"),                            emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

@@ -17,7 +17,7 @@ process SPLIT_BY_RANK {
     output: 
     path("*.lineage.fasta"),                            emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

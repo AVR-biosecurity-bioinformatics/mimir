@@ -11,7 +11,7 @@ process COUNT_GENBANK {
     output: 
     tuple val(taxon), path("*.count"),                       emit: chunks_counts 
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

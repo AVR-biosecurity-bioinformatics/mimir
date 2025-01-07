@@ -13,7 +13,7 @@ process EXTRACT_BOLD {
     output: 
     path("bold_db_targets.*.rds"),                  emit: tibble, optional: true
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

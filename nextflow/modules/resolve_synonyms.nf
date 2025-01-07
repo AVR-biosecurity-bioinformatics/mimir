@@ -15,7 +15,7 @@ process RESOLVE_SYNONYMS {
     tuple path("*_seqs_resolved.rds"), val(seq_source),         emit: seqs
     path("*.fasta"),                                            emit: fasta, optional: true
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
