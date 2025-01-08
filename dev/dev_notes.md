@@ -147,7 +147,7 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
 
 # drosophila genus - used 1.105G memory in REMOV_CONTAM for 19539 seqs
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7215  --target_ranks genus --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7215 --target_ranks genus --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
 
 # Drosophilidae family - used 2.89G memory in REMOV_CONTAM for 68469 seqs
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214  --target_ranks family --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
