@@ -152,6 +152,23 @@ NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/fol
 # Drosophilidae family - used 2.89G memory in REMOV_CONTAM for 68469 seqs
 NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214  --target_ranks family --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
 
+# clustalo header truncation test (genus that causes issue) 
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 299289 --target_ranks genus --bold_db_path ./input --marker COI --add_root --use_genbank false
+
+## time tests for complete pipeline (20/12/2024)
+# siphonaptera BOLD only - input 600 - 12m 
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7509 --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false
+
+# hemiptera BOLD only - 554389 input - 1h44m
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false
+
+# insecta BOLD only, no unclassified - 10629757 input (2981685 full classification) - 1 day requested
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Insecta --target_ranks class --bold_db_path ./input --marker COI --add_root --use_genbank false --remove_unclassified any_ranks
+
+# memory usage tests (GB) - min: 0.44, mean: 0.64, median: 0.45, max: 1.75 (completed) for Insecta pre-GC additions
+#  usage for below test with Drosophilidae - min: 0.44, mean: 0.63, median: 0.59, max: 1.02 (completed) post-GC
+NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214  --target_ranks family --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
+
 
 ```
 
