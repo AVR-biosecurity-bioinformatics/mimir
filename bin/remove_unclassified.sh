@@ -8,7 +8,7 @@ set -u
 # $4 = '--remove_unclassified' parameter
 # $5 = task.index
 
-OUTPUT_FILE="remove_unclassified.${5}.fasta"
+OUTPUT_FILE="remove_unclassified.fasta"
 
 case ${4} in 
 

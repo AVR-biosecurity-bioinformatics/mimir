@@ -7,7 +7,7 @@ process MATCH_BOLD {
     memory '4.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
-    fair true
+    // fair true
 
     input:
     path(seq_tibble)
@@ -48,7 +48,7 @@ process MATCH_BOLD {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """

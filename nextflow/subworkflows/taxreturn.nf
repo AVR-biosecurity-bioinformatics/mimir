@@ -349,12 +349,14 @@ workflow TAXRETURN {
     //// remove unclassified sequences
     if ( params.remove_unclassified == "all_ranks" || params.remove_unclassified == "any_ranks" || params.remove_unclassified == "terminal" ) {
         REMOVE_UNCLASSIFIED (
-            ch_input_seqs,
-            params.remove_unclassified
+            ch_input_seqs.map{ file -> [ file, params.remove_unclassified ] }
         )        
 
+        //// combine channel inputs for FILTER_PHMM
         ch_filter_phmm_input = REMOVE_UNCLASSIFIED.out.fasta
             .filter{ it.size()>0 } // remove empty files
+            .combine( ch_phmm ) // add phmm model
+            .combine( PARSE_MARKER.out.coding ) // combine coding value 
 
         ch_count_remove_unclassified = REMOVE_UNCLASSIFIED.out.fasta.countFasta()
 
@@ -363,19 +365,22 @@ workflow TAXRETURN {
             REMOVE_UNCLASSIFIED.out.fasta
                 .collectFile ( 
                     name: "remove_unclassified.fasta",
-                    storeDir: "./output/results"
+                    storeDir: "./output/results",
+                    cache: 'lenient'
                 )
         }
 
     } else {
         ch_filter_phmm_input = ch_input_seqs
+            .combine( ch_phmm ) // add phmm model
+            .combine( PARSE_MARKER.out.coding ) // combine coding value 
     }
+
+
 
     //// filter sequences in each chunk using PHMM model
     FILTER_PHMM (
-        ch_filter_phmm_input,
-        ch_phmm,
-        PARSE_MARKER.out.coding
+        ch_filter_phmm_input
     )
 
     //// combine and save intermediate file 
@@ -383,19 +388,24 @@ workflow TAXRETURN {
         FILTER_PHMM.out.fasta
             .collectFile ( 
                 name: "filter_phmm.fasta",
-                storeDir: "./output/results"
+                storeDir: "./output/results",
+                cache: 'lenient'
             )
     }
 
     //// count number of sequences passing PHMM filter
     ch_count_filter_phmm = FILTER_PHMM.out.fasta.countFasta() 
 
+    //// combine channel inputs for FILTER_STOP
+    ch_filter_stop_input = FILTER_PHMM.out.fasta
+        .filter{ it.size()>0 }
+        .combine( PARSE_MARKER.out.coding )
+        .combine( PARSE_MARKER.out.type )
+        .combine( GET_NCBI_TAXONOMY.out.ncbi_gencodes )
+
     //// filter for stop codons (depending on marker)
     FILTER_STOP (
-        FILTER_PHMM.out.fasta.filter{ it.size()>0 }, // remove empty files
-        PARSE_MARKER.out.coding,
-        PARSE_MARKER.out.type,
-        GET_NCBI_TAXONOMY.out.ncbi_gencodes
+        ch_filter_stop_input
     )
 
     //// combine and save intermediate file 
@@ -403,7 +413,8 @@ workflow TAXRETURN {
         FILTER_STOP.out.fasta
             .collectFile ( 
                 name: "filter_stop.fasta",
-                storeDir: "./output/results"
+                storeDir: "./output/results",
+                cache: 'lenient'
             )
     }
 
@@ -412,7 +423,7 @@ workflow TAXRETURN {
 
     ch_filter_output = FILTER_STOP.out.fasta
         .filter{ it.size()>0 } // remove empty files
-        .collect()
+        .collect(sort: true)
 
     // //// branch channels based on seq_source
     // ch_filter_output

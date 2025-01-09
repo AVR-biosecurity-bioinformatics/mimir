@@ -45,8 +45,7 @@ nf_vars <- c(
     "params_dict",
     "fasta_file",
     "phmm_model_file",
-    "coding",
-    "task_index"
+    "coding"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -104,9 +103,9 @@ seqs_filtered <-
 if ( !is.null(seqs_filtered) && length(seqs_filtered) > 0 ){
     write_fasta(
         seqs_filtered, 
-        file = paste0("filter_phmm.",task_index,".fasta"), 
+        file = paste0("filter_phmm.fasta"), 
         compress = FALSE
         )
 } else {
-    file.create(paste0("filter_phmm.",task_index,".fasta"))
+    file.create(paste0("filter_phmm.fasta"))
 }

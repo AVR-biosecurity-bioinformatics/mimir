@@ -12,8 +12,7 @@ process PRUNE_GROUPS {
     val(internal_names_file)
 
     output: 
-    // path("seqs_pruned.rds"),                  emit: seqs
-    path("seqs_pruned.*.fasta"),                emit: fasta
+    path("seqs_pruned.fasta"),                emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -28,7 +27,6 @@ process PRUNE_GROUPS {
     ## input channel variables
     fasta_files =                   "${fasta_files}"
     internal_names_file =                   "${internal_names_file}"
-    task_index =                   "${task.index}"
 
     ## global variables
     projectDir = "$projectDir"
@@ -46,7 +44,7 @@ process PRUNE_GROUPS {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """

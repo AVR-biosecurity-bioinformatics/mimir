@@ -5,13 +5,10 @@ process FILTER_STOP {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
-    val(coding)
-    val(marker_type)
-    val(ncbi_gencodes)
+    tuple path(fasta_file), val(coding), val(marker_type), path(ncbi_gencodes)
 
     output: 
-    path("filter_stop.*.fasta"),                emit: fasta
+    path("filter_stop.fasta"),                emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -28,7 +25,6 @@ process FILTER_STOP {
     coding =                 "${coding}"
     marker_type =            "${marker_type}"
     ncbi_gencodes =          "${ncbi_gencodes}"
-    task_index =             "${task.index}"
 
     ## global variables
     projectDir = "$projectDir"
@@ -46,7 +42,7 @@ process FILTER_STOP {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """

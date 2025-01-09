@@ -5,10 +5,9 @@ process REMOVE_EXACT_DUPLICATES {
     container "staphb/seqkit:2.8.2"
 
     input:
-    val(fasta_file)
+    path(fasta_file)
 
     output: 
-    // path("seqs_combined.rds"),                  emit: seqs
     path("seqs_deduplicated.fasta"),                            emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'

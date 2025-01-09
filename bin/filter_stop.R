@@ -46,9 +46,8 @@ nf_vars <- c(
     "fasta_file",
     "coding",
     "marker_type",
-    "ncbi_gencodes",
-    "task_index"
-    )
+    "ncbi_gencodes"
+)
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
@@ -228,6 +227,17 @@ if ( coding == "true" ){
         stop("Number of sequences in input .fasta does not match number of returned genetic codes")
     }
 
+    # clean up memory
+    rm(match_all)
+    rm(match_censor_s)
+    rm(match_censor_g)
+    rm(match_censor_f)
+    rm(match_censor_o)
+    rm(match_censor_c)
+    rm(match_censor_p)
+    rm(match_censor_k)
+    gc()
+
     ## do filtering of sequences containing stop codons
 
     ### NOTE: This assumes all sequences are in the correct orientation ie. 5'-3'.
@@ -321,9 +331,9 @@ if ( coding == "true" ){
 if ( !is.null(seqs_filtered) && length(seqs_filtered) > 0 ){
     write_fasta(
         seqs_filtered, 
-        file = paste0("filter_stop.",task_index,".fasta"), 
+        file = paste0("filter_stop.fasta"), 
         compress = FALSE
         )
 } else {
-    file.create(paste0("filter_stop.",task_index,".fasta"))
+    file.create(paste0("filter_stop.fasta"))
 }
