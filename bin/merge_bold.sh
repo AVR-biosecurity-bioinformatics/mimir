@@ -8,12 +8,12 @@ set -u
 # $4 = matching_taxids_list
 # $5 = synchanges_list
 
-### input Groovy lists to bash lists
-FASTA_LIST=$(echo $3 | tr -d ',[]')
+### input Groovy lists to bash lists, sorting contents by file name
+FASTA_LIST=$(echo $3 | tr -d ',[]' | tr ' ' '\n' | sort | tr '\n' ' ' )
 
-MATCHING_TAXIDS_LIST=$(echo $4 | tr -d ',[]')
+MATCHING_TAXIDS_LIST=$(echo $4 | tr -d ',[]' | tr ' ' '\n' | sort | tr '\n' ' ' )
 
-SYNCHANGES_LIST=$(echo $5 | tr -d ',[]')
+SYNCHANGES_LIST=$(echo $5 | tr -d ',[]' | tr ' ' '\n' | sort | tr '\n' ' ' )
 
 ### concatenate .fasta files into a single file
 cat $FASTA_LIST > bold_seqs.merged.fasta

@@ -5,9 +5,9 @@ process MERGE_BOLD {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_list)
-    val(matching_taxids_list)
-    val(synchanges_list)
+    path(fasta_list)
+    path(matching_taxids_list)
+    path(synchanges_list)
 
     output: 
     path("bold_seqs.merged.fasta"),                  emit: fasta

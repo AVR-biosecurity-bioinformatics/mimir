@@ -1,21 +1,21 @@
 process MATCH_BOLD {
     def module_name = "match_bold"
+    // cache 'lenient'
     tag "-"
     // label "small"
     time '30.m'
     memory '4.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
+    fair true
 
     input:
-    val(seq_tibble)
-    val(ncbi_lineageparents)
-    val(ncbi_synonyms)
+    path(seq_tibble)
+    path(ncbi_lineageparents)
+    path(ncbi_synonyms)
 
     output: 
-    path("matching_taxids.*.csv"),                emit: matching_taxids
-    path("bold_seqs.*.fasta"),                    emit: fasta
-    path("synchanges.*.csv"),                     emit: synchanges
+    tuple path("bold_seqs.*.fasta"), path("matching_taxids.*.csv"), path("synchanges.*.csv"),    emit: matching_data
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

@@ -216,11 +216,21 @@ workflow TAXRETURN {
             GET_NCBI_TAXONOMY.out.synonyms
         )
 
+        //// refactor output channels so caching is valid 
+        MATCH_BOLD.out.matching_data
+            .flatten()
+            .branch{ file ->
+                fasta: file.fileName.name =~ /^bold_seqs/
+                matching_taxids: file.fileName.name =~ /^matching_taxids/
+                synchanges: file.fileName.name =~ /^synchanges/
+            }
+            .set{ ch_matched_bold }
+
         //// merge BOLD chunks into single .fasta and .csv files
         MERGE_BOLD (
-            MATCH_BOLD.out.fasta.collect(),
-            MATCH_BOLD.out.matching_taxids.collect(),
-            MATCH_BOLD.out.synchanges.collect()
+            ch_matched_bold.fasta.collect(sort: true),
+            ch_matched_bold.matching_taxids.collect(sort: true),
+            ch_matched_bold.synchanges.collect(sort: true)
         )
 
         //// chunk BOLD sequences into smaller .fasta files for processing
