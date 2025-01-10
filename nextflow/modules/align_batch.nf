@@ -4,7 +4,7 @@ process ALIGN_BATCH {
     // label "medium"
     time '1.h'
     memory '4.GB'
-    cpus 1
+    cpus 4
     container "staphb/clustalo:1.2.4"
 
     input:

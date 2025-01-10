@@ -1,14 +1,17 @@
-process REMOVE_EXACT_DUPLICATES {
-    def module_name = "remove_exact_duplicates"
+process MERGE_SPLITS {
+    def module_name = "merge_splits"
     tag "-"
-    label "very_small"
-    container "staphb/seqkit:2.8.2"
+    // label "small"
+    time '1.h'
+    memory '4.GB'
+    cpus 1
+    container "cicirello/gnu-on-alpine:3.20.3"
 
     input:
-    path(fasta_file)
+    path('dir*/*')
 
     output: 
-    path("seqs_deduplicated.fasta"),                            emit: fasta
+    path("merged/*.lineage.fasta"),                            emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -22,9 +25,7 @@ process REMOVE_EXACT_DUPLICATES {
     ### run module code
     bash ${module_name}.sh \
         ${projectDir} \
-        ${task.cpus} \
-        ${fasta_file} 
-        
+        ${task.cpus} 
     """
 
 }

@@ -1,15 +1,14 @@
 process REMOVE_UNCLASSIFIED {
     def module_name = "remove_unclassified"
-    tag "${task.index}"
+    tag "-"
     label "very_small"
     container "staphb/seqkit:2.8.2"
 
     input:
-    path(fasta_file)
-    val(remove_unclassified)
+    tuple path(fasta_file), val(remove_unclassified)
 
     output: 
-    path("remove_unclassified.*.fasta"),      emit: fasta
+    path("remove_unclassified.fasta"),      emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -25,8 +24,7 @@ process REMOVE_UNCLASSIFIED {
         ${projectDir} \
         ${task.cpus} \
         "${fasta_file}" \
-        ${remove_unclassified} \
-        ${task.index}
+        ${remove_unclassified}
     
     """
 }

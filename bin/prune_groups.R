@@ -44,8 +44,7 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "fasta_files",
-    "internal_names_file",
-    "task_index"
+    "internal_names_file"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -265,9 +264,9 @@ seqs_pruned <-
 if ( !length(seqs_pruned) == 0 ){
     write_fasta(
         seqs_pruned, 
-        file = paste0("seqs_pruned.",task_index,".fasta"), 
+        file = paste0("seqs_pruned.fasta"), 
         compress = FALSE
     )
 } else {
-    file.create(paste0("seqs_pruned.",task_index,".fasta"))
+    file.create(paste0("seqs_pruned.fasta"))
 }

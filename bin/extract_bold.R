@@ -53,9 +53,6 @@ lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-# get name of db_tsv chunk for output naming
-chunk_index <- tools::file_path_sans_ext(basename(db_tsv_file)) 
-
 # read in bold db
 bold_db <- 
     readr::read_delim(
@@ -108,7 +105,7 @@ bold_db_targets <-
 
 ## save subset database as .rds (if data still remains after filtering)
 if ( nrow(bold_db_targets) > 0 ){
-    saveRDS(bold_db_targets, paste0("bold_db_targets.",chunk_index,".rds")) ### TODO: make this naming work with multiple taxa as pipeline input
+    saveRDS(bold_db_targets, paste0("bold_db_targets.rds")) ### TODO: make this naming work with multiple taxa as pipeline input
 } else {
     message("No sequences matching criteria found -- not saving output .rds file.")
 }

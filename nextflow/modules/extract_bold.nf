@@ -1,17 +1,19 @@
 process EXTRACT_BOLD {
     def module_name = "extract_bold"
+    // cache 'lenient'
     tag "-"
     label "small"
     container "jackscanlan/piperline-multi:0.0.1"
+    // fair true
 
     input:
-    tuple val(db_tsv_file), val(db_meta_file)
-    val(bold_names_file)
-    val(bold_rank_file)
+    tuple path(db_tsv_file), path(db_meta_file)
+    path(bold_names_file)
+    path(bold_rank_file)
     val(marker)
 
     output: 
-    path("bold_db_targets.*.rds"),                  emit: tibble, optional: true
+    path("bold_db_targets.rds"),                  emit: tibble, optional: true
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -29,7 +31,6 @@ process EXTRACT_BOLD {
     bold_names_file =             "${bold_names_file}"
     bold_rank_file =              "${bold_rank_file}"
     marker =                      "${marker}"
-    #marker =                      "COI-5P" # TODO: add channel from PARSE_MARKER
 
     ## global variables
     projectDir = "$projectDir"
@@ -47,7 +48,7 @@ process EXTRACT_BOLD {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """

@@ -5,12 +5,10 @@ process FILTER_PHMM {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
-    val(phmm_model_file)
-    val(coding)
+    tuple path(fasta_file), path(phmm_model_file), val(coding)
 
     output: 
-    path("filter_phmm.*.fasta"),                            emit: fasta
+    path("filter_phmm.fasta"),                            emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -26,7 +24,6 @@ process FILTER_PHMM {
     fasta_file =             "${fasta_file}"
     phmm_model_file =        "${phmm_model_file}"
     coding =                 "${coding}"
-    task_index =             "${task.index}"
 
     ## global variables
     projectDir = "$projectDir"
@@ -44,7 +41,7 @@ process FILTER_PHMM {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """

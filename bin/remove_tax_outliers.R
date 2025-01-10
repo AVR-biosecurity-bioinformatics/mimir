@@ -195,11 +195,13 @@ if ( lapply(mixedtab,nrow) %>% unlist %>% sum == 0 ) { # handle list output or d
             threshold = cluster_threshold
         ) %>%
         dplyr::mutate_if(is.factor, as.character)
-}
-
-# handle case where mixed_clusters is a df with 0 rows instead of NULL (can't explain code causing this)
-if (nrow(mixed_clusters) == 0){
-    mixed_clusters <- NULL
+    
+    # handle case where mixed_clusters is a df with 0 rows instead of NULL (can't explain code causing this)
+    if ( is.data.frame(mixed_clusters) ){
+        if (nrow(mixed_clusters) == 0){
+            mixed_clusters <- NULL
+        }
+    }
 }
 
 # remove mixed cluster seqs

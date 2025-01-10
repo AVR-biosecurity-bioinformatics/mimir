@@ -8,8 +8,8 @@ process REMOVE_TAX_OUTLIERS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
-    val(cluster_tsv)
+    path(fasta_file)
+    path(cluster_tsv)
     val(db_file)
 
     output: 
@@ -46,7 +46,7 @@ process REMOVE_TAX_OUTLIERS {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """
