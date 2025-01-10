@@ -23,6 +23,7 @@ include { IMPORT_INTERNAL                                                 } from
 include { MATCH_BOLD                                                 } from '../modules/match_bold'
 // include { MATCH_INTERNAL                                                 } from '../modules/match_internal'
 include { MERGE_BOLD                                                 } from '../modules/merge_bold'
+include { MERGE_SPLITS                                                 } from '../modules/merge_splits'
 include { PARSE_MARKER                                                 } from '../modules/parse_marker'
 include { PARSE_TARGETS                                                 } from '../modules/parse_targets'
 include { PRUNE_GROUPS                                                 } from '../modules/prune_groups'
@@ -150,7 +151,7 @@ workflow TAXRETURN {
 
         //// split list of accessions for fetching in chunks
         QUERY_GENBANK.out.seq_acc
-            .splitText( by: params.chunk_size, file: true )
+            .splitText( by: params.input_chunk_size, file: true )
             .set { ch_genbank_acc_chunks }
 
         //// fetch Genbank sequences as .fasta + taxid list
@@ -235,7 +236,7 @@ workflow TAXRETURN {
 
         //// chunk BOLD sequences into smaller .fasta files for processing
         MERGE_BOLD.out.fasta
-            .splitFasta( by: params.chunk_size, file: true )
+            .splitFasta( by: params.input_chunk_size, file: true )
             .set { ch_bold_fasta }
 
         //// count number of sequences extracted from BOLD
@@ -281,7 +282,7 @@ workflow TAXRETURN {
         
         //// populate and chunk internal channel
         IMPORT_INTERNAL.out.fasta
-            .splitText( by: params.chunk_size, file: true )
+            .splitText( by: params.input_chunk_size, file: true )
             .set { ch_internal_fasta }
     }
     
@@ -496,7 +497,7 @@ workflow TAXRETURN {
 
     //// chunk input into SPLIT_BY_SPECIES to parallelise
     REMOVE_TAX_OUTLIERS.out.fasta
-        // .splitFasta ( by: 20000, file: true )
+        .splitFasta ( by: params.split_rank_chunk, file: true )
         .set { ch_split_species_input }
 
     //// split .fasta by taxonomic lineage down to species level
@@ -505,8 +506,13 @@ workflow TAXRETURN {
         "species"
     )
 
-    //// group species-level .fasta into batches for aligning and pruning
-    ch_split = SPLIT_BY_SPECIES.out.fasta
+    //// merge files from the same species across the different chunks
+    MERGE_SPLITS (
+        SPLIT_BY_SPECIES.out.fasta.collect()
+    )
+
+    //// group species-level .fasta files into batches for aligning and pruning
+    ch_split = MERGE_SPLITS.out.fasta
         .flatten()
         .buffer( size: 100, remainder: true ) 
 
