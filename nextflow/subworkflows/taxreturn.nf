@@ -35,6 +35,7 @@ include { REMOVE_TAX_OUTLIERS                                                 } 
 include { REMOVE_UNCLASSIFIED                                                 } from '../modules/remove_unclassified'
 include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
+include { SORT_BY_LINEAGE                                                } from '../modules/sort_by_lineage'
 include { SPLIT_BY_RANK as SPLIT_BY_SPECIES                                                } from '../modules/split_by_rank'
 include { SUMMARISE_COUNTS                                                 } from '../modules/summarise_counts'
 include { SUMMARISE_TAXA                                                 } from '../modules/summarise_taxa'
@@ -303,18 +304,18 @@ workflow TAXRETURN {
 
     //// count number of external input sequences
     ch_count_external = ch_genbank_fasta
-        .concat ( ch_bold_fasta )
-        .concat ( ch_mito_fasta )
-        .concat ( ch_genome_fasta )
+        .mix ( ch_bold_fasta )
+        .mix ( ch_mito_fasta )
+        .mix ( ch_genome_fasta )
         .countFasta() 
 
     //// concat output channels into a single channel for PHMM alignment
     ch_input_seqs
-        .concat ( ch_genbank_fasta )
-        .concat ( ch_bold_fasta )
-        .concat ( ch_mito_fasta )
-        .concat ( ch_genome_fasta )
-        .concat ( ch_internal_fasta )
+        .mix ( ch_genbank_fasta )
+        .mix ( ch_bold_fasta )
+        .mix ( ch_mito_fasta )
+        .mix ( ch_genome_fasta )
+        .mix ( ch_internal_fasta )
         .set { ch_input_seqs }  
 
     //// count number of total input sequences
@@ -495,8 +496,15 @@ workflow TAXRETURN {
     //// count number of sequences passing taxonomic decontamination
     ch_count_remove_tax_outliers = REMOVE_TAX_OUTLIERS.out.fasta.countFasta()
 
+    // ch_split_species_input.take( 3 ).view()
+
+    //// sort .fasta by lineage string to reduce the number of files that need to be merged after splitting 
+    SORT_BY_LINEAGE (
+        REMOVE_TAX_OUTLIERS.out.fasta
+    )
+
     //// chunk input into SPLIT_BY_SPECIES to parallelise
-    REMOVE_TAX_OUTLIERS.out.fasta
+    SORT_BY_LINEAGE.out.fasta
         .splitFasta ( by: params.split_rank_chunk, file: true )
         .set { ch_split_species_input }
 
@@ -506,19 +514,43 @@ workflow TAXRETURN {
         "species"
     )
 
+    //// group files with the same name
+    SPLIT_BY_SPECIES.out.fasta
+        .flatten()
+        .map { file ->
+            [ file.name , file ] }
+        .groupTuple( by: 0 )
+        // branch channel depending on the number of files in each tuple
+        .branch { file_name, file_list ->
+            no_merge: file_list.size() == 1
+                return file_list
+            merge: file_list.size() > 1
+                return file_list
+        } 
+        .set { ch_split_species_output }
+
+    //// group merging files into groups of 1000 species for merging
+    ch_split_species_output.merge
+        .buffer ( size: 1000, remainder: true )
+        .flatten()
+        .collect()
+        .set { ch_merge_splits_input }
+
     //// merge files from the same species across the different chunks
     MERGE_SPLITS (
-        SPLIT_BY_SPECIES.out.fasta.collect()
+        ch_merge_splits_input
     )
 
     //// group species-level .fasta files into batches for aligning and pruning
-    ch_split = MERGE_SPLITS.out.fasta
+    ch_split_species_output.no_merge
         .flatten()
+        .mix( MERGE_SPLITS.out.fasta.flatten())
         .buffer( size: 100, remainder: true ) 
+        .set { ch_align_input }
 
     //// align species-level .fasta in batches
     ALIGN_SPECIES (
-        ch_split
+        ch_align_input
     )
 
     //// remove sequence outliers from species clusters
