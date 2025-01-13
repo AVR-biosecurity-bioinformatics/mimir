@@ -3,99 +3,101 @@
 
 run pipeline
 ```
+NXF_VER=23.05-edge
+
 module load Java/17
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds
 
 # entrez key (example only; Apis + subgenus)
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 83321 --chunk_rank genus
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 83321 --chunk_rank genus
 
 # testing whole-order (Archaeognatha)
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 29994 --chunk_rank family
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 29994 --chunk_rank family
 
 # quick test across a small order (Neuroptera)
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7516 --chunk_rank family
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7516 --chunk_rank family
 
 # testing handling of chunk_rank above target taxon rank (Drosophila melanogaster vs family)
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --chunk_rank family
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --chunk_rank family
 
 # Drosophilinae chunked to genus
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 43845 --chunk_rank genus
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 43845 --chunk_rank genus
 
 # all insects as a test
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 50557 --chunk_rank family
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 50557 --chunk_rank family
 
 # testing BOLD DB downloading
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 50557 --chunk_rank family --bold_db_url "https://www.boldsystems.org/index.php/API_Datapackage?id=BOLD_Public.06-Sep-2024&uid=166f9f24c69328"
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 50557 --chunk_rank family --bold_db_url "https://www.boldsystems.org/index.php/API_Datapackage?id=BOLD_Public.06-Sep-2024&uid=166f9f24c69328"
 
 # testing BOLD DB pre-uploaded (works with both path and files)
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 50557 --chunk_rank family --bold_db_path ./input
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 50557 --chunk_rank family --bold_db_path ./input
 
 # testing new PARSE_TARGETS on valid BOLD taxon
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Diptera --target_ranks order --bold_db_path ./input
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Diptera --target_ranks order --bold_db_path ./input
 
 # testing PARSE_TARGETS on invalid BOLD taxon
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Bombycoidea --target_ranks superfamily --bold_db_path ./input
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Bombycoidea --target_ranks superfamily --bold_db_path ./input
 
 # testing BOLD code
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Bombycoidea --target_ranks superfamily --bold_db_path ./input
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Bombycoidea --target_ranks superfamily --bold_db_path ./input
 
 # quick test
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input
 
 # quick test 2 (Drosophila)
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7215 --target_ranks genus --bold_db_path ./input
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7215 --target_ranks genus --bold_db_path ./input
 
 # quick test 3 (Apis)
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7459 --target_ranks genus --bold_db_path ./input
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7459 --target_ranks genus --bold_db_path ./input
 
 # quick test 4 (Embioptera)
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 50657 --target_ranks order --bold_db_path ./input
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 50657 --target_ranks order --bold_db_path ./input
 
 # bactrocera test of clustering
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 27456 --target_ranks genus --bold_db_path ./input --cluster_rank species --cluster_threshold 0.99
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 27456 --target_ranks genus --bold_db_path ./input --cluster_rank species --cluster_threshold 0.99
 
 # Drosophilidae test of clustering
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214 --target_ranks family --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97 --marker COI
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214 --target_ranks family --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97 --marker COI
 
 # Orthoptera test
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 6993 --target_ranks order --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 6993 --target_ranks order --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
 
 # Acrididae test for NA taxids in input sequences (example KU184830.1)
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7002 --target_ranks family --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7002 --target_ranks family --bold_db_path ./input --cluster_rank genus --cluster_threshold 0.97
 
 ### testing markers
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI
 
 
 ### testing internal sequences (correct formatting)
 
 # Drosophila melanogaster + internal
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --cluster_rank species --cluster_threshold 0.99
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --cluster_rank species --cluster_threshold 0.99
 
 # test alignment on small 
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --add_root --aligned_output
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --add_root --aligned_output
 
 # test alignment on Neuroptera 
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --add_root --aligned_output
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --add_root --aligned_output
 
 ## small tests
 
 # Neuroptera (order), bold only
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --train_idtaxa
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --train_idtaxa
 
 # Drosophila melanogaster + internal, bold only
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
 
 # Aphis (genus), bold only
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 80764 --target_ranks genus --bold_db_path ./input --marker COI --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 80764 --target_ranks genus --bold_db_path ./input --marker COI --use_genbank false
 
 # Schizaphis (genus), bold only
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 13261 --target_ranks genus --bold_db_path ./input --marker COI --use_genbank false 
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 13261 --target_ranks genus --bold_db_path ./input --marker COI --use_genbank false 
 
 ## big tests
 
 # all aphids for aphid prey data (retain unclassified)
-NXF_VER=23.04.5 nextflow run . \
+NXF_VER=23.05.0-edge nextflow run . \
 	-profile basc_slurm,debug \
 	--phmm_model assets/folmer_fullength_model.rds \
 	--entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 \
@@ -109,7 +111,7 @@ NXF_VER=23.04.5 nextflow run . \
 	--train_idtaxa
 
 # all aphids for aphid prey data (remove unclassified)
-NXF_VER=23.04.5 nextflow run . \
+NXF_VER=23.05.0-edge nextflow run . \
 	-profile basc_slurm,debug \
 	--phmm_model assets/folmer_fullength_model.rds \
 	--entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 \
@@ -124,50 +126,50 @@ NXF_VER=23.04.5 nextflow run . \
     --remove_unclassified any_ranks
 
 # lepidoptera test, no internal (1 day requested) - 2111104 input
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root 
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root 
 
 # hemiptera test, no internal (1 day requested) - 741137 input - used 23.6G memory for REMOV_CONTAM for 696767 seqs
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root 
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root 
 
 # hemiptera BOLD only - 554389 input
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false
 
 # lepidoptera test, bold only - 1506300 input
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false 
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false 
 
 # bold only insecta - 10629784 input
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Insecta --target_ranks class --bold_db_path ./input --marker COI --add_root --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Insecta --target_ranks class --bold_db_path ./input --marker COI --add_root --use_genbank false
 
 ## memory tests for REMOVE_CONTAM
 
 # hemiptera test, no internal (1 day requested) - 741137 input - used 23.6G memory in REMOV_CONTAM for 696767 seqs
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root 
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root 
 
 # drosophila melanogaster - used 0.440G memory in REMOV_CONTAM for 137 seqs
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7227 --target_ranks species --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
 
 # drosophila genus - used 1.105G memory in REMOV_CONTAM for 19539 seqs
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7215 --target_ranks genus --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7215 --target_ranks genus --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
 
 # Drosophilidae family - used 2.89G memory in REMOV_CONTAM for 68469 seqs
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214  --target_ranks family --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214  --target_ranks family --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
 
 # clustalo header truncation test (genus that causes issue) 
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 299289 --target_ranks genus --bold_db_path ./input --marker COI --add_root --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 299289 --target_ranks genus --bold_db_path ./input --marker COI --add_root --use_genbank false
 
 ## time tests for complete pipeline (20/12/2024)
 # siphonaptera BOLD only - input 600 - 12m 
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7509 --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7509 --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false
 
 # hemiptera BOLD only - 554389 input - 1h44m
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false
 
 # insecta BOLD only, no unclassified - 10629757 input (2981685 full classification) - 1 day requested
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Insecta --target_ranks class --bold_db_path ./input --marker COI --add_root --use_genbank false --remove_unclassified any_ranks
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Insecta --target_ranks class --bold_db_path ./input --marker COI --add_root --use_genbank false --remove_unclassified any_ranks
 
 # memory usage tests (GB) - min: 0.44, mean: 0.64, median: 0.45, max: 1.75 (completed) for Insecta pre-GC additions
 #  usage for below test with Drosophilidae - min: 0.44, mean: 0.63, median: 0.59, max: 1.02 (completed) post-GC
-NXF_VER=23.04.5 nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214  --target_ranks family --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7214  --target_ranks family --bold_db_path ./input --marker COI --internal_seqs assets/internal_fake.fasta --use_genbank false
 
 
 ```
