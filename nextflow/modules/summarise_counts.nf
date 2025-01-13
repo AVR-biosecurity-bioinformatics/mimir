@@ -13,8 +13,7 @@ process SUMMARISE_COUNTS {
     val(count_external)
     val(count_input)
     val(count_remove_unclassified)
-    val(count_filter_phmm)
-    val(count_filter_stop)
+    val(count_filter_hmm)
     val(count_remove_exact)
     val(count_remove_tax_outliers)
     val(count_remove_seq_outliers)
@@ -43,8 +42,7 @@ process SUMMARISE_COUNTS {
     count_external = "${count_external}"
     count_input = "${count_input}"
     count_remove_unclassified = "${count_remove_unclassified}"
-    count_filter_phmm = "${count_filter_phmm}"
-    count_filter_stop = "${count_filter_stop}"
+    count_filter_hmm = "${count_filter_hmm}"
     count_remove_exact = "${count_remove_exact}"
     count_remove_tax_outliers = "${count_remove_tax_outliers}"
     count_remove_seq_outliers = "${count_remove_seq_outliers}"

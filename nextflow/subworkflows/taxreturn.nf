@@ -14,11 +14,13 @@ include { EXTRACT_BOLD                                                 } from '.
 // include { FETCH_BOLD                                                } from '../modules/fetch_bold'
 include { FETCH_GENBANK                                             } from '../modules/fetch_genbank'
 // include { FETCH_MITO                                                } from '../modules/fetch_mito'
+include { FILTER_HMM                                                 } from '../modules/filter_hmm'
 include { FILTER_PHMM                                                 } from '../modules/filter_phmm'
 include { FILTER_STOP                                                 } from '../modules/filter_stop'
 include { FORMAT_OUTPUT                                         } from '../modules/format_output'
 include { GET_BOLD_DATABASE                                         } from '../modules/get_bold_database'
 include { GET_NCBI_TAXONOMY                                         } from '../modules/get_ncbi_taxonomy'
+include { HMMSEARCH                                         } from '../modules/hmmsearch'
 include { IMPORT_INTERNAL                                                 } from '../modules/import_internal'
 include { MATCH_BOLD                                                 } from '../modules/match_bold'
 // include { MATCH_INTERNAL                                                 } from '../modules/match_internal'
@@ -40,6 +42,7 @@ include { SPLIT_BY_RANK as SPLIT_BY_SPECIES                                     
 include { SUMMARISE_COUNTS                                                 } from '../modules/summarise_counts'
 include { SUMMARISE_TAXA                                                 } from '../modules/summarise_taxa'
 include { TRAIN_IDTAXA                                                 } from '../modules/train_idtaxa'
+include { TRANSLATE_SEQUENCES                                                 } from '../modules/translate_sequences'
 include { TRIM_PHMM                                                 } from '../modules/trim_phmm'
 
 
@@ -354,11 +357,12 @@ workflow TAXRETURN {
             ch_input_seqs.map{ file -> [ file, params.remove_unclassified ] }
         )        
 
-        //// combine channel inputs for FILTER_PHMM
-        ch_filter_phmm_input = REMOVE_UNCLASSIFIED.out.fasta
+        //// combine channel inputs for TRANSLATE_SEQUENCES
+        ch_translation_input = REMOVE_UNCLASSIFIED.out.fasta
             .filter{ it.size()>0 } // remove empty files
-            .combine( ch_phmm ) // add phmm model
-            .combine( PARSE_MARKER.out.coding ) // combine coding value 
+            .combine( PARSE_MARKER.out.coding )  
+            .combine ( PARSE_MARKER.out.type )
+            .combine( GET_NCBI_TAXONOMY.out.ncbi_gencodes )
 
         ch_count_remove_unclassified = REMOVE_UNCLASSIFIED.out.fasta.countFasta()
 
@@ -373,81 +377,45 @@ workflow TAXRETURN {
         }
 
     } else {
-        ch_filter_phmm_input = ch_input_seqs
-            .combine( ch_phmm ) // add phmm model
-            .combine( PARSE_MARKER.out.coding ) // combine coding value 
+        //// combine channel inputs for TRANSLATE_SEQUENCES
+        ch_translation_input = ch_input_seqs
+            .combine( PARSE_MARKER.out.coding )  
+            .combine ( PARSE_MARKER.out.type )
+            .combine( GET_NCBI_TAXONOMY.out.ncbi_gencodes )
     }
 
+    //// translate sequences in all six frames
+    TRANSLATE_SEQUENCES (
+        ch_translation_input
+    )
 
+    //// search translated sequences for hits against PHMM model
+    HMMSEARCH (
+        TRANSLATE_SEQUENCES.out.translations,
+        PARSE_MARKER.out.phmm
+    )
 
-    //// filter sequences in each chunk using PHMM model
-    FILTER_PHMM (
-        ch_filter_phmm_input
+    //// filter sequences by HMMSEARCH output
+    FILTER_HMM (
+        HMMSEARCH.out.hmmer_output
     )
 
     //// combine and save intermediate file 
     if ( params.save_intermediate ) {
-        FILTER_PHMM.out.fasta
+        FILTER_HMM.out.fasta
             .collectFile ( 
-                name: "filter_phmm.fasta",
+                name: "filter_hmm.fasta",
                 storeDir: "./output/results",
                 cache: 'lenient'
             )
     }
 
     //// count number of sequences passing PHMM filter
-    ch_count_filter_phmm = FILTER_PHMM.out.fasta.countFasta() 
+    ch_count_filter_hmm = FILTER_HMM.out.fasta.countFasta() 
 
-    //// combine channel inputs for FILTER_STOP
-    ch_filter_stop_input = FILTER_PHMM.out.fasta
-        .filter{ it.size()>0 }
-        .combine( PARSE_MARKER.out.coding )
-        .combine( PARSE_MARKER.out.type )
-        .combine( GET_NCBI_TAXONOMY.out.ncbi_gencodes )
-
-    //// filter for stop codons (depending on marker)
-    FILTER_STOP (
-        ch_filter_stop_input
-    )
-
-    //// combine and save intermediate file 
-    if ( params.save_intermediate ) {
-        FILTER_STOP.out.fasta
-            .collectFile ( 
-                name: "filter_stop.fasta",
-                storeDir: "./output/results",
-                cache: 'lenient'
-            )
-    }
-
-    //// count number of sequences passing stop codon filter
-    ch_count_filter_stop = FILTER_STOP.out.fasta.countFasta() 
-
-    ch_filter_output = FILTER_STOP.out.fasta
+    ch_filter_output = FILTER_HMM.out.fasta
         .filter{ it.size()>0 } // remove empty files
-        .collect(sort: true)
-
-    // //// branch channels based on seq_source
-    // ch_filter_output
-    //     .branch {
-    //         bold: it[1] == "bold"
-    //         other: true
-    //     }
-    //     .set { ch_filter_branch }
-
-    /// NOTE: Not currently needed as taxids are used
-    // //// resolve taxonomic synonyms
-    // RESOLVE_SYNONYMS ( 
-    //     ch_filter_branch.other,
-    //     GET_NCBI_TAXONOMY.out.db_path
-    // )
-
-    // //// collect chunks into a list
-    // RESOLVE_SYNONYMS.out.seqs
-    //     .concat ( ch_filter_branch.bold )
-    //     .map { seqs, seq_source -> seqs } // remove seq_source
-    //     .collect()
-    //     .set { ch_chunks }
+        .collect()
 
     //// combine sequences into one .fasta file and dealign
     COMBINE_CHUNKS_1 ( 
@@ -640,8 +608,7 @@ workflow TAXRETURN {
         ch_count_external,
         ch_count_input,
         ch_count_remove_unclassified,
-        ch_count_filter_phmm,
-        ch_count_filter_stop,
+        ch_count_filter_hmm,
         ch_count_remove_exact,
         ch_count_remove_tax_outliers,
         ch_count_remove_seq_outliers,
@@ -660,8 +627,7 @@ workflow TAXRETURN {
     ch_count_external               .view { "ch_count_external: $it" }
     ch_count_input                  .view { "ch_count_input: $it" }
     ch_count_remove_unclassified    .view { "ch_count_remove_unclassified: $it" }
-    ch_count_filter_phmm            .view { "ch_count_filter_phmm: $it" }
-    ch_count_filter_stop            .view { "ch_count_filter_stop: $it" }
+    ch_count_filter_hmm             .view { "ch_count_filter_pmm: $it" }
     ch_count_remove_exact           .view { "ch_count_remove_exact: $it" }
     ch_count_remove_tax_outliers    .view { "ch_count_remove_tax_outliers: $it" }
     ch_count_remove_seq_outliers    .view { "ch_count_remove_seq_outliers: $it" }
