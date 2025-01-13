@@ -20,10 +20,16 @@ include { validateParameters; paramsHelp; paramsSummaryLog; samplesheetToList } 
 // 
 // from https://github.com/nextflow-io/nextflow/issues/1129
 
-if( !nextflow.version.matches('=23.04.5') ) {
+// if( !nextflow.version.matches('=23.04.5') ) {
+//     println " "
+//     println "*** ERROR ~ This pipeline currently requires Nextflow version 23.04.5 -- You are running version ${nextflow.version}. ***"
+//     error "*** You can use version 23.04.5 by appending 'NXF_VER=23.04.5' to the front of the 'nextflow run' command. ***"
+// }
+
+if( !nextflow.version.matches('=23.05.0-edge') ) {
     println " "
-    println "*** ERROR ~ This pipeline currently requires Nextflow version 23.04.5 -- You are running version ${nextflow.version}. ***"
-    error "*** You can use version 23.04.5 by appending 'NXF_VER=23.04.5' to the front of the 'nextflow run' command. ***"
+    println "*** ERROR ~ This pipeline currently requires Nextflow version 23.05.0-edge -- You are running version ${nextflow.version}. ***"
+    error "*** You can use version 23.05.0-edge by appending 'NXF_VER=23.05.0-edge' to the front of the 'nextflow run' command. ***"
 }
 
 def startupMessage() {
