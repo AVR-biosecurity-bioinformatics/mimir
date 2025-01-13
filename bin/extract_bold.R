@@ -64,6 +64,10 @@ bold_db <-
 bold_names <- readr::read_lines(bold_names_file)
 bold_rank <- readr::read_lines(bold_rank_file)
 
+# min and max sequence lengths
+min_length <- as.integer(params.min_length)
+max_length <- as.integer(params.max_length)
+
 ### run code
 
 # subset BOLD db
@@ -89,6 +93,9 @@ bold_db_targets <-
     } %>%
     # dealign nucleotides
     dplyr::mutate(nuc = stringr::str_remove_all(nuc, "\\-")) %>%
+    # filter nucleotide length
+    dplyr::mutate(nuc_basecount = as.integer(nuc_basecount)) %>%
+    dplyr::filter(nuc_basecount >= min_length, nuc_basecount <= max_length) %>%
     # select only columns of interest
     dplyr::select(
         processid, 
