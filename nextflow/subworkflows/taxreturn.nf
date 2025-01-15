@@ -595,7 +595,7 @@ workflow TAXRETURN {
 
     //// summarise number of taxa in database
     SUMMARISE_TAXA (
-        COMBINE_CHUNKS_2.out.fasta
+        FORMAT_OUTPUT.out.fasta
     )
 
     //// summarise the counts of sequences at each stage of the pipeline
@@ -627,7 +627,7 @@ workflow TAXRETURN {
     ch_count_external               .view { "ch_count_external: $it" }
     ch_count_input                  .view { "ch_count_input: $it" }
     ch_count_remove_unclassified    .view { "ch_count_remove_unclassified: $it" }
-    ch_count_filter_hmm             .view { "ch_count_filter_pmm: $it" }
+    ch_count_filter_hmm             .view { "ch_count_filter_hmm: $it" }
     ch_count_remove_exact           .view { "ch_count_remove_exact: $it" }
     ch_count_remove_tax_outliers    .view { "ch_count_remove_tax_outliers: $it" }
     ch_count_remove_seq_outliers    .view { "ch_count_remove_seq_outliers: $it" }
