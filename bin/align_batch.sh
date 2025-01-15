@@ -30,9 +30,12 @@ set -u
 #     fi
 # done
 
+# convert groovy list to bash list
+FILE_LIST=$(echo $3 | tr -d '[],')
+
 ### workaround clustalo truncating sequence headers >127 characters (which changes lineage string)
 ## this pre-truncates sequence headers then replaces with the original header after alignment
-for FILE in $3
+for FILE in $FILE_LIST
 do
     # get basename of file
     BASE=$( basename "$FILE" .fasta )
@@ -44,7 +47,7 @@ do
         # truncate headers to seqid + taxid
         cat $FILE | sed 's/;.*//' > ${BASE}.trunc.fasta
         # align file with truncated headers, keeping original order
-        echo "Aligning $FILE"
+        echo "Aligning ${BASE}.fasta"
         clustalo \
             -i ${BASE}.trunc.fasta \
             -o ${BASE}.aligned.trunc.fasta \
