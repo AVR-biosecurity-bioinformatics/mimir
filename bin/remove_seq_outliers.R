@@ -7,29 +7,29 @@ process_packages <- c(
     "R.utils",
     "RCurl",
     "ape",
-    "aphid",
+    # "aphid",
     "bold",
     "data.table",
     "data.tree",
     "dplyr",
-    "entropy",
-    "fs",
-    "furrr",
-    "future",
+    # "entropy",
+    # "fs",
+    # "furrr",
+    # "future",
     "httr",
     "kmer",
     "magrittr",
     "methods",
     "openssl",
     "parallel",
-    "phytools",
+    # "phytools",
     "purrr",
     "readr",
-    "rentrez",
-    "rvest",
+    # "rentrez",
+    # "rvest",
     "stats",
     "stringr",
-    "taxize",
+    # "taxize",
     "tibble",
     "tidyr",
     "utils",
@@ -73,7 +73,7 @@ dist_threshold <- as.numeric(dist_threshold)
 ## function to detect sequence outliers within a species
 remove_intraspp_dist_outliers <- function(seqs, removal_threshold = 0.05) {
     # convert sequences
-    seqs <- seqs %>% DNAbin2DNAstringset()
+    seqs <- seqs %>% DNAbin2DNAstringset(remove_gaps = FALSE) 
     # get species name
     spp_name <-  
         seqs %>%
@@ -86,40 +86,79 @@ remove_intraspp_dist_outliers <- function(seqs, removal_threshold = 0.05) {
         unique()
     # check only one species name
     if (length(spp_name) > 1) {stop(paste0("Multiple species detected when one needed: '",stringr::str_c(spp_name, sep = ","),"'"))}
-    # calculate intraspecific distance (only if alignment is of classified sequences and >1 sequences)
-    if (spp_name != "Unclassified" && length(seqs) > 1) {
+    # calculate intraspecific distance if...
+    if (
+      spp_name != "Unclassified" && # species is not Unclassified
+      length(unique(seqs)) > 1  # there are at least 2 unique sequences
+      ) {
         # check sequences are aligned by comparing lengths
         if(length(table(lengths(seqs))) > 1){ stop(paste0("Sequences for species '",spp_name,"' don't appear to be aligned"))} 
-        # get distance matrix
+        # get sequences as a tibble
+        seqs_tibble <- 
+          seqs %>% 
+          as.data.frame %>% 
+          tibble::as_tibble(rownames = "name") %>%
+          dplyr::rename(seq = x) 
+        # get counts of each unique sequence string, retaining a single representative
+        seqs_tibble_rep <-
+          seqs_tibble %>%
+          dplyr::group_by(seq) %>%
+          dplyr::mutate(n = n()) %>%
+          dplyr::slice(1) %>%
+          dplyr::ungroup()
+        # get vector of sequence weights (counts)
+        seqs_weights <- seqs_tibble_rep$n
+        # convert back to DNAStringset of representatives
+        seqs_reps <- tibble::deframe(seqs_tibble_rep[,1:2]) %>% DNAStringSet(.)
+        # get distance matrix for representative sequences
         message(paste0("Calculating distance matrix for species '",spp_name,"'"))
         distmat <- 
-            DECIPHER::DistanceMatrix(
-                seqs, 
-                includeTerminalGaps = FALSE, 
-                penalizeGapLetterMatches = TRUE,
-                #penalizeGapGapMatches = FALSE, 
-                correction = "Jukes-Cantor",
-                processors = 1, 
-                verbose = TRUE
-            )
-        # find index of most central element
-        center <- which.min(apply(distmat,1,median))
+          DECIPHER::DistanceMatrix(
+            seqs_reps, 
+            includeTerminalGaps = FALSE, 
+            penalizeGapLetterMatches = TRUE,
+            #penalizeGapGapMatches = FALSE, 
+            correction = "Jukes-Cantor",
+            processors = 1, 
+            verbose = TRUE
+          )
+        # find index of most central element, using weighted median
+        # code from: https://stackoverflow.com/questions/2748725/is-there-a-weighted-median-function
+        # works because weights are counts and therefore integers
+        center <- which.min(
+          apply(
+            distmat,
+            1,
+            function(x, w){
+              median(rep(x, times = w))
+            },
+            w = seqs_weights
+          )
+        )
         gc() # clean memory
         # distance from each element to most central element
         dd <- distmat[center,]
         # remove distance matrix from memory
         rm(distmat)
         gc()
+        # give distance to all non-representative sequences
+        seqs_dd <- 
+          seqs_tibble_rep %>%
+            dplyr::mutate(dd = dd) %>%
+            dplyr::select(seq, dd)
+        seqs_tibble_dd <- 
+          dplyr::left_join(seqs_tibble, seqs_dd, by = "seq")
+        if (!all(seqs_tibble_dd$name == names(seqs))){stop("Seqs not in the correct order when subsetting by distance")}
         # remove sequences above threshold
-        if(any(dd > removal_threshold)){
-            removed <- ape::as.DNAbin(seqs[dd > removal_threshold]) %>% ape::del.gaps() # remove alignment
-            retained <- ape::as.DNAbin(seqs[dd <= removal_threshold]) %>% ape::del.gaps() # remove alignment
+        if(any(seqs_tibble_dd$dd > removal_threshold)){
+            removed <- ape::as.DNAbin(seqs[seqs_tibble_dd$dd > removal_threshold]) %>% ape::del.gaps() # remove alignment
+            retained <- ape::as.DNAbin(seqs[seqs_tibble_dd$dd <= removal_threshold]) %>% ape::del.gaps() # remove alignment
         } else {
             removed <- NULL
             retained <- ape::as.DNAbin(seqs) %>% ape::del.gaps() # remove alignment
         }
     } else {
-        # if sequences are unclassified, save them all as retained
+        # if sequences are not to be compared, save them all as retained
         removed <- NULL
         retained <- ape::as.DNAbin(seqs) %>% ape::del.gaps() # remove alignment
     }
