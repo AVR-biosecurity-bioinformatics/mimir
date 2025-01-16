@@ -423,7 +423,12 @@ workflow TAXRETURN {
 
     //// filter sequences by HMMSEARCH output
     FILTER_HMM (
-        HMMSEARCH.out.hmmer_output
+        HMMSEARCH.out.hmmer_output,
+        params.hmm_max_evalue,
+        params.hmm_min_score,
+        params.hmm_max_hits,
+        params.hmm_min_acc,
+        params.hmm_max_gap
     )
 
     //// combine and save intermediate file 
@@ -435,6 +440,30 @@ workflow TAXRETURN {
                 cache: 'lenient'
             )
     }
+
+    //// combine and save excluded sequences
+    if ( params.save_intermediate ) {
+        FILTER_HMM.out.removed_fasta
+            .collectFile ( 
+                name: "filter_hmm.removed.fasta",
+                storeDir: "./output/results",
+                cache: 'lenient'
+            )
+    }
+
+    //// combine and save excluded sequence table
+    if ( params.save_intermediate ) {
+        FILTER_HMM.out.removed_csv
+            .collectFile ( 
+                name: "filter_hmm.removed.csv",
+                storeDir: "./output/results",
+                cache: 'lenient',
+                keepHeader: true, 
+                skip: 1
+            )
+    }
+
+    ////
 
     //// count number of sequences passing PHMM filter
     ch_count_filter_hmm = FILTER_HMM.out.fasta.countFasta().combine(["filter_hmm"]) 

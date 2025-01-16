@@ -44,7 +44,12 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "fasta_file",
-    "hmmer_output"
+    "hmmer_output",
+    "hmm_max_evalue", 
+    "hmm_min_score", 
+    "hmm_max_hits",   
+    "hmm_min_acc",   
+    "hmm_max_gap"    
 )
 lapply(nf_vars, nf_var_check)
 
@@ -54,6 +59,15 @@ seqs <- ape::read.FASTA(fasta_file)
 
 # read in hmmer_output
 domtblout <- readr::read_lines(hmmer_output, lazy=FALSE, progress=FALSE) 
+
+# filtering parameters
+evalue_threshold <- hmm_max_evalue %>% as.numeric()
+score_threshold <- hmm_min_score %>% as.numeric()
+domain_threshold <- hmm_max_hits %>% as.integer() # max allowed domains (1 is safe)
+acc_threshold <- hmm_min_acc %>% as.numeric()
+terminalgap_threshold <- hmm_max_gap %>% as.integer() # terminal gap is the distance between the beginning or end of the envelope/HMM and the min/max of the target or HMM
+## NOTE: terminal gaps above the threshold on the same side (start or end) for both the envelope and HMM is expected in the case of frameshifts
+## More extensive frameshift detection could be done with alignments to other sequences and removing those with gaps not in multiples of three
 
 ### run code
 
@@ -129,77 +143,69 @@ hits <-
     # reformat new columns
     dplyr::mutate(
         frame = as.integer(frame),
-        stop_codons = as.character(stop_codons)
+        stop_codons = dplyr::na_if(stop_codons, "") %>% as.character() # empty value to NA
         ) %>%
     # group by sequence, arranging from best score to worst score (if there are multiple hits per frame), keeping best hit
     dplyr::group_by(target_name) %>%
     dplyr::arrange(desc(score)) %>%
     dplyr::slice(1) %>%
-    dplyr::ungroup() 
+    dplyr::ungroup() %>%
+    # calculate envelope and hmm gaps
+    dplyr::mutate(
+        env_start_gap = env_from - 1,
+        env_end_gap = target_len - env_to,
+        hmm_start_gap = hmm_from - 1,
+        hmm_end_gap = query_len - hmm_to
+    ) %>%
+    # work out if any stop codons lie within the hit envelope
+    tidyr::separate_longer_delim(
+        cols = stop_codons,
+        delim = "|"
+    ) %>%
+    dplyr::mutate(stop_codons = as.integer(stop_codons)) %>%
+    dplyr::mutate(
+        within_hit = dplyr::case_when(
+            between(stop_codons, env_from, env_to) ~ TRUE,
+            .default = FALSE
+        )
+    ) %>%
+    dplyr::group_by(target_name, frame) %>%
+    dplyr::mutate(
+        stop_codon_hit = any(within_hit), # TRUE if any stop codons found in hit envelope
+        stop_codons = paste(stop_codons, collapse = "|"), # "un-separate" the stop_codons column
+        stop_codons = dplyr::na_if(stop_codons, "NA")
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(-within_hit) %>%
+    dplyr::distinct() 
 
 # check hits are all in sequence file
 if(!all(hits$target_name %in% names(seqs))){
     stop("One or more sequence names in HMMER output table do not match names in input .fasta file")
 }
 
-## make these filters parameters ### TODO
-evalue_threshold <- 1e-10
-score_threshold <- 100
-domain_threshold <- 1 # max allowed domains (1 is safe)
-acc_threshold <- 0.85
-terminalgap_threshold <- 10 # terminal gap is the distance between the beginning or end of the envelope/HMM and the min/max of the target or HMM
-
-## NOTE: terminal gaps above the threshold on the same side (start or end) for both the envelope and HMM is expected in the case of frameshifts
-## More extensive frameshift detection could be done with alignments to other sequences and removing those with gaps not in multiples of three
-
 # filter hits based on various thresholds
-hits_filtered <- 
+hits_retained <- 
     hits %>%
-    # calculate envelope and hmm coverages and gaps
-    dplyr::mutate(
-        env_start_gap = env_from - 1,
-        env_end_gap = target_len - env_to,
-        hmm_start_gap = hmm_from - 1,
-        hmm_end_gap = query_len - hmm_to
-    ) %>%
     # remove sequences that don't meet all criteria
     dplyr::filter(
         evalue_i <= evalue_threshold & 
         score >= score_threshold & 
         domain_total <= domain_threshold & 
         acc >= acc_threshold &
-        !( hmm_start_gap >= terminalgap_threshold & env_start_gap >= terminalgap_threshold ) & # both need to be fulfilled 
-        !( hmm_end_gap >= terminalgap_threshold & env_end_gap >= terminalgap_threshold ) 
-    )
-
-# save data for hits that were removed after filtering
-excluded <- 
-    hits %>%
-    # calculate envelope and hmm coverages and gaps
-    dplyr::mutate(
-        env_start_gap = env_from - 1,
-        env_end_gap = target_len - env_to,
-        hmm_start_gap = hmm_from - 1,
-        hmm_end_gap = query_len - hmm_to
-    ) %>%
-    # remove sequences that don't meet all criteria
-    dplyr::filter(
-        evalue_i > evalue_threshold |
-        score < score_threshold | 
-        domain_total > domain_threshold |
-        acc < acc_threshold |
-        ( hmm_start_gap >= terminalgap_threshold & env_start_gap >= terminalgap_threshold ) | # both need to be fulfilled 
-        ( hmm_end_gap >= terminalgap_threshold & env_end_gap >= terminalgap_threshold ) 
+        stop_codon_hit == FALSE &
+        !( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ) & # both need to be fulfilled 
+        !( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ) 
     )
 
 # forward strand hits
 hits_fwd <- 
-    hits_filtered %>%
+    hits_retained %>%
     dplyr::filter(frame > 0)
 
 # reverse strand hits
 hits_rev <- 
-    hits_filtered %>%
+    hits_retained %>%
     dplyr::filter(frame < 0)
 
 # fwd seqs
@@ -207,9 +213,6 @@ seqs_fwd <- seqs[names(seqs) %in% hits_fwd$target_name]
 
 # rev seqs
 seqs_rev <- seqs[names(seqs) %in% hits_rev$target_name]
-
-# seqs without a significant hit (either no hit or an excluded hit)
-seqs_nohit <- seqs[!names(seqs) %in% c(hits_fwd$target_name, hits_rev$target_name)]
 
 # revcomp the seqs with reverse strand hits
 seqs_revcomp <- 
@@ -228,7 +231,7 @@ seq_lengths <-
 
 # calculate positions of hits on nucleotide sequence
 hit_locations <- 
-    hits_filtered %>%
+    hits_retained %>%
     # reorder tibble to match order of combined DNAbin
     dplyr::arrange(
         factor(target_name, levels = names(seqs_combined))
@@ -258,13 +261,69 @@ if (!all(unname(lengths(seqs_subset)) == hit_locations$pad_len)){
     stop("Actual subset sequence lengths are not the same as calculated subset sequence lengths")
 }
 
+###
+
+# seqs without a significant hit (either no hit or an excluded hit)
+seqs_nohit <- seqs[!names(seqs) %in% c(hits_fwd$target_name, hits_rev$target_name)]
+
+# save data for hits that were removed after filtering
+seqs_removed_tibble <- 
+    hits %>%
+    # remove sequences that don't meet all criteria
+    dplyr::filter(
+        evalue_i > evalue_threshold |
+        score < score_threshold | 
+        domain_total > domain_threshold |
+        acc < acc_threshold |
+        stop_codon_hit == TRUE |
+        ( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ) | # both need to be fulfilled 
+        ( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ) 
+    ) %>%
+    # which filters were failed
+    dplyr::mutate(
+        fail_max_evalue = evalue_i > evalue_threshold,
+        fail_min_score =  score < score_threshold,
+        fail_max_hits = domain_total > domain_threshold ,
+        fail_min_acc = acc < acc_threshold ,
+        fail_max_gap_start = ( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ),
+        fail_max_gap_end = ( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ),
+        fail_stop_codon = stop_codon_hit == TRUE
+    ) %>%
+    dplyr::mutate(removal_type = "excluded_hit", .after = stop_codon_hit) %>%
+    # add names of sequences without a hit
+    tibble::add_row(
+        target_name = names(seqs_nohit)[!names(seqs_nohit) %in% .$target_name], 
+        removal_type = "no_hit"
+    )
+
+readr::write_csv(seqs_removed_tibble, file = "removed.csv")
+
+### outputs
+
+
+# check all sequences are either retained or removed
+if ( length(seqs_subset) + length(seqs_nohit) != length(seqs) ){
+    stop("ERROR: Sum of retained and removed sequences does not equal the number of input sequences")
+}
+
 # write fasta of subsetted sequences
 if ( !is.null(seqs_subset) && length(seqs_subset) > 0 ){
     write_fasta(
         seqs_subset, 
-        file = paste0("filtered.fasta"), 
+        file = paste0("retained.fasta"), 
         compress = FALSE
         )
 } else {
-    file.create(paste0("filtered.fasta"))
+    file.create(paste0("retained.fasta"))
+}
+
+# write fasta of excluded (filtered-out) sequences
+if ( !is.null(seqs_nohit) && length(seqs_nohit) > 0 ){
+    write_fasta(
+        seqs_nohit, 
+        file = paste0("removed.fasta"), 
+        compress = FALSE
+        )
+} else {
+    file.create(paste0("removed.fasta"))
 }

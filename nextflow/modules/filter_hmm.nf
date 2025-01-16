@@ -6,9 +6,17 @@ process FILTER_HMM {
 
     input:
     tuple path(fasta_file), path(hmmer_output, name: 'hmmer_domtblout.txt')
+    val(hmm_max_evalue)
+    val(hmm_min_score)
+    val(hmm_max_hits)
+    val(hmm_min_acc)
+    val(hmm_max_gap)
 
     output: 
-    path("filtered.fasta"),                            emit: fasta
+    path("retained.fasta"),                            emit: fasta
+    path("removed.fasta"),                            emit: removed_fasta
+    path("removed.csv"),                            emit: removed_csv
+
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -22,7 +30,12 @@ process FILTER_HMM {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     fasta_file =             "${fasta_file}"
-    hmmer_output =        "${hmmer_output}"
+    hmmer_output =          "${hmmer_output}"
+    hmm_max_evalue =        "${hmm_max_evalue}"
+    hmm_min_score =         "${hmm_min_score}"
+    hmm_max_hits =          "${hmm_max_hits}"
+    hmm_min_acc =           "${hmm_min_acc}"
+    hmm_max_gap =           "${hmm_max_gap}"
 
     ## global variables
     projectDir = "$projectDir"
