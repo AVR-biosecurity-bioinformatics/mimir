@@ -15,8 +15,8 @@ include { EXTRACT_BOLD                                                 } from '.
 include { FETCH_GENBANK                                             } from '../modules/fetch_genbank'
 // include { FETCH_MITO                                                } from '../modules/fetch_mito'
 include { FILTER_HMM                                                 } from '../modules/filter_hmm'
-include { FILTER_PHMM                                                 } from '../modules/filter_phmm'
-include { FILTER_STOP                                                 } from '../modules/filter_stop'
+// include { FILTER_PHMM                                                 } from '../modules/filter_phmm'
+// include { FILTER_STOP                                                 } from '../modules/filter_stop'
 include { FORMAT_OUTPUT                                         } from '../modules/format_output'
 include { GET_BOLD_DATABASE                                         } from '../modules/get_bold_database'
 include { GET_NCBI_TAXONOMY                                         } from '../modules/get_ncbi_taxonomy'
@@ -31,6 +31,7 @@ include { PARSE_TARGETS                                                 } from '
 include { PRUNE_GROUPS                                                 } from '../modules/prune_groups'
 include { QUERY_GENBANK                                                 } from '../modules/query_genbank'
 include { REFORMAT_NAMES                                                 } from '../modules/reformat_names'
+include { REMOVE_AMBIGUOUS                                                 } from '../modules/remove_ambiguous'
 include { REMOVE_EXACT_DUPLICATES                                                 } from '../modules/remove_exact_duplicates'
 include { REMOVE_SEQ_OUTLIERS                                                 } from '../modules/remove_seq_outliers'
 include { REMOVE_TAX_OUTLIERS                                                 } from '../modules/remove_tax_outliers'
@@ -43,7 +44,7 @@ include { SUMMARISE_COUNTS                                                 } fro
 include { SUMMARISE_TAXA                                                 } from '../modules/summarise_taxa'
 include { TRAIN_IDTAXA                                                 } from '../modules/train_idtaxa'
 include { TRANSLATE_SEQUENCES                                                 } from '../modules/translate_sequences'
-include { TRIM_PHMM                                                 } from '../modules/trim_phmm'
+// include { TRIM_PHMM                                                 } from '../modules/trim_phmm'
 
 
 
@@ -80,9 +81,6 @@ workflow TAXRETURN {
     } else {
         error "*** '--marker' must be specified ***"
     }
-
-    //// genetic code
-    if ( !params.genetic_code ){ error "*** '--genetic_code' must be specified ***" }
 
     //// ENTREZ key channel parsing
     ch_entrez_key = params.entrez_key ?: "no_key"
@@ -182,7 +180,7 @@ workflow TAXRETURN {
     
 
     //// count number of sequences downloaded from Genbank
-    ch_count_genbank = ch_genbank_fasta.countFasta()
+    ch_count_genbank = ch_genbank_fasta.countFasta().combine(["genbank"])
     
     /*
     Getting BOLD sequences and matching them to the NCBI database
@@ -243,8 +241,7 @@ workflow TAXRETURN {
             .splitFasta( by: params.input_chunk_size, file: true )
             .set { ch_bold_fasta }
 
-        //// count number of sequences extracted from BOLD
-        ch_count_bold = ch_bold_fasta.countFasta()
+        
 
     } else {
         //// extract sequences by querying BOLD API
@@ -254,18 +251,16 @@ workflow TAXRETURN {
 
         // )
         
-        ch_count_bold = Channel.empty()
-        
-        //// TODO: Need to make sure this outputs same tibble format as EXTRACT_BOLD
     }
 
-
+    //// count number of BOLD sequences
+    ch_count_bold = ch_bold_fasta.countFasta().combine(["bold"])
 
     //// count number of mitochondrial sequences 
-    ch_count_mito = ch_mito_fasta.countFasta()    
+    ch_count_mito = ch_mito_fasta.countFasta().combine(["mito"])
 
     //// count number of genome assembly-derived sequences 
-    ch_count_genome = ch_genome_fasta.countFasta()
+    ch_count_genome = ch_genome_fasta.countFasta().combine(["genome"])
 
 
 
@@ -301,7 +296,7 @@ workflow TAXRETURN {
     ch_internal_names = ch_internal_names.ifEmpty('no_file').first()
     
     //// count number of internal sequences 
-    ch_count_internal = ch_internal_fasta.countFasta()
+    ch_count_internal = ch_internal_fasta.countFasta().combine(["internal"])
 
 
 
@@ -310,7 +305,8 @@ workflow TAXRETURN {
         .mix ( ch_bold_fasta )
         .mix ( ch_mito_fasta )
         .mix ( ch_genome_fasta )
-        .countFasta() 
+        .countFasta()
+        .combine(["external"])
 
     //// concat output channels into a single channel for PHMM alignment
     ch_input_seqs
@@ -322,7 +318,7 @@ workflow TAXRETURN {
         .set { ch_input_seqs }  
 
     //// count number of total input sequences
-    ch_count_input = ch_input_seqs.countFasta()      
+    ch_count_input = ch_input_seqs.countFasta().combine(["input"])      
 
     //// combine and save all unfiltered input sequences a single .fasta 
     if ( params.save_input || params.save_intermediate ) {
@@ -333,38 +329,34 @@ workflow TAXRETURN {
             )
     }
 
-    //// trim model to primer sequences
-    if ( params.trim_phmm ) {
-        //// throw error if either primer sequence is not supplied
-        if ( !params.primer_fwd || !params.primer_rev ) {
-            println "*** params.primer_fwd = '$params.primer_fwd'; params.primer_rev = '$params.primer_rev' ***"
-            error "*** ERROR: Both primer sequences must be given if '--trim_phmm' is set to 'true' ***"
-        }
+    // //// trim model to primer sequences
+    // if ( params.trim_phmm ) {
+    //     //// throw error if either primer sequence is not supplied
+    //     if ( !params.primer_fwd || !params.primer_rev ) {
+    //         println "*** params.primer_fwd = '$params.primer_fwd'; params.primer_rev = '$params.primer_rev' ***"
+    //         error "*** ERROR: Both primer sequences must be given if '--trim_phmm' is set to 'true' ***"
+    //     }
         
-        TRIM_PHMM (
-            ch_phmm, 
-            params.primer_fwd,
-            params.primer_rev,
-            params.remove_primers
-        )        
-    }
+    //     TRIM_PHMM (
+    //         ch_phmm, 
+    //         params.primer_fwd,
+    //         params.primer_rev,
+    //         params.remove_primers
+    //     )        
+    // }
 
-    ch_count_remove_unclassified = Channel.empty()
+    ////
+    ch_input_seqs
+        .set { ch_remove_unclassified_input }
 
     //// remove unclassified sequences
     if ( params.remove_unclassified == "all_ranks" || params.remove_unclassified == "any_ranks" || params.remove_unclassified == "terminal" ) {
         REMOVE_UNCLASSIFIED (
-            ch_input_seqs.map{ file -> [ file, params.remove_unclassified ] }
+            ch_remove_unclassified_input,
+            params.remove_unclassified
         )        
 
-        //// combine channel inputs for TRANSLATE_SEQUENCES
-        ch_translation_input = REMOVE_UNCLASSIFIED.out.fasta
-            .filter{ it.size()>0 } // remove empty files
-            .combine( PARSE_MARKER.out.coding )  
-            .combine ( PARSE_MARKER.out.type )
-            .combine( GET_NCBI_TAXONOMY.out.ncbi_gencodes )
-
-        ch_count_remove_unclassified = REMOVE_UNCLASSIFIED.out.fasta.countFasta()
+        ch_count_remove_unclassified = REMOVE_UNCLASSIFIED.out.fasta.countFasta().combine(["remove_unclassified"])
 
         //// combine and save intermediate file 
         if ( params.save_intermediate ) {
@@ -376,17 +368,51 @@ workflow TAXRETURN {
                 )
         }
 
+        REMOVE_UNCLASSIFIED.out.fasta
+            .set { ch_remove_ambiguous_input }
+
     } else {
-        //// combine channel inputs for TRANSLATE_SEQUENCES
-        ch_translation_input = ch_input_seqs
-            .combine( PARSE_MARKER.out.coding )  
-            .combine ( PARSE_MARKER.out.type )
-            .combine( GET_NCBI_TAXONOMY.out.ncbi_gencodes )
+
+        ch_count_remove_unclassified = Channel.of(["NA", "remove_unclassified"])
+
+        ch_remove_unclassified_input
+            .set { ch_remove_ambiguous_input }
+    }
+    //// remove ambiguous 
+    if ( params.remove_ambiguous ){
+        REMOVE_AMBIGUOUS (
+            ch_remove_ambiguous_input
+        )
+
+        ch_count_remove_ambiguous = REMOVE_AMBIGUOUS.out.fasta.countFasta().combine(["remove_ambiguous"])
+
+        //// combine and save intermediate file 
+        if ( params.save_intermediate ) {
+            REMOVE_AMBIGUOUS.out.fasta
+                .collectFile ( 
+                    name: "remove_ambiguous.fasta",
+                    storeDir: "./output/results",
+                    cache: 'lenient'
+                )
+        }
+
+        REMOVE_AMBIGUOUS.out.fasta
+            .set { ch_translate_sequences_input }
+
+    } else {
+
+        ch_count_remove_ambiguous = Channel.of(["NA", "remove_ambiguous"])
+
+        ch_remove_ambiguous_input
+            .set { ch_translate_sequences_input }
     }
 
     //// translate sequences in all six frames
     TRANSLATE_SEQUENCES (
-        ch_translation_input
+        ch_translate_sequences_input,
+        PARSE_MARKER.out.coding,
+        PARSE_MARKER.out.type,
+        GET_NCBI_TAXONOMY.out.ncbi_gencodes
     )
 
     //// search translated sequences for hits against PHMM model
@@ -411,7 +437,7 @@ workflow TAXRETURN {
     }
 
     //// count number of sequences passing PHMM filter
-    ch_count_filter_hmm = FILTER_HMM.out.fasta.countFasta() 
+    ch_count_filter_hmm = FILTER_HMM.out.fasta.countFasta().combine(["filter_hmm"]) 
 
     ch_filter_output = FILTER_HMM.out.fasta
         .filter{ it.size()>0 } // remove empty files
@@ -438,7 +464,7 @@ workflow TAXRETURN {
     }
 
     //// count number of sequences passing exact deduplication
-    ch_count_remove_exact = REMOVE_EXACT_DUPLICATES.out.fasta.countFasta()
+    ch_count_remove_exact = REMOVE_EXACT_DUPLICATES.out.fasta.countFasta().combine(["remove_exact"])
 
     //// cluster sequences into OTUs with mmseqs2
     CLUSTER_SEQUENCES (
@@ -462,7 +488,7 @@ workflow TAXRETURN {
     }
 
     //// count number of sequences passing taxonomic decontamination
-    ch_count_remove_tax_outliers = REMOVE_TAX_OUTLIERS.out.fasta.countFasta()
+    ch_count_remove_tax_outliers = REMOVE_TAX_OUTLIERS.out.fasta.countFasta().combine(["remove_tax_outliers"])
 
     // ch_split_species_input.take( 3 ).view()
 
@@ -512,7 +538,7 @@ workflow TAXRETURN {
     //// group species-level .fasta files into batches for aligning and pruning
     ch_split_species_output.no_merge
         .flatten()
-        .mix( MERGE_SPLITS.out.fasta.flatten())
+        .mix( MERGE_SPLITS.out.fasta.flatten() )
         .buffer( size: 100, remainder: true ) 
         .set { ch_align_input }
 
@@ -538,7 +564,7 @@ workflow TAXRETURN {
     }
 
     //// count number of sequences passing taxonomic decontamination
-    ch_count_remove_seq_outliers = REMOVE_SEQ_OUTLIERS.out.retained_fasta.flatten().countFasta()
+    ch_count_remove_seq_outliers = REMOVE_SEQ_OUTLIERS.out.retained_fasta.flatten().countFasta().combine(["remove_seq_outliers"])
 
     //// prune large groups, preferentially retaining internal sequences
     PRUNE_GROUPS (
@@ -556,7 +582,7 @@ workflow TAXRETURN {
         )
 
     //// count number of sequences passing group pruning
-    ch_count_prune_groups = PRUNE_GROUPS.out.fasta.flatten().countFasta()
+    ch_count_prune_groups = PRUNE_GROUPS.out.fasta.flatten().countFasta().combine(["prune_groups"])
 
     //// combine pruned .fasta files into a single file
     COMBINE_CHUNKS_2 ( 
@@ -568,8 +594,8 @@ workflow TAXRETURN {
     Database output
     */
 
-    //// optional: align final database
-    if ( params.aligned_output ) {
+    //// trim to primers based on alignment
+    if ( params.trim_to_primers ) {
     
         ALIGN_OUTPUT (
             COMBINE_CHUNKS_2.out.fasta
@@ -583,7 +609,8 @@ workflow TAXRETURN {
 
     //// format database output
     FORMAT_OUTPUT (
-        ch_formatting_input
+        ch_formatting_input,
+        params.aligned_output
     )
 
     //// save final output
@@ -598,40 +625,47 @@ workflow TAXRETURN {
         FORMAT_OUTPUT.out.fasta
     )
 
-    //// summarise the counts of sequences at each stage of the pipeline
-    SUMMARISE_COUNTS (
-        ch_count_genbank,
-        ch_count_bold,
-        ch_count_mito,
-        ch_count_genome,
-        ch_count_internal,
-        ch_count_external,
-        ch_count_input,
-        ch_count_remove_unclassified,
-        ch_count_filter_hmm,
-        ch_count_remove_exact,
-        ch_count_remove_tax_outliers,
-        ch_count_remove_seq_outliers,
-        ch_count_prune_groups
-    )
-
-    //// channel map for sequence counts
-    
-
     //// sequence counts for debugging
-    ch_count_genbank                .view { "ch_count_genbank: $it" }
-    ch_count_bold                   .view { "ch_count_bold: $it" }
-    ch_count_mito                   .view { "ch_count_mito: $it" }
-    ch_count_genome                 .view { "ch_count_genome: $it" }
-    ch_count_internal               .view { "ch_count_internal: $it" }
-    ch_count_external               .view { "ch_count_external: $it" }
-    ch_count_input                  .view { "ch_count_input: $it" }
-    ch_count_remove_unclassified    .view { "ch_count_remove_unclassified: $it" }
-    ch_count_filter_hmm             .view { "ch_count_filter_hmm: $it" }
-    ch_count_remove_exact           .view { "ch_count_remove_exact: $it" }
-    ch_count_remove_tax_outliers    .view { "ch_count_remove_tax_outliers: $it" }
-    ch_count_remove_seq_outliers    .view { "ch_count_remove_seq_outliers: $it" }
-    ch_count_prune_groups           .view { "ch_count_prune_groups: $it" }
+    ch_count_genbank                .view{ "${it[1]}: ${it[0]}" }
+    ch_count_bold                   .view{ "${it[1]}: ${it[0]}" }
+    ch_count_mito                   .view{ "${it[1]}: ${it[0]}" }
+    ch_count_genome                 .view{ "${it[1]}: ${it[0]}" }
+    ch_count_internal               .view{ "${it[1]}: ${it[0]}" }
+    ch_count_external               .view{ "${it[1]}: ${it[0]}" }
+    ch_count_input                  .view{ "${it[1]}: ${it[0]}" }
+    ch_count_remove_unclassified    .view{ "${it[1]}: ${it[0]}" }
+    ch_count_remove_ambiguous       .view{ "${it[1]}: ${it[0]}" }
+    ch_count_filter_hmm             .view{ "${it[1]}: ${it[0]}" }
+    ch_count_remove_exact           .view{ "${it[1]}: ${it[0]}" }
+    ch_count_remove_tax_outliers    .view{ "${it[1]}: ${it[0]}" }
+    ch_count_remove_seq_outliers    .view{ "${it[1]}: ${it[0]}" }
+    ch_count_prune_groups           .view{ "${it[1]}: ${it[0]}" }
+
+    //// collect count channels into a csv
+    ch_counts_file = Channel.empty()
+    ch_counts_file
+        .concat ( ch_count_genbank                  .combine([1]) )
+        .concat ( ch_count_bold                     .combine([2]) )
+        .concat ( ch_count_mito                     .combine([3]) )
+        .concat ( ch_count_genome                   .combine([4]) )
+        .concat ( ch_count_internal                 .combine([5]) )
+        .concat ( ch_count_external                 .combine([6]) )
+        .concat ( ch_count_input                    .combine([7]) )
+        .concat ( ch_count_remove_unclassified      .combine([8]) )
+        .concat ( ch_count_remove_ambiguous         .combine([9]) )
+        .concat ( ch_count_filter_hmm               .combine([10]) )
+        .concat ( ch_count_remove_exact             .combine([11]) )
+        .concat ( ch_count_remove_tax_outliers      .combine([12]) )
+        .concat ( ch_count_remove_seq_outliers      .combine([13]) )
+        .concat ( ch_count_prune_groups             .combine([14]) )
+        .map { sequences, process, order -> "$sequences,$process,$order" }
+        .collectFile ( name: 'counts.csv', seed: "sequences,process,order", newLine: true )
+        .set { ch_counts_file }
+    
+    //// summarise the count of sequences output from stage of the pipeline
+    SUMMARISE_COUNTS (
+        ch_counts_file
+    )
 
     //// train IDTAXA model
     if ( params.train_idtaxa ) {

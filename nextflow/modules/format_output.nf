@@ -6,6 +6,7 @@ process FORMAT_OUTPUT {
 
     input:
     val(fasta_file)
+    val(aligned_output)
 
     output: 
     path("final_database.rds"),                              emit: seqs

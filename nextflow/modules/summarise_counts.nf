@@ -5,19 +5,7 @@ process SUMMARISE_COUNTS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(count_genbank)
-    val(count_bold)
-    val(count_mito)
-    val(count_genome)
-    val(count_internal)
-    val(count_external)
-    val(count_input)
-    val(count_remove_unclassified)
-    val(count_filter_hmm)
-    val(count_remove_exact)
-    val(count_remove_tax_outliers)
-    val(count_remove_seq_outliers)
-    val(count_prune_groups)
+    path(counts_file, name: 'counts.csv')
 
     output: 
     path("*.csv"),                  emit: csv
@@ -34,19 +22,7 @@ process SUMMARISE_COUNTS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    count_genbank = "${count_genbank}"
-    count_bold = "${count_bold}"
-    count_mito = "${count_mito}"
-    count_genome = "${count_genome}"
-    count_internal = "${count_internal}"
-    count_external = "${count_external}"
-    count_input = "${count_input}"
-    count_remove_unclassified = "${count_remove_unclassified}"
-    count_filter_hmm = "${count_filter_hmm}"
-    count_remove_exact = "${count_remove_exact}"
-    count_remove_tax_outliers = "${count_remove_tax_outliers}"
-    count_remove_seq_outliers = "${count_remove_seq_outliers}"
-    count_prune_groups = "${count_prune_groups}"
+    counts_file = "counts.csv"
 
     ## global variables
     projectDir = "$projectDir"

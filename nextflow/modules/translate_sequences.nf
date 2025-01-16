@@ -5,7 +5,10 @@ process TRANSLATE_SEQUENCES {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple path(fasta_file), val(coding), val(marker_type), path(ncbi_gencodes)
+    path(fasta_file)
+    val(coding)
+    val(marker_type)
+    path(ncbi_gencodes)
 
     output: 
     tuple path(fasta_file), path("translations.fasta"),                emit: translations
