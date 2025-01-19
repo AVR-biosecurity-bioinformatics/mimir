@@ -153,7 +153,7 @@ workflow TAXRETURN {
 
         //// split list of accessions for fetching in chunks
         QUERY_GENBANK.out.seq_acc
-            .splitText( by: params.input_chunk_size, file: true )
+            .splitText( by: params.genbank_fetch_size, file: true )
             .set { ch_genbank_acc_chunks }
 
         //// fetch Genbank sequences as .fasta + taxid list
