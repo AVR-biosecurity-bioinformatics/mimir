@@ -43,7 +43,10 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "fasta_file"
+    "fasta_file",
+    "add_root",
+    "aligned_output",
+    "compressed_output"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -52,10 +55,28 @@ lapply(nf_vars, nf_var_check)
 # read fasta from file
 seqs <- ape::read.FASTA(fasta_file)
 
-# parse params.compressed_output
-if ( params.compressed_output == "true" ) {
+# parse add_root
+if ( add_root == "true" ) {
+    add_root <- TRUE
+} else if ( add_root == "false" ) {
+    add_root <- FALSE
+} else {
+    stop("ERROR: '--add_root' should be 'true' or 'false'.")
+}
+
+# parse aligned_output
+if ( aligned_output == "true" ) {
+    aligned_output <- TRUE
+} else if ( aligned_output == "false" ) {
+    aligned_output <- FALSE
+} else {
+    stop("ERROR: '--aligned_output' should be 'true' or 'false'.")
+}
+
+# parse compressed_output
+if ( compressed_output == "true" ) {
     compressed_output <- TRUE
-} else if ( params.compressed_output == "false" ) {
+} else if ( compressed_output == "false" ) {
     compressed_output <- FALSE
 } else {
     stop("ERROR: '--compressed_output' should be 'true' or 'false'.")
@@ -64,18 +85,25 @@ if ( params.compressed_output == "true" ) {
 ### run code
 
 # add "Root" to taxonomic hierarchy if requested
-if ( params.add_root == "true" ) {
+if ( add_root ) {
+    print("Adding 'Root' to taxonomic hierarchy")
     names(seqs) <- 
         names(seqs) %>%
         stringr::str_replace(";",";Root;")
 }
 
+if ( !aligned_output ){
+    print("Dealigning sequences")
+    seqs <- 
+        seqs %>% 
+        DNAbin2DNAstringset(.) %>% 
+        DECIPHER::RemoveGaps(., removeGaps = "all") %>%
+        ape::as.DNAbin()
+}
+
 ### TODO: add options to remove spaces, semicolons etc. in sequence headers
 
 ### TODO: put marker and taxon information in the final name of the database
-
-# save renamed sequences as .rds file
-saveRDS(seqs, "final_database.rds")
 
 # write fasta 
 write_fasta(

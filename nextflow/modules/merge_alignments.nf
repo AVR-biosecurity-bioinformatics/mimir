@@ -1,5 +1,5 @@
-process ALIGN_SINGLE {
-    def module_name = "align_single"
+process MERGE_ALIGNMENTS {
+    def module_name = "merge_alignments"
     tag "-"
     // label "very_high"
     cpus 8
@@ -10,7 +10,7 @@ process ALIGN_SINGLE {
 
 
     input:
-    val(fasta_file)
+    tuple path('combined.fasta'), path('subMSAtable')
 
     output: 
     path("aligned.fasta"),             emit: aligned_fasta
@@ -28,7 +28,8 @@ process ALIGN_SINGLE {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${fasta_file}"
+        combined.fasta \
+        subMSAtable
     
     """
 }

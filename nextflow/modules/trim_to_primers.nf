@@ -1,18 +1,23 @@
-process PRUNE_GROUPS {
-    def module_name = "prune_groups"
-    // tag "-"
+process TRIM_TO_PRIMERS {
+    def module_name = "trim_to_primers"
+    tag "-"
     // label "medium"
-    time '30.m'
+    time '1.h'
     memory '8.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(fasta_files)
-    val(internal_names_file)
+    path(fasta_file)
+    val(primer_fwd)
+    val(primer_rev)
+    val(remove_primers)
+    val(max_primer_mismatches)
+    val(min_length_trimmed)
 
     output: 
-    path("seqs_pruned.fasta"),                emit: fasta
+    path("trimmed.fasta"),                                  emit: fasta
+    path("trimmed.removed.fasta"),                          emit: removed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -25,8 +30,12 @@ process PRUNE_GROUPS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_files =                   "${fasta_files}"
-    internal_names_file =                   "${internal_names_file}"
+    fasta_file =                    "${fasta_file}"
+    primer_fwd =                    "${primer_fwd}"
+    primer_rev =                    "${primer_rev}"
+    remove_primers =                "${remove_primers}"
+    max_primer_mismatches =         "${max_primer_mismatches}"
+    min_length_trimmed =            "${min_length_trimmed}"
 
     ## global variables
     projectDir = "$projectDir"

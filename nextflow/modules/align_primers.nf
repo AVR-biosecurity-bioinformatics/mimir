@@ -1,19 +1,17 @@
-process ALIGN_SINGLE {
-    def module_name = "align_single"
+process ALIGN_PRIMERS {
+    def module_name = "align_primers"
     tag "-"
-    // label "very_high"
-    cpus 8
-    time '2.h'
+    time '1.h'
     memory '16.GB'
-    // container "staphb/clustalo:1.2.4"
+    cpus 8
     container "staphb/mafft:7.526"
 
-
     input:
-    val(fasta_file)
+    path(fasta_file)
+    path(primers)
 
     output: 
-    path("aligned.fasta"),             emit: aligned_fasta
+    path("aligned_primers.fasta"),             emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,12 +21,13 @@ process ALIGN_SINGLE {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
-
+    ####
     ### run module code
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${fasta_file}"
+        "${fasta_file}" \
+        ${primers}
     
     """
 }

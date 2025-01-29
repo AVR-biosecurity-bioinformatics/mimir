@@ -1,19 +1,20 @@
-process TRAIN_IDTAXA {
-    def module_name = "train_idtaxa"
+process DISAMBIGUATE_PRIMERS {
+    def module_name = "disambiguate_primers"
     tag "-"
     // label "medium"
-    time '4.h'
-    memory '64.GB'
+    time '10.m'
+    memory '2.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
+    val(primer_fwd)
+    val(primer_rev)
 
     output: 
-    path("idtaxa_model.rds"),                  emit: model
+    path("primers.fasta"),                                  emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
@@ -24,7 +25,8 @@ process TRAIN_IDTAXA {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
+    primer_fwd =                    "${primer_fwd}"
+    primer_rev =                    "${primer_rev}"
 
     ## global variables
     projectDir = "$projectDir"
@@ -42,7 +44,7 @@ process TRAIN_IDTAXA {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """

@@ -6,10 +6,12 @@
 //// modules to import
 include { ADD_TAXID_GENBANK                                                 } from '../modules/add_taxid_genbank'
 include { ALIGN_BATCH as ALIGN_SPECIES                                                 } from '../modules/align_batch'
+include { ALIGN_PRIMERS                                                 } from '../modules/align_primers'
 include { ALIGN_SINGLE as ALIGN_OUTPUT                                                 } from '../modules/align_single'
 include { CLUSTER_SEQUENCES                                                 } from '../modules/cluster_sequences'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                            } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                           } from '../modules/combine_chunks'
+include { DISAMBIGUATE_PRIMERS                                                 } from '../modules/disambiguate_primers'
 include { EXTRACT_BOLD                                                 } from '../modules/extract_bold'
 // include { FETCH_BOLD                                                } from '../modules/fetch_bold'
 include { FETCH_GENBANK                                             } from '../modules/fetch_genbank'
@@ -22,10 +24,13 @@ include { GET_BOLD_DATABASE                                         } from '../m
 include { GET_NCBI_TAXONOMY                                         } from '../modules/get_ncbi_taxonomy'
 include { HMMSEARCH                                         } from '../modules/hmmsearch'
 include { IMPORT_INTERNAL                                                 } from '../modules/import_internal'
+include { MAKE_MERGE_TABLE                                                 } from '../modules/make_merge_table'
 include { MATCH_BOLD                                                 } from '../modules/match_bold'
 // include { MATCH_INTERNAL                                                 } from '../modules/match_internal'
+include { MERGE_ALIGNMENTS                                                 } from '../modules/merge_alignments'
 include { MERGE_BOLD                                                 } from '../modules/merge_bold'
-include { MERGE_SPLITS                                                 } from '../modules/merge_splits'
+include { MERGE_SPLITS as MERGE_SPLITS_FAMILY                         } from '../modules/merge_splits'
+include { MERGE_SPLITS as MERGE_SPLITS_SPECIES                             } from '../modules/merge_splits'
 include { PARSE_MARKER                                                 } from '../modules/parse_marker'
 include { PARSE_TARGETS                                                 } from '../modules/parse_targets'
 include { PRUNE_GROUPS                                                 } from '../modules/prune_groups'
@@ -38,12 +43,15 @@ include { REMOVE_TAX_OUTLIERS                                                 } 
 include { REMOVE_UNCLASSIFIED                                                 } from '../modules/remove_unclassified'
 include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
-include { SORT_BY_LINEAGE                                                } from '../modules/sort_by_lineage'
+include { SORT_BY_LINEAGE as SORT_BY_LINEAGE_1                                                } from '../modules/sort_by_lineage'
+include { SORT_BY_LINEAGE as SORT_BY_LINEAGE_2                                                } from '../modules/sort_by_lineage'
+include { SPLIT_BY_RANK as SPLIT_BY_FAMILY                                                } from '../modules/split_by_rank'
 include { SPLIT_BY_RANK as SPLIT_BY_SPECIES                                                } from '../modules/split_by_rank'
 include { SUMMARISE_COUNTS                                                 } from '../modules/summarise_counts'
 include { SUMMARISE_TAXA                                                 } from '../modules/summarise_taxa'
 include { TRAIN_IDTAXA                                                 } from '../modules/train_idtaxa'
 include { TRANSLATE_SEQUENCES                                                 } from '../modules/translate_sequences'
+include { TRIM_TO_PRIMERS                                                 } from '../modules/trim_to_primers'
 // include { TRIM_PHMM                                                 } from '../modules/trim_phmm'
 
 
@@ -519,15 +527,13 @@ workflow TAXRETURN {
     //// count number of sequences passing taxonomic decontamination
     ch_count_remove_tax_outliers = REMOVE_TAX_OUTLIERS.out.fasta.countFasta().combine(["remove_tax_outliers"])
 
-    // ch_split_species_input.take( 3 ).view()
-
     //// sort .fasta by lineage string to reduce the number of files that need to be merged after splitting 
-    SORT_BY_LINEAGE (
+    SORT_BY_LINEAGE_1 (
         REMOVE_TAX_OUTLIERS.out.fasta
     )
 
     //// chunk input into SPLIT_BY_SPECIES to parallelise
-    SORT_BY_LINEAGE.out.fasta
+    SORT_BY_LINEAGE_1.out.fasta
         .splitFasta ( by: params.split_rank_chunk, file: true )
         .set { ch_split_species_input }
 
@@ -555,20 +561,22 @@ workflow TAXRETURN {
     //// group merging files into groups of 1000 species for merging
     ch_split_species_output.merge
         .buffer ( size: 1000, remainder: true )
-        .flatten()
-        .collect()
-        .set { ch_merge_splits_input }
+        .flatten ()
+        .collect ()
+        .set { ch_merge_splits_species_input }
 
     //// merge files from the same species across the different chunks
-    MERGE_SPLITS (
-        ch_merge_splits_input
+    MERGE_SPLITS_SPECIES (
+        ch_merge_splits_species_input
     )
 
     //// group species-level .fasta files into batches for aligning and pruning
     ch_split_species_output.no_merge
-        .flatten()
-        .mix( MERGE_SPLITS.out.fasta.flatten() )
-        .buffer( size: 100, remainder: true ) 
+        .flatten ()
+        .mix ( MERGE_SPLITS_SPECIES.out.fasta.flatten() )
+        .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
+        .flatten ()
+        .buffer ( size: 100, remainder: true ) 
         .set { ch_align_input }
 
     //// align species-level .fasta in batches
@@ -603,12 +611,14 @@ workflow TAXRETURN {
     )
 
     //// save PRUNE_GROUPS output
-    PRUNE_GROUPS.out.fasta
-        .flatten()
-        .collectFile ( 
-            name: "prune_groups.fasta",
-            storeDir: "./output/results"
-        )
+    if ( params.save_intermediate ) {
+        PRUNE_GROUPS.out.fasta
+            .flatten()
+            .collectFile ( 
+                name: "prune_groups.fasta",
+                storeDir: "./output/results"
+            )
+    }
 
     //// count number of sequences passing group pruning
     ch_count_prune_groups = PRUNE_GROUPS.out.fasta.flatten().countFasta().combine(["prune_groups"])
@@ -623,23 +633,156 @@ workflow TAXRETURN {
     Database output
     */
 
-    //// trim to primers based on alignment
-    if ( params.trim_to_primers ) {
-    
-        ALIGN_OUTPUT (
+    if ( params.trim_to_primers || params.aligned_output ) {
+        
+        //// sort .fasta by lineage string to reduce the number of files that need to be merged after splitting 
+        SORT_BY_LINEAGE_2 (
             COMBINE_CHUNKS_2.out.fasta
         )
 
-        ch_formatting_input = ALIGN_OUTPUT.out.aligned_fasta
+        //// split database by family 
+        SPLIT_BY_FAMILY (
+            SORT_BY_LINEAGE_2.out.fasta,
+            "family"
+        )
+
+        //// group files with the same name
+        SPLIT_BY_FAMILY.out.fasta
+            .flatten()
+            .map { file ->
+                [ file.name , file ] }
+            .groupTuple( by: 0 )
+            // branch channel depending on the number of files in each tuple
+            .branch { file_name, file_list ->
+                no_merge: file_list.size() == 1
+                    return file_list
+                merge: file_list.size() > 1
+                    return file_list
+            } 
+            .set { ch_split_family_output }
+
+        //// group merging files into groups of 1000 families for merging
+        ch_split_family_output.merge
+            .buffer ( size: 1000, remainder: true )
+            .flatten ()
+            .collect ()
+            .set { ch_merge_splits_family_input }
+
+        //// merge files from the same species across the different chunks
+        MERGE_SPLITS_FAMILY (
+            ch_merge_splits_family_input
+        )
+
+        //// collect and flatten merged and unmerged family-level .fastas
+        ch_split_family_output.no_merge
+            .flatten ()
+            .mix ( MERGE_SPLITS_FAMILY.out.fasta.flatten() )
+            .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
+            .flatten ()
+            .set { ch_align_family_input }
+
+        //// align each family of the database
+        ALIGN_OUTPUT (
+            ch_align_family_input
+        )
+
+        //// collect alignments into list, branching based on number of alignments (only merge if more than one)
+        ALIGN_OUTPUT.out.aligned_fasta
+            .collect ()
+            .branch { file_list ->
+                no_merge: file_list.size() == 1
+                    return file_list
+                merge: file_list.size() > 1
+                    return file_list
+            }
+            .set { ch_aligned_families }
+
+        //// make merge table for mafft merge
+        MAKE_MERGE_TABLE (
+            ch_aligned_families.merge
+        )
+
+        //// merge msas with mafft merge
+        MERGE_ALIGNMENTS (
+            MAKE_MERGE_TABLE.out.fasta_table
+        )
+
+        ch_merged_alignments = Channel.empty()
+
+        ch_merged_alignments
+            .mix ( MERGE_ALIGNMENTS.out.aligned_fasta )
+            .set { ch_merged_alignments }
+
+        //// mix merged and non-merged channels to complete the optional process path
+        ch_aligned_families.no_merge
+            .mix ( ch_merged_alignments )
+            .set { ch_aligned_database }
+
+        //// trim database to primer region
+        if ( params.trim_to_primers ){
+
+            //// convert degenerate primer sequences to all possible sequence combinations
+            DISAMBIGUATE_PRIMERS (
+                params.primer_fwd,
+                params.primer_rev
+            )
+
+            //// add primer sequences to database alignment
+            ALIGN_PRIMERS (
+                ch_aligned_database,
+                DISAMBIGUATE_PRIMERS.out.fasta
+            )
+
+            //// trim alignment to primers
+            TRIM_TO_PRIMERS (
+                ALIGN_PRIMERS.out.fasta,
+                params.primer_fwd,
+                params.primer_rev,
+                params.remove_primers,
+                params.max_primer_mismatches,
+                params.min_length_trimmed
+            )
+
+            //// save TRIM_TO_PRIMERS output
+            if ( params.save_intermediate ) {
+                TRIM_TO_PRIMERS.out.fasta
+                    .collectFile ( 
+                        name: "trim_to_primers.fasta",
+                        storeDir: "./output/results"
+                    )
+            }
+
+            //// save TRIM_TO_PRIMERS removed sequences
+            if ( params.save_intermediate ) {
+                TRIM_TO_PRIMERS.out.removed
+                    .collectFile ( 
+                        name: "trim_to_primers.removed.fasta",
+                        storeDir: "./output/results"
+                    )
+            }
+
+            ch_count_trim_to_primers = TRIM_TO_PRIMERS.out.fasta.countFasta().combine(["trim_to_primers"])
+
+            ch_formatting_input = TRIM_TO_PRIMERS.out.fasta
+
+        } else {
+            ch_count_trim_to_primers = Channel.of(["NA", "trim_to_primers"])
+
+            ch_formatting_input = ch_aligned_database
+        }
 
     } else {
+        ch_count_trim_to_primers = Channel.of(["NA", "trim_to_primers"])
+
         ch_formatting_input = COMBINE_CHUNKS_2.out.fasta
     }
 
     //// format database output
     FORMAT_OUTPUT (
         ch_formatting_input,
-        params.aligned_output
+        params.add_root,
+        params.aligned_output,
+        params.compressed_output
     )
 
     //// save final output
@@ -669,6 +812,7 @@ workflow TAXRETURN {
     ch_count_remove_tax_outliers    .view{ "${it[1]}: ${it[0]}" }
     ch_count_remove_seq_outliers    .view{ "${it[1]}: ${it[0]}" }
     ch_count_prune_groups           .view{ "${it[1]}: ${it[0]}" }
+    ch_count_trim_to_primers        .view{ "${it[1]}: ${it[0]}" }
 
     //// collect count channels into a csv
     ch_counts_file = Channel.empty()
@@ -687,8 +831,9 @@ workflow TAXRETURN {
         .concat ( ch_count_remove_tax_outliers      .combine([12]) )
         .concat ( ch_count_remove_seq_outliers      .combine([13]) )
         .concat ( ch_count_prune_groups             .combine([14]) )
+        .concat ( ch_count_trim_to_primers          .combine([15]) )
         .map { sequences, process, order -> "$sequences,$process,$order" }
-        .collectFile ( name: 'counts.csv', seed: "sequences,process,order", newLine: true )
+        .collectFile ( name: 'counts.csv', seed: "sequences,process,order", newLine: true, cache: false )
         .set { ch_counts_file }
     
     //// summarise the count of sequences output from stage of the pipeline
