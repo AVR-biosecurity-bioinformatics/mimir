@@ -377,41 +377,13 @@ workflow TAXRETURN {
         }
 
         REMOVE_UNCLASSIFIED.out.fasta
-            .set { ch_remove_ambiguous_input }
+            .set { ch_translate_sequences_input }
 
     } else {
 
         ch_count_remove_unclassified = Channel.of(["NA", "remove_unclassified"])
 
         ch_remove_unclassified_input
-            .set { ch_remove_ambiguous_input }
-    }
-    //// remove ambiguous 
-    if ( params.remove_ambiguous ){
-        REMOVE_AMBIGUOUS (
-            ch_remove_ambiguous_input
-        )
-
-        ch_count_remove_ambiguous = REMOVE_AMBIGUOUS.out.fasta.countFasta().combine(["remove_ambiguous"])
-
-        //// combine and save intermediate file 
-        if ( params.save_intermediate ) {
-            REMOVE_AMBIGUOUS.out.fasta
-                .collectFile ( 
-                    name: "remove_ambiguous.fasta",
-                    storeDir: "./output/results",
-                    cache: 'lenient'
-                )
-        }
-
-        REMOVE_AMBIGUOUS.out.fasta
-            .set { ch_translate_sequences_input }
-
-    } else {
-
-        ch_count_remove_ambiguous = Channel.of(["NA", "remove_ambiguous"])
-
-        ch_remove_ambiguous_input
             .set { ch_translate_sequences_input }
     }
 
@@ -503,9 +475,38 @@ workflow TAXRETURN {
     //// count number of sequences passing exact deduplication
     ch_count_remove_exact = REMOVE_EXACT_DUPLICATES.out.fasta.countFasta().combine(["remove_exact"])
 
+    //// remove ambiguous 
+    if ( params.remove_ambiguous ){
+        REMOVE_AMBIGUOUS (
+            REMOVE_EXACT_DUPLICATES.out.fasta
+        )
+
+        ch_count_remove_ambiguous = REMOVE_AMBIGUOUS.out.fasta.countFasta().combine(["remove_ambiguous"])
+
+        //// combine and save intermediate file 
+        if ( params.save_intermediate ) {
+            REMOVE_AMBIGUOUS.out.fasta
+                .collectFile ( 
+                    name: "remove_ambiguous.fasta",
+                    storeDir: "./output/results",
+                    cache: 'lenient'
+                )
+        }
+
+        REMOVE_AMBIGUOUS.out.fasta
+            .set { ch_cluster_sequences_input }
+
+    } else {
+
+        ch_count_remove_ambiguous = Channel.of(["NA", "remove_ambiguous"])
+
+        REMOVE_EXACT_DUPLICATES.out.fasta
+            .set { ch_cluster_sequences_input }
+    }
+
     //// cluster sequences into OTUs with mmseqs2
     CLUSTER_SEQUENCES (
-        REMOVE_EXACT_DUPLICATES.out.fasta
+        ch_cluster_sequences_input
     )
 
     //// remove taxonomic outliers from sequence clusters
@@ -719,6 +720,15 @@ workflow TAXRETURN {
             .first () // convert to value channel
             .set { ch_aligned_database }
 
+        //// save aligned database
+        if ( params.save_intermediate ) {
+            ch_aligned_database
+                .collectFile ( 
+                    name: "aligned_database.fasta",
+                    storeDir: "./output/results"
+                )
+        }
+
         //// trim database to primer region
         if ( params.trim_to_primers ){
 
@@ -818,9 +828,9 @@ workflow TAXRETURN {
     ch_count_external               .view{ "${it[1]}: ${it[0]}" }
     ch_count_input                  .view{ "${it[1]}: ${it[0]}" }
     ch_count_remove_unclassified    .view{ "${it[1]}: ${it[0]}" }
-    ch_count_remove_ambiguous       .view{ "${it[1]}: ${it[0]}" }
     ch_count_filter_hmm             .view{ "${it[1]}: ${it[0]}" }
     ch_count_remove_exact           .view{ "${it[1]}: ${it[0]}" }
+    ch_count_remove_ambiguous       .view{ "${it[1]}: ${it[0]}" }
     ch_count_remove_tax_outliers    .view{ "${it[1]}: ${it[0]}" }
     ch_count_remove_seq_outliers    .view{ "${it[1]}: ${it[0]}" }
     ch_count_prune_groups           .view{ "${it[1]}: ${it[0]}" }
@@ -837,9 +847,9 @@ workflow TAXRETURN {
         .concat ( ch_count_external                 .combine([6]) )
         .concat ( ch_count_input                    .combine([7]) )
         .concat ( ch_count_remove_unclassified      .combine([8]) )
-        .concat ( ch_count_remove_ambiguous         .combine([9]) )
-        .concat ( ch_count_filter_hmm               .combine([10]) )
-        .concat ( ch_count_remove_exact             .combine([11]) )
+        .concat ( ch_count_filter_hmm               .combine([9]) )
+        .concat ( ch_count_remove_exact             .combine([10]) )
+        .concat ( ch_count_remove_ambiguous         .combine([11]) )
         .concat ( ch_count_remove_tax_outliers      .combine([12]) )
         .concat ( ch_count_remove_seq_outliers      .combine([13]) )
         .concat ( ch_count_prune_groups             .combine([14]) )
