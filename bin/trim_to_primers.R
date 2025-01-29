@@ -74,7 +74,7 @@ max_primer_mismatches <- max_primer_mismatches %>% as.integer()
 min_length_trimmed <- min_length_trimmed %>% as.integer()
 
 # minimum number of disambiguated primer sequences that need to support the location of a primer
-location_threshold <- 0.8
+location_threshold <- 0.5
 
 # new ambiguity map that handles gaps 
 NEW_AMB_MAP <- c(Biostrings::IUPAC_CODE_MAP, "-" = "-")
@@ -431,7 +431,8 @@ primer_check <- function(primer, msa, location_threshold = location_threshold){
         # remove primer sequences at the end
         .[!names(msa) %>% stringr::str_starts(., "fwd_ag|rev_ag|fwd_rc|rev_rc")] %>%
         # get consensus of region
-        Biostrings::consensusMatrix(., as.prob = FALSE) %>%
+        Biostrings::consensusMatrix(., as.prob = FALSE, baseOnly = TRUE) %>% # only get counts of A/C/G/T characters (ignoring gaps and ambiguous characters)
+        .[rownames(.)!="other",] %>% # remove "other" column from matrix to allow consensus
         Biostrings::consensusString(ambiguityMap = NEW_AMB_MAP, threshold = 0.1) %>%
         Biostrings::DNAString()
     

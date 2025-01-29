@@ -188,11 +188,15 @@ NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model asset
 # hemiptera - 6364 from prune_groups, alignment took 30s, align_primers took 7min
 NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Hemiptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200
 
-# lepidoptera - 89203 from prune_groups, alignment took 1hr 23min, align_primers his OOM error
+# lepidoptera - 89203 from prune_groups, alignment took 1hr 23min, align_primers his OOM error -- trying with 8 threads took... 
 NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200
 
 # neuroptera
-NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200
+
+## testing AM's primers on neuroptera
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --remove_unclassified any_ranks --trim_to_primers --primer_fwd CCHGAYATRGCHTTYCCHCG --primer_rev TCDGGRTGNCCRAARAAYCA --min_length_trimmed 350
+
 
 ```
 

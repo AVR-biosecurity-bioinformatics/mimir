@@ -716,6 +716,7 @@ workflow TAXRETURN {
         //// mix merged and non-merged channels to complete the optional process path
         ch_aligned_families.no_merge
             .mix ( ch_merged_alignments )
+            .first () // convert to value channel
             .set { ch_aligned_database }
 
         //// trim database to primer region
@@ -727,15 +728,26 @@ workflow TAXRETURN {
                 params.primer_rev
             )
 
-            //// add primer sequences to database alignment
+            //// split into individual primer sequences for alignment
+            DISAMBIGUATE_PRIMERS.out.fasta
+                .splitFasta ( by: 1, file: true )
+                .set { ch_disambiguated_primers }
+
+            //// add primer sequences to database alignment, output only the primer sequence (with gaps)
             ALIGN_PRIMERS (
                 ch_aligned_database,
-                DISAMBIGUATE_PRIMERS.out.fasta
+                ch_disambiguated_primers
             )
+
+            //// merge individual primer alignments into one alignment with the database
+            ch_aligned_database
+                .mix ( ALIGN_PRIMERS.out.fasta )
+                .collectFile ( name: 'merged_primers.fasta', newLine: true )
+                .set { ch_merged_primer_alignment }
 
             //// trim alignment to primers
             TRIM_TO_PRIMERS (
-                ALIGN_PRIMERS.out.fasta,
+                ch_merged_primer_alignment,
                 params.primer_fwd,
                 params.primer_rev,
                 params.remove_primers,
