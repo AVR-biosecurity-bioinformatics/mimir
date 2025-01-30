@@ -6,6 +6,8 @@
 //// modules to import
 include { ADD_TAXID_GENBANK                                                 } from '../modules/add_taxid_genbank'
 include { ALIGN_BATCH as ALIGN_SPECIES                                                 } from '../modules/align_batch'
+include { ALIGN_CORE                                                 } from '../modules/align_core'
+include { ALIGN_OTHER                                                 } from '../modules/align_other'
 include { ALIGN_PRIMERS                                                 } from '../modules/align_primers'
 include { ALIGN_SINGLE as ALIGN_OUTPUT                                                 } from '../modules/align_single'
 include { CLUSTER_SEQUENCES                                                 } from '../modules/cluster_sequences'
@@ -21,6 +23,7 @@ include { FILTER_HMM                                                 } from '../
 // include { FILTER_STOP                                                 } from '../modules/filter_stop'
 include { FORMAT_OUTPUT                                         } from '../modules/format_output'
 include { GET_BOLD_DATABASE                                         } from '../modules/get_bold_database'
+include { GET_CORE_SEQUENCES                                         } from '../modules/get_core_sequences'
 include { GET_NCBI_TAXONOMY                                         } from '../modules/get_ncbi_taxonomy'
 include { HMMSEARCH                                         } from '../modules/hmmsearch'
 include { IMPORT_INTERNAL                                                 } from '../modules/import_internal'
@@ -636,88 +639,111 @@ workflow TAXRETURN {
 
     if ( params.trim_to_primers || params.aligned_output ) {
         
-        //// sort .fasta by lineage string to reduce the number of files that need to be merged after splitting 
-        SORT_BY_LINEAGE_2 (
+        // ////// 'old' alignment method based on merging
+        
+        // //// sort .fasta by lineage string to reduce the number of files that need to be merged after splitting 
+        // SORT_BY_LINEAGE_2 (
+        //     COMBINE_CHUNKS_2.out.fasta
+        // )
+
+        // //// split database by family 
+        // SPLIT_BY_FAMILY (
+        //     SORT_BY_LINEAGE_2.out.fasta,
+        //     "family"
+        // )
+
+        // //// group files with the same name
+        // SPLIT_BY_FAMILY.out.fasta
+        //     .flatten()
+        //     .map { file ->
+        //         [ file.name , file ] }
+        //     .groupTuple( by: 0 )
+        //     // branch channel depending on the number of files in each tuple
+        //     .branch { file_name, file_list ->
+        //         no_merge: file_list.size() == 1
+        //             return file_list
+        //         merge: file_list.size() > 1
+        //             return file_list
+        //     } 
+        //     .set { ch_split_family_output }
+
+        // //// group merging files into groups of 1000 families for merging
+        // ch_split_family_output.merge
+        //     .buffer ( size: 1000, remainder: true )
+        //     .flatten ()
+        //     .collect ()
+        //     .set { ch_merge_splits_family_input }
+
+        // //// merge files from the same species across the different chunks
+        // MERGE_SPLITS_FAMILY (
+        //     ch_merge_splits_family_input
+        // )
+
+        // //// collect and flatten merged and unmerged family-level .fastas
+        // ch_split_family_output.no_merge
+        //     .flatten ()
+        //     .mix ( MERGE_SPLITS_FAMILY.out.fasta.flatten() )
+        //     .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
+        //     .flatten ()
+        //     .set { ch_align_family_input }
+
+        // //// align each family of the database
+        // ALIGN_OUTPUT (
+        //     ch_align_family_input
+        // )
+
+        // //// collect alignments into list, branching based on number of alignments (only merge if more than one)
+        // ALIGN_OUTPUT.out.aligned_fasta
+        //     .collect ()
+        //     .branch { file_list ->
+        //         no_merge: file_list.size() == 1
+        //             return file_list
+        //         merge: file_list.size() > 1
+        //             return file_list
+        //     }
+        //     .set { ch_aligned_families }
+
+        // //// make merge table for mafft merge
+        // MAKE_MERGE_TABLE (
+        //     ch_aligned_families.merge
+        // )
+
+        // //// merge msas with mafft merge
+        // MERGE_ALIGNMENTS (
+        //     MAKE_MERGE_TABLE.out.fasta_table
+        // )
+
+        // ch_merged_alignments = Channel.empty()
+
+        // ch_merged_alignments
+        //     .mix ( MERGE_ALIGNMENTS.out.aligned_fasta )
+        //     .set { ch_merged_alignments }
+
+        // //// mix merged and non-merged channels to complete the optional process path
+        // ch_aligned_families.no_merge
+        //     .mix ( ch_merged_alignments )
+        //     .first () // convert to value channel
+        //     .set { ch_aligned_database }
+
+        //// new alignment method based on mafft-sparsecore.rb (add sequences to a core alignment)
+
+        //// define 'core' and 'other' sequences based on taxonomy and length
+        GET_CORE_SEQUENCES (
             COMBINE_CHUNKS_2.out.fasta
         )
 
-        //// split database by family 
-        SPLIT_BY_FAMILY (
-            SORT_BY_LINEAGE_2.out.fasta,
-            "family"
+        //// align core sequences
+        ALIGN_CORE (
+            GET_CORE_SEQUENCES.out.core
         )
 
-        //// group files with the same name
-        SPLIT_BY_FAMILY.out.fasta
-            .flatten()
-            .map { file ->
-                [ file.name , file ] }
-            .groupTuple( by: 0 )
-            // branch channel depending on the number of files in each tuple
-            .branch { file_name, file_list ->
-                no_merge: file_list.size() == 1
-                    return file_list
-                merge: file_list.size() > 1
-                    return file_list
-            } 
-            .set { ch_split_family_output }
-
-        //// group merging files into groups of 1000 families for merging
-        ch_split_family_output.merge
-            .buffer ( size: 1000, remainder: true )
-            .flatten ()
-            .collect ()
-            .set { ch_merge_splits_family_input }
-
-        //// merge files from the same species across the different chunks
-        MERGE_SPLITS_FAMILY (
-            ch_merge_splits_family_input
+        //// add other sequences to core alignment
+        ALIGN_OTHER (
+            ALIGN_CORE.out.fasta,
+            GET_CORE_SEQUENCES.out.other
         )
 
-        //// collect and flatten merged and unmerged family-level .fastas
-        ch_split_family_output.no_merge
-            .flatten ()
-            .mix ( MERGE_SPLITS_FAMILY.out.fasta.flatten() )
-            .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
-            .flatten ()
-            .set { ch_align_family_input }
-
-        //// align each family of the database
-        ALIGN_OUTPUT (
-            ch_align_family_input
-        )
-
-        //// collect alignments into list, branching based on number of alignments (only merge if more than one)
-        ALIGN_OUTPUT.out.aligned_fasta
-            .collect ()
-            .branch { file_list ->
-                no_merge: file_list.size() == 1
-                    return file_list
-                merge: file_list.size() > 1
-                    return file_list
-            }
-            .set { ch_aligned_families }
-
-        //// make merge table for mafft merge
-        MAKE_MERGE_TABLE (
-            ch_aligned_families.merge
-        )
-
-        //// merge msas with mafft merge
-        MERGE_ALIGNMENTS (
-            MAKE_MERGE_TABLE.out.fasta_table
-        )
-
-        ch_merged_alignments = Channel.empty()
-
-        ch_merged_alignments
-            .mix ( MERGE_ALIGNMENTS.out.aligned_fasta )
-            .set { ch_merged_alignments }
-
-        //// mix merged and non-merged channels to complete the optional process path
-        ch_aligned_families.no_merge
-            .mix ( ch_merged_alignments )
-            .first () // convert to value channel
+        ALIGN_OTHER.out.fasta
             .set { ch_aligned_database }
 
         //// save aligned database

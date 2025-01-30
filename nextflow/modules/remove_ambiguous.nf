@@ -20,7 +20,7 @@ process REMOVE_AMBIGUOUS {
     """
     #!/usr/bin/env bash
 
-    ### run module code
+    #### run module code
     source ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \

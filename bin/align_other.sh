@@ -4,26 +4,23 @@ set -u
 ## args are the following:
 # $1 = projectDir 
 # $2 = cpus
-# $3 = fasta_file
-# $4 = subMSAtable
+# $3 = core.aligned.fasta
+# $4 = other.fasta
 
-### for family-level alignment
-export MAFFT_TMPDIR="/tmp"
 
 # if only one sequence in file, skip alignment
 if [[ $( grep -c "^>" $3 ) > 1 ]]; then 
     # align
     mafft \
         --nuc \
-        --thread $2 \
+        --thread ${2} \
         --linelength -1 \
-        --auto \
-        --memsave \
         --memsavetree \
-        --merge $4 \
-        "${3}" \
-        > aligned.fasta
+        --add ${4} \
+        ${3} \
+        > all.aligned.fasta
 else 
     # rename as aligned
-    cp $3 aligned.fasta
+    cp $3 all.aligned.fasta
 fi 
+

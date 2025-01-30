@@ -58,8 +58,7 @@ if [[ $( grep -c "^>" $3 ) > 1 ]]; then
         --nuc \
         --thread $2 \
         --linelength -1 \
-        --globalpair \
-        --large \
+        --auto \
         ${3} \
         > aligned.fasta
 else 
