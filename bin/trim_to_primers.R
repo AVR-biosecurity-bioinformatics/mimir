@@ -543,11 +543,10 @@ if ( any(bsp_scores) > max_primer_mismatches ){
     stop(paste0("At least one mismatch score for the best scoring primer orientation is greater than '--max_primer_mismatch'"))
 }
 
-# for alignment, remove primers and remove columns that only contain gaps (ie. were induced by primer alignment)
+# remove primers from alignment
 np_alignment <- 
     dap_alignment %>%
-    .[!names(.) %>% stringr::str_starts(., "fwd_ag|rev_ag|fwd_rc|rev_rc")] %>%
-    DECIPHER::RemoveGaps(., removeGaps = "common")
+    .[!names(.) %>% stringr::str_starts(., "fwd_ag|rev_ag|fwd_rc|rev_rc")] 
 
 ### trim database sequences to primer positions
 # use existing location info 
@@ -579,7 +578,10 @@ below_min_length <-
     width(.) < min_length_trimmed
 
 # remove short sequences
-alignment_final <- alignment_trimmed[!below_min_length]
+alignment_filtered <- alignment_trimmed[!below_min_length]
+
+# remove columns that only contain gaps (ie. were induced by alignment to now-removed sequences)
+alignment_final <- alignment_filtered %>% DECIPHER::RemoveGaps(., removeGaps = "common")
 
 # write trimmed sequences out
 ape::write.FASTA(alignment_final %>% ape::as.DNAbin(), file = "trimmed.fasta")
