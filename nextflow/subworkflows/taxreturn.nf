@@ -511,7 +511,7 @@ workflow TAXRETURN {
 
     //// remove taxonomic outliers from sequence clusters
     REMOVE_TAX_OUTLIERS (
-        REMOVE_EXACT_DUPLICATES.out.fasta,
+        ch_cluster_sequences_input,
         CLUSTER_SEQUENCES.out.tsv,
         GET_NCBI_TAXONOMY.out.rankedlineage // NOTE: remove this channel and update process, as not needed
     )
