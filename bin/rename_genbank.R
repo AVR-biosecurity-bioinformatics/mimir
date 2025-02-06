@@ -75,51 +75,69 @@ gb <- tryCatch(
 
 # check for accessions
 if(sum(grepl("ACCESSION", gb)) < 1){
-  stop("No accessions in GenBank flat file")
+    stop("No accessions in GenBank flat file")
 }
 
-# lines where the sequence starts and stops
-start <- which(grepl("^ORIGIN", gb))
-stop <- which(grepl("^//", gb))
-
-# check for malformed start and stops and remove if present
-good_records <- stringr::str_detect(gb[stop-1], "[0-9] [a-z-]")
-stop <- stop[good_records]
+# lines where records start and stop
+record_start <- which(grepl("^LOCUS +", gb))
+record_stop <- which(grepl("^//", gb))
 
 # check same number of start and stop positions
-if (length(start) == length(stop)){
-    n_seqs <- length(start)
+if (length(record_start) == length(record_stop)){
+    n_seqs <- length(record_start)
 } else {
     stop("Incorrect length of start and stop")
 }
 
-# extract nucleotide sequence for each record 
-seqs <- vector("character", length = n_seqs)
+# extract records into a list
+records <- vector("list", length = n_seqs)
 for (l in 1:n_seqs){
-    seqs[[l]] <- toupper(paste(stringr::str_remove_all(gb[(start[l]+1):(stop[l]-1)], "[^A-Za-z]"), collapse=""))
+    records[[l]] <- gb[(record_start[l]):(record_stop[l])]
 }
 
-# get versions (accession with version decimal)
-seq_ver <- gsub("+VERSION +", "", grep("VERSION", gb, value = TRUE))
+# function to format GB record into named sequence
+sequence_from_record <- function(x){
+    # get versions (accession with version decimal)
+    seq_ver <- gsub("+VERSION +", "", grep("VERSION", x, value = TRUE))
+    # get taxids
+    seq_taxid <- grep("db_xref=\\\"taxon:", x, value = TRUE) %>% stringr::str_remove_all("( +/db_xref=\"taxon:)|(\\\")")
+    # get sequence
+    sequence <- toupper(paste(stringr::str_remove_all(gb[(which(grepl("^ORIGIN", x))+1):(which(grepl("^//", x))-1)], "[^A-Za-z]"), collapse=""))
+    # check only one version, taxid and sequence
+    if(length(seq_ver) > 1){
+        stop(paste0("More than one sequence version:", stringr::str_flatten_comma(seq_ver)))
+    }
+    if(length(seq_taxid) > 1){
+        if(seq_taxid %>% unique %>% length == 1){ # if taxid is mentioned more than once...
+            seq_taxid <- unique(seq_taxid) # collapse if all the same
+        } else {
+            print(x)
+            stop(paste0("More than one unique sequence taxid:", stringr::str_flatten_comma(seq_taxid),"for seq_ver ",seq_ver))
+        }
+    }
+    if(length(sequence) > 1){
+        stop(paste0("More than one sequence string:", stringr::str_flatten_comma(sequence)))
+    }
+    # name sequence
+    names(sequence) <- paste0(seq_ver,"|",seq_taxid)
+    return(sequence)
+}
 
-# get taxids
-seq_taxid <- grep("db_xref=\\\"taxon:", gb, value = TRUE) %>% stringr::str_remove_all("( +/db_xref=\"taxon:)|(\\\")")
-
-# build sequence names
-seq_names <- paste0(seq_ver,"|",seq_taxid)
-
-# name sequences
-names(seqs) <- seq_names[good_records]
-
-# make DNAbin object
-seqs <- char2DNAbin(seqs)
+# for each element of list (record), get version, taxid and sequence and put into DNAbin object
+seqs <- 
+    lapply(
+        records, 
+        sequence_from_record
+    ) %>%
+    unlist() %>%
+    char2DNAbin()
 
 # check if any sequence names and accessions don't match 
 if (any ( !names(seqs) %>% stringr::str_starts( stringr::str_flatten(accessions, "|")))) {
-  stop("One or more accessions not found in parsed sequence names")
+    stop("One or more accessions not found in parsed sequence names")
 }
 if (length(seqs) != length(accessions)){
-  stop("Number of sequences parsed does not equal number of accessions")
+    stop("Number of sequences parsed does not equal number of accessions")
 }
 
 ## add taxonomic lineage string
