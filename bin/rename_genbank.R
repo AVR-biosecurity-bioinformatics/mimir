@@ -50,9 +50,6 @@ lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-# get basename chunk for output naming
-chunk_index <- tools::file_path_sans_ext(basename(fasta_file)) %>% stringr::str_extract("^.+(?=\\.taxid$)") 
-
 # read in fasta file as DNAbin
 seqs <-  ape::read.FASTA(fasta_file)
 
@@ -107,4 +104,4 @@ seq_names_header <-
 names(seqs) <- seq_names_header$header
 
 # write .fasta to file
-write.FASTA(seqs, file = paste0(chunk_index,".renamed.fasta"))
+write.FASTA(seqs, file = "renamed.fasta")

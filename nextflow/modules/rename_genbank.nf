@@ -12,7 +12,7 @@ process RENAME_GENBANK {
     val(ncbi_rankedlineage_noname)
 
     output: 
-    path("*.renamed.fasta"),                    emit: fasta
+    path("renamed.fasta"),                    emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -44,7 +44,7 @@ process RENAME_GENBANK {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """
