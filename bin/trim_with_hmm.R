@@ -169,28 +169,7 @@ hits <-
         env_end_gap = target_len - env_to,
         hmm_start_gap = hmm_from - 1,
         hmm_end_gap = query_len - hmm_to
-    ) %>%
-    # work out if any stop codons lie within the hit envelope
-    tidyr::separate_longer_delim(
-        cols = stop_codons,
-        delim = "|"
-    ) %>%
-    dplyr::mutate(stop_codons = as.integer(stop_codons)) %>%
-    dplyr::mutate(
-        within_hit = dplyr::case_when(
-            between(stop_codons, env_from, env_to) ~ TRUE,
-            .default = FALSE
-        )
-    ) %>%
-    dplyr::group_by(target_name, frame) %>%
-    dplyr::mutate(
-        stop_codon_hit = any(within_hit), # TRUE if any stop codons found in hit envelope
-        stop_codons = paste(stop_codons, collapse = "|"), # "un-separate" the stop_codons column
-        stop_codons = dplyr::na_if(stop_codons, "NA")
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::select(-within_hit) %>%
-    dplyr::distinct() 
+    ) 
 
 # check hits are all in sequence file
 if(!all(hits$target_name %in% names(seqs))){
@@ -207,7 +186,6 @@ hits_retained <-
         score >= score_threshold_trimmed & 
         # domain_total == domain_threshold & 
         acc >= acc_threshold &
-        stop_codon_hit == FALSE &
         !( hmm_start_gap > terminalgap_threshold_trimmed & env_start_gap > terminalgap_threshold_trimmed ) & # both need to be fulfilled 
         !( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed ) 
     )
@@ -300,7 +278,6 @@ seqs_removed_tibble <-
         score < score_threshold_trimmed | 
         # domain_total > domain_threshold |
         acc < acc_threshold |
-        stop_codon_hit == TRUE |
         ( hmm_start_gap > terminalgap_threshold_trimmed & env_start_gap > terminalgap_threshold_trimmed ) | # both need to be fulfilled 
         ( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed ) 
     ) %>%
@@ -311,10 +288,9 @@ seqs_removed_tibble <-
         # fail_max_hits =         domain_total > domain_threshold ,
         fail_min_acc =          acc < acc_threshold ,
         fail_max_gap_start =    ( hmm_start_gap > terminalgap_threshold_trimmed & env_start_gap > terminalgap_threshold_trimmed ),
-        fail_max_gap_end =      ( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed ),
-        fail_stop_codon =       stop_codon_hit == TRUE
+        fail_max_gap_end =      ( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed )
     ) %>%
-    dplyr::mutate(removal_type = "excluded_hit", .after = stop_codon_hit) %>%
+    dplyr::mutate(removal_type = "excluded_hit", .after = hmm_end_gap) %>%
     # add names of sequences without a hit
     tibble::add_row(
         target_name = names(seqs_nohit)[!names(seqs_nohit) %in% .$target_name], 
@@ -330,7 +306,6 @@ seqs_removed_tibble <-
         fail_min_acc =          FALSE,
         fail_max_gap_start =    FALSE,
         fail_max_gap_end =      FALSE,
-        fail_stop_codon =       FALSE
     ) %>%
     dplyr::select(-old_name) # remove old_name as redundant with target_name
 

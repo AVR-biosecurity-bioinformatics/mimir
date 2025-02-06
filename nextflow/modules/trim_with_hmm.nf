@@ -29,7 +29,7 @@ process TRIM_WITH_HMM {
     #!/usr/bin/env Rscript
     
     ### defining Nextflow environment variables as R variables
-    ## input channel variables
+    ### input channel variables
     fasta_file =            "${fasta_file}"
     hmmer_output =          "${hmmer_output}"
     hmm_max_evalue =        "${hmm_max_evalue}"
