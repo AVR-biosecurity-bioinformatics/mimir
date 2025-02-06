@@ -340,7 +340,8 @@ seqs_removed_tibble <-
     tibble::add_row(
         target_name = names(seqs_nohit)[!names(seqs_nohit) %in% .$target_name], 
         removal_type = "no_hit"
-    )
+    ) %>%
+    dplyr::select(-old_name) # remove old_name as redundant with target_name
 
 readr::write_csv(seqs_removed_tibble, file = "removed_full.csv")
 

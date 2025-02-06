@@ -331,7 +331,8 @@ seqs_removed_tibble <-
         fail_max_gap_start =    FALSE,
         fail_max_gap_end =      FALSE,
         fail_stop_codon =       FALSE
-    )
+    ) %>%
+    dplyr::select(-old_name) # remove old_name as redundant with target_name
 
 readr::write_csv(seqs_removed_tibble, file = "removed_trimmed.csv")
 
