@@ -14,7 +14,7 @@ process HMMSEARCH_FULL {
     output: 
     tuple path(fasta_file), path(translations), path("hmmer_domtblout.txt"),        emit: hmmer_output
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

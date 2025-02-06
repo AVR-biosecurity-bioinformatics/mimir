@@ -14,7 +14,7 @@ process HMMSEARCH_TRIMMED {
     output: 
     tuple path('retained_full.fasta'), path("hmmer_domtblout.txt"),        emit: hmmer_output
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
