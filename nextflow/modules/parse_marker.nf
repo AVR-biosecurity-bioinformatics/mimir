@@ -2,7 +2,7 @@ process PARSE_MARKER {
     def module_name = "parse_marker"
     tag "-"
     label "very_small"
-    container "jackscanlan/piperline-multi:0.0.1"
+    container "ellerbrock/alpine-bash-curl-ssl:0.3.0"
 
     input:
     val(marker)
@@ -12,6 +12,8 @@ process PARSE_MARKER {
     env(BOLD),                  emit: bold_query
     env(CODING),                emit: coding
     env(TYPE),                  emit: type
+    path("full.hmm"),           emit: phmm
+    path("seed.stockholm"),     emit: seed
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

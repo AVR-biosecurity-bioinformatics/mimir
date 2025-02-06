@@ -6,9 +6,11 @@ process FORMAT_OUTPUT {
 
     input:
     val(fasta_file)
+    val(add_root)
+    val(aligned_output)
+    val(compressed_output)
 
     output: 
-    path("final_database.rds"),                              emit: seqs
     path("final_database.fasta"),                           emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
@@ -27,6 +29,9 @@ process FORMAT_OUTPUT {
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
+    add_root = "${add_root}"
+    aligned_output = "${aligned_output}"
+    compressed_output = "${compressed_output}"
 
     tryCatch({
     ### source functions and themes, load packages, and import Nextflow params

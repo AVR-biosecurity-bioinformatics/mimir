@@ -20,7 +20,7 @@ if head -n3 $3 | grep "^>" | wc -l | grep -q 2; then
 	# if first three lines contain two headers, input is unwrapped
 	FASTA=${3}
 else 
-	# if first three lines don't contain two, input is likely wrapped
+	# if first three lines don't contain two headers, input is likely wrapped
 	# unwrap fasta
 	awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' $3 > unwrapped.fasta
 	FASTA=unwrapped.fasta

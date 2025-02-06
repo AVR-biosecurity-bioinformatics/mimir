@@ -1,19 +1,20 @@
-process TRAIN_IDTAXA {
-    def module_name = "train_idtaxa"
-    tag "-"
+process GET_CORE_SEQUENCES {
+    def module_name = "get_core_sequences"
+    // tag "-"
     // label "medium"
-    time '4.h'
-    memory '64.GB'
+    time '30.m'
+    memory '8.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
+    path(fasta_file)
 
     output: 
-    path("idtaxa_model.rds"),                  emit: model
+    path("core.fasta"),                                  emit: core
+    path("other.fasta"),                                 emit: other
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
@@ -42,7 +43,7 @@ process TRAIN_IDTAXA {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """

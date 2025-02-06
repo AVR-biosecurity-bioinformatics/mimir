@@ -129,7 +129,7 @@ for (i in seq_len(max_iterations)) {
   if (i==max_iterations)
     break
   probSeqsPrev <- probSeqs
-
+  gc()
   # remove any problem sequences
   index <- which(!remove)[probSeqs]
   remove[index] <- TRUE # remove all problem sequences
@@ -141,8 +141,11 @@ for (i in seq_len(max_iterations)) {
       index <- index[groups[index] %in% missing]
       remove[index] <- FALSE # don't remove
     }
+    gc()
   }
+  gc()
 }
+
 
 if (!quiet) {message(paste0(sum(remove), " sequences removed"))}
 if (!quiet) {message(paste0(length(probSeqs), " problem sequences remaining"))}

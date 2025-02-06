@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 set -u
 ## args are the following:
@@ -13,14 +13,16 @@ case ${3} in
         BOLD="COI-5P"
         CODING="true"
         TYPE="mitochondrial"
+        PHMM_URL="https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/PF00115?annotation=hmm"
+        SEED_URL="https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/PF00115/?annotation=alignment:seed&download"
         ;;
     
-    "28S")
-        GENBANK="28S[TI] OR LSU[TI] OR large ribosomal subunit[TI]"
-        BOLD="28S"
-        CODING="false"
-        TYPE="nuclear"
-        ;;
+    # "28S")
+    #     GENBANK="28S[TI] OR LSU[TI] OR large ribosomal subunit[TI]"
+    #     BOLD="28S"
+    #     CODING="false"
+    #     TYPE="nuclear"
+    #     ;;
     
     #"ITS")
     #"matK")
@@ -32,3 +34,11 @@ case ${3} in
         ;;
 
 esac
+
+### TODO: make these downloads more robust
+
+# download PHMM from InterPro and unzip
+curl $PHMM_URL | gunzip > full.hmm
+
+# download seed alignment for PHMM from InterPro and unzip
+curl $SEED_URL | gunzip > seed.stockholm

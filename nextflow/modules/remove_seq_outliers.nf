@@ -1,6 +1,6 @@
 process REMOVE_SEQ_OUTLIERS {
     def module_name = "remove_seq_outliers"
-    tag "-"
+    // tag "-"
     // label "medium"
     time '1.h'
     memory '4.GB'

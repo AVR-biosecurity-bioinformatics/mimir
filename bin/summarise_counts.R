@@ -43,82 +43,41 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 ### check Nextflow environment variables
 nf_vars <- c(
     "projectDir",
-    "params_dict",
-    "count_genbank",
-    "count_bold",
-    "count_mito",
-    "count_genome",
-    "count_internal",
-    "count_external",
-    "count_input",
-    "count_remove_unclassified",
-    "count_filter_phmm",
-    "count_filter_stop",
-    "count_remove_exact",
-    "count_remove_tax_outliers",
-    "count_remove_seq_outliers",
-    "count_prune_groups"
+    "params_dict"
     )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
+# import counts.csv
+counts_raw <- readr::read_csv("counts.csv")
 
 ### run code
 
-## summarise
+# summarise
 counts_summary <- 
-    tibble::tibble(
-        genbank = count_genbank,
-        bold = count_bold,
-        mito = count_mito,
-        genome = count_genome,
-        internal = count_internal,
-        external = count_external,
-        input = count_input,
-        remove_unclassified = count_remove_unclassified,
-        filter_phmm = count_filter_phmm,
-        filter_stop = count_filter_stop,
-        remove_exact = count_remove_exact,
-        remove_tax_outliers = count_remove_tax_outliers,
-        remove_seq_outliers = count_remove_seq_outliers,
-        prune_groups = count_prune_groups
-    ) %>%
-    tidyr::pivot_longer(
-        cols = genbank:prune_groups,
-        names_to = "step",
-        values_to = "sequences"
-    ) %>%
+    counts_raw %>%
+    dplyr::arrange(order) %>%
     dplyr::mutate(
-        sequences = as.numeric(sequences),
-        step = forcats::fct_relevel(
-            step, 
-            c(
-                "genbank",
-                "bold",
-                "mito",
-                "genome",
-                "internal",
-                "external",
-                "input",
-                "remove_unclassified",
-                "filter_phmm",
-                "filter_stop",
-                "remove_exact",
-                "remove_tax_outliers",
-                "remove_seq_outliers",
-                "prune_groups"
-            )
-        )
-    )
+        process = forcats::fct_reorder(process, order)
+    ) %>%
+    dplyr::select(process, sequences)
 
+# write .csv
 readr::write_csv(counts_summary, "counts_summary.csv")
 
 # plot
-ggplot2::ggplot(counts_summary, aes(x = sequences, y = step)) +
-  geom_col() +
-  geom_text(aes(label = sequences, x = sequences + (max(sequences)* 0.02)), hjust = 0, size = 2) + # label 2% past end of column 
-  scale_y_discrete(limits = rev) +
-  scale_x_continuous(limits = c(0,max(counts_summary$sequences) * 1.1))
+counts_plot <- 
+    counts_summary %>% 
+    ggplot2::ggplot(., aes(x = sequences, y = process)) +
+    geom_col() +
+    geom_text(
+        aes(label = sequences, x = sequences + (max(sequences)* 0.02)), # label 2% past end of column
+        hjust = 0, 
+        size = 2
+    ) +  
+    scale_y_discrete(limits = rev) +
+    scale_x_continuous(limits = c(0,max(counts_summary$sequences) * 1.2))
 
-ggsave("counts_summary.pdf", width = 4, height = 6)
+# write plot
+ggsave("counts_summary.pdf", counts_plot, width = 4, height = 6)

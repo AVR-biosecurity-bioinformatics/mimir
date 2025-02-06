@@ -1,19 +1,19 @@
-process ALIGN_SINGLE {
-    def module_name = "align_single"
+process ALIGN_OTHER {
+    def module_name = "align_other"
     tag "-"
     // label "very_high"
-    cpus 8
-    time '4.h'
-    memory '8.GB'
-    // container "staphb/clustalo:1.2.4"
+    time '8.h'
+    memory '16.GB'
+    cpus 16
     container "staphb/mafft:7.526"
 
 
     input:
-    val(fasta_file)
+    path('core.aligned.fasta')
+    path('other.fasta')
 
     output: 
-    path("aligned.fasta"),             emit: aligned_fasta
+    path("all.aligned.fasta"),             emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -28,7 +28,9 @@ process ALIGN_SINGLE {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${fasta_file}"
+        core.aligned.fasta \
+        other.fasta
+
     
     """
 }

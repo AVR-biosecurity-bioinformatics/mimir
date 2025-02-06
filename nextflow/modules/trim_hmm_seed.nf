@@ -1,19 +1,16 @@
-process TRAIN_IDTAXA {
-    def module_name = "train_idtaxa"
+process TRIM_HMM_SEED {
+    def module_name = "trim_hmm_seed"
     tag "-"
-    // label "medium"
-    time '4.h'
-    memory '64.GB'
-    cpus 1
+    label "small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
+    path(fasta_file)
 
     output: 
-    path("idtaxa_model.rds"),                  emit: model
+    path("seed_trimmed.fasta"),                            emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
@@ -24,8 +21,8 @@ process TRAIN_IDTAXA {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
-
+    fasta_file =             "${fasta_file}"
+    
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
@@ -42,7 +39,7 @@ process TRAIN_IDTAXA {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """

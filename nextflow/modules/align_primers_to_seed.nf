@@ -1,15 +1,17 @@
-process REMOVE_UNCLASSIFIED {
-    def module_name = "remove_unclassified"
+process ALIGN_PRIMERS_TO_SEED {
+    def module_name = "align_primers_to_seed"
     tag "-"
-    label "very_small"
-    container "staphb/seqkit:2.8.2"
+    time '30.m'
+    memory '8.GB'
+    cpus 1
+    container "staphb/mafft:7.526"
 
     input:
     path(fasta_file)
-    val(remove_unclassified)
+    path(primers)
 
     output: 
-    path("remove_unclassified.fasta"),      emit: fasta
+    path("aligned_primers.fasta"),             emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -19,13 +21,13 @@ process REMOVE_UNCLASSIFIED {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
-
+    
     ### run module code
-    source ${module_name}.sh \
+    bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
         "${fasta_file}" \
-        ${remove_unclassified}
+        ${primers}
     
     """
 }

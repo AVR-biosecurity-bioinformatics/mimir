@@ -1,15 +1,15 @@
-process REMOVE_UNCLASSIFIED {
-    def module_name = "remove_unclassified"
+process REMOVE_AMBIGUOUS {
+    def module_name = "remove_ambiguous"
     tag "-"
     label "very_small"
-    container "staphb/seqkit:2.8.2"
+    container "cicirello/gnu-on-alpine:3.20.3"
 
     input:
     path(fasta_file)
-    val(remove_unclassified)
 
     output: 
-    path("remove_unclassified.fasta"),      emit: fasta
+    path("remove_ambiguous.fasta"),      emit: fasta
+    path("removed.fasta"),          emit: removed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -20,12 +20,11 @@ process REMOVE_UNCLASSIFIED {
     """
     #!/usr/bin/env bash
 
-    ### run module code
+    #### run module code
     source ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${fasta_file}" \
-        ${remove_unclassified}
+        "${fasta_file}" 
     
     """
 }

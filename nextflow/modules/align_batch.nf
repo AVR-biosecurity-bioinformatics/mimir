@@ -8,7 +8,7 @@ process ALIGN_BATCH {
     container "staphb/clustalo:1.2.4"
 
     input:
-    path(fasta_file)
+    val(fasta_file)
 
     output: 
     path("*.aligned.fasta"),             emit: aligned_fasta
@@ -22,7 +22,7 @@ process ALIGN_BATCH {
     """
     #!/usr/bin/env bash
 
-    ### run module code
+    ### run module code #
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \

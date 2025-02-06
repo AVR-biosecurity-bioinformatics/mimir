@@ -1,18 +1,23 @@
-process PRUNE_GROUPS {
-    def module_name = "prune_groups"
-    // tag "-"
-    // label "medium"
-    time '30.m'
-    memory '8.GB'
-    cpus 1
+process TRIM_WITH_HMM {
+    def module_name = "trim_with_hmm"
+    tag "-"
+    label "small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(fasta_files)
-    val(internal_names_file)
+    tuple path(fasta_file), path(hmmer_output, name: 'hmmer_domtblout.txt')
+    val(hmm_max_evalue)
+    val(hmm_min_score)
+    val(hmm_max_hits)
+    val(hmm_min_acc)
+    val(hmm_max_gap)
+    val(min_length_trimmed)
 
     output: 
-    path("seqs_pruned.fasta"),                emit: fasta
+    path("retained_trimmed.fasta"),                       emit: fasta  
+    path("removed_trimmed.fasta"),                        emit: removed_fasta
+    path("removed_trimmed.csv"),                          emit: removed_csv
+
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -25,8 +30,14 @@ process PRUNE_GROUPS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_files =                   "${fasta_files}"
-    internal_names_file =                   "${internal_names_file}"
+    fasta_file =            "${fasta_file}"
+    hmmer_output =          "${hmmer_output}"
+    hmm_max_evalue =        "${hmm_max_evalue}"
+    hmm_min_score =         "${hmm_min_score}"
+    hmm_max_hits =          "${hmm_max_hits}"
+    hmm_min_acc =           "${hmm_min_acc}"
+    hmm_max_gap =           "${hmm_max_gap}"
+    min_length_trimmed =    "${min_length_trimmed}"
 
     ## global variables
     projectDir = "$projectDir"

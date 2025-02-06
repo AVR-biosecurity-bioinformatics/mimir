@@ -6,7 +6,6 @@ set -u
 # $2 = cpus
 # $3 = fasta_file
 # $4 = '--remove_unclassified' parameter
-# $5 = task.index
 
 OUTPUT_FILE="remove_unclassified.fasta"
 

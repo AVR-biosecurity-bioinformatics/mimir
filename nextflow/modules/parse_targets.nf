@@ -9,6 +9,7 @@ process PARSE_TARGETS {
     val(taxon_rank)
     val(entrez_key)
     val(ncbi_synonyms_file)
+    val(ncbi_gencodes_file)
 
     output: 
     tuple path("*_name.txt"), val(taxon_rank),                      emit: taxon_name
@@ -17,6 +18,7 @@ process PARSE_TARGETS {
     path("*_bold_names.txt"),                                       emit: bold_names
     path("*_bold_ids.txt"),                                         emit: bold_ids
     path("*_bold_rank.txt"),                                        emit: bold_rank
+    path("*_gencodes.rds"),                                         emit: gencodes
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -33,6 +35,7 @@ process PARSE_TARGETS {
     taxon_rank =                "${taxon_rank}"
     entrez_key =                "${entrez_key}"
     ncbi_synonyms_file =        "${ncbi_synonyms_file}"
+    ncbi_gencodes_file =        "${ncbi_gencodes_file}"
 
     ## global variables
     projectDir = "$projectDir"

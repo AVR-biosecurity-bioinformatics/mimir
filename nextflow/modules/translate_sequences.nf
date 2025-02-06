@@ -1,19 +1,19 @@
-process TRAIN_IDTAXA {
-    def module_name = "train_idtaxa"
+process TRANSLATE_SEQUENCES {
+    def module_name = "translate_sequences"
     tag "-"
-    // label "medium"
-    time '4.h'
-    memory '64.GB'
-    cpus 1
+    label "small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
+    path(fasta_file)
+    val(coding)
+    val(marker_type)
+    path(ncbi_gencodes)
 
     output: 
-    path("idtaxa_model.rds"),                  emit: model
+    tuple path(fasta_file), path("translations.fasta"),                emit: translations
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
@@ -24,7 +24,10 @@ process TRAIN_IDTAXA {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
+    fasta_file =             "${fasta_file}"
+    coding =                 "${coding}"
+    marker_type =            "${marker_type}"
+    ncbi_gencodes =          "${ncbi_gencodes}"
 
     ## global variables
     projectDir = "$projectDir"
@@ -42,7 +45,7 @@ process TRAIN_IDTAXA {
     )
     }, finally = {
     ### save R environment for debugging
-    if ("${params.rdata}" == "true") { save.image(file = "${task.process}_${task.index}.rda") } 
+    if ("${params.rdata}" == "true") { save.image(file = "${task.process}.rda") } 
     })
 
     """
