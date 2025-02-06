@@ -12,7 +12,8 @@ process PARSE_MARKER {
     env(BOLD),                  emit: bold_query
     env(CODING),                emit: coding
     env(TYPE),                  emit: type
-    path("hmm.gz"),             emit: phmm
+    path("full.hmm"),           emit: phmm
+    path("seed.stockholm"),     emit: seed
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

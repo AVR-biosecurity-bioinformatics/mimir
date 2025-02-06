@@ -24,7 +24,7 @@ mafft \
     --nuc \
     --thread $2 \
     --linelength -1 \
-    --multipair \
+    --6merpair \
     --keeplength \
     --addfragments $4 \
     "${3}" | \
@@ -32,3 +32,10 @@ mafft \
     NR>1 && $1 ~ /^'$PRIMER_NAME'$/ {print ">"$0}
   ' - > aligned_primer.fasta
 
+# throw error if output file is empty
+if [ -s aligned_primer.fasta ]; then
+    echo "Finished aligning primer sequence"        
+else 
+    echo "alignment output file is empty"
+    exit 1
+fi

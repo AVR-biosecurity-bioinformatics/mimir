@@ -1,8 +1,8 @@
-process ALIGN_PRIMERS {
-    def module_name = "align_primers"
+process ALIGN_PRIMERS_TO_DATABASE {
+    def module_name = "align_primers_to_database"
     tag "-"
-    time '10.m'
-    memory '8.GB'
+    time '30.m'
+    memory '12.GB'
     cpus 1
     container "staphb/mafft:7.526"
 
@@ -21,7 +21,7 @@ process ALIGN_PRIMERS {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
-    # #
+    # #  
     ### run module code
     bash ${module_name}.sh \
         ${projectDir} \

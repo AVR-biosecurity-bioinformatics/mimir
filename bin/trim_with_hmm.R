@@ -44,22 +44,19 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "fasta_file",
-    "translations",
     "hmmer_output",
     "hmm_max_evalue", 
     "hmm_min_score", 
     "hmm_max_hits",   
     "hmm_min_acc",   
-    "hmm_max_gap"    
+    "hmm_max_gap",
+    "min_length_trimmed"
 )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 # read in fasta file as DNAbin
 seqs <- ape::read.FASTA(fasta_file)
-
-# read in translated sequences
-translations <- ape::read.FASTA(translations, type = "AA")
 
 # read in hmmer_output
 domtblout <- readr::read_lines(hmmer_output, lazy=FALSE, progress=FALSE) 
@@ -70,8 +67,18 @@ score_threshold <- hmm_min_score %>% as.numeric()
 domain_threshold <- hmm_max_hits %>% as.integer() # max allowed domains (1 is safe)
 acc_threshold <- hmm_min_acc %>% as.numeric()
 terminalgap_threshold <- hmm_max_gap %>% as.integer() # terminal gap is the distance between the beginning or end of the envelope/HMM and the min/max of the target or HMM
+min_length_trimmed <- min_length_trimmed %>% as.integer()
 ## NOTE: terminal gaps above the threshold on the same side (start or end) for both the envelope and HMM is expected in the case of frameshifts
 ## More extensive frameshift detection could be done with alignments to other sequences and removing those with gaps not in multiples of three
+
+# alter filtering parameters for trimmed
+evalue_mantissa <- evalue_threshold %>% as.character() %>% stringr::str_extract(., "^\\d+") %>% as.double
+evalue_power <- evalue_threshold %>% as.character() %>% stringr::str_extract(., "\\d+$") %>% as.integer 
+evalue_threshold_trimmed <- paste0(evalue_mantissa,"e-",(evalue_power/2)) %>% as.numeric()
+if (evalue_threshold_trimmed >1){stop("New evalue is greater than 1")}
+
+score_threshold_trimmed <- floor(score_threshold / 5)
+terminalgap_threshold_trimmed <- ceiling(terminalgap_threshold / 2)
 
 ### run code
 
@@ -190,19 +197,21 @@ if(!all(hits$target_name %in% names(seqs))){
     stop("One or more sequence names in HMMER output table do not match names in input .fasta file")
 }
 
+
 # filter hits based on various thresholds
 hits_retained <- 
     hits %>%
     # remove sequences that don't meet all criteria
     dplyr::filter(
-        evalue_i <= evalue_threshold & 
-        score >= score_threshold & 
-        # domain_total <= domain_threshold & 
+        evalue_i <= evalue_threshold_trimmed & 
+        score >= score_threshold_trimmed & 
+        # domain_total == domain_threshold & 
         acc >= acc_threshold &
         stop_codon_hit == FALSE &
-        !( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ) & # both need to be fulfilled 
-        !( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ) 
+        !( hmm_start_gap > terminalgap_threshold_trimmed & env_start_gap > terminalgap_threshold_trimmed ) & # both need to be fulfilled 
+        !( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed ) 
     )
+
 
 # forward strand hits
 hits_fwd <- 
@@ -263,6 +272,7 @@ hit_locations <-
         pad_len =   pad_to - pad_from + 1
     ) 
   
+
 # subset nucleotide seqs based on location of hits for each sequence
 seqs_subset <-
     seqs_combined %>%
@@ -275,40 +285,9 @@ if (!all(unname(lengths(seqs_subset)) == hit_locations$pad_len)){
     stop("Actual subset sequence lengths are not the same as calculated subset sequence lengths")
 }
 
-## subset translations based on location of envelope for each sequence (for further trimming with trimmed HMM)
+# remove sequences shorter than min_length_trimmed
+seqs_long <- seqs_subset[seqs_subset %>% lengths() %>% unname() >= min_length_trimmed]
 
-# remove translations not present in the subset sequences
-translations_retained <- translations[names(translations) %in% hit_locations$old_name]
-
-# get order of translations
-translations_retained_names <- names(translations_retained)
-
-# get padded envelope locations
-env_locations <- 
-    hit_locations %>% 
-    # pad envelope 1 residue either side
-    dplyr::mutate(
-        env_from_pad = base::pmax(1, env_from - 1),
-        env_to_pad = base::pmin(target_len, env_to + 1)
-    ) %>%
-    # force order of tibble to be the same as the AAbin object
-    dplyr::mutate( old_name = forcats::fct_relevel(old_name, translations_retained_names) ) %>% 
-    dplyr::arrange(old_name)
-
-# subset translations to padded envelopes
-translations_subset <-
-    translations_retained %>%
-    # convert to AAstringset
-    as.list() %>%
-    as.character() %>%
-    purrr::map(function(y){ paste0(y, collapse = "") }) %>%
-    unlist %>%
-    Biostrings::AAStringSet() %>%
-    # subset
-    XVector::subseq(., start = env_locations$env_from_pad, end = env_locations$env_to_pad) %>%
-    ape::as.AAbin()
-
-##
 # seqs without a significant hit (either no hit or an excluded hit)
 seqs_nohit <- seqs[!names(seqs) %in% c(hits_fwd$target_name, hits_rev$target_name)]
 
@@ -317,69 +296,73 @@ seqs_removed_tibble <-
     hits %>%
     # remove sequences that don't meet all criteria
     dplyr::filter(
-        evalue_i > evalue_threshold |
-        score < score_threshold | 
+        evalue_i > evalue_threshold_trimmed |
+        score < score_threshold_trimmed | 
         # domain_total > domain_threshold |
         acc < acc_threshold |
         stop_codon_hit == TRUE |
-        ( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ) | # both need to be fulfilled 
-        ( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ) 
+        ( hmm_start_gap > terminalgap_threshold_trimmed & env_start_gap > terminalgap_threshold_trimmed ) | # both need to be fulfilled 
+        ( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed ) 
     ) %>%
     # which filters were failed
     dplyr::mutate(
-        fail_max_evalue =       evalue_i > evalue_threshold,
-        fail_min_score =        score < score_threshold,
+        fail_max_evalue =       evalue_i > evalue_threshold_trimmed,
+        fail_min_score =        score < score_threshold_trimmed,
         # fail_max_hits =         domain_total > domain_threshold ,
         fail_min_acc =          acc < acc_threshold ,
-        fail_max_gap_start =    ( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ),
-        fail_max_gap_end =      ( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ),
+        fail_max_gap_start =    ( hmm_start_gap > terminalgap_threshold_trimmed & env_start_gap > terminalgap_threshold_trimmed ),
+        fail_max_gap_end =      ( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed ),
         fail_stop_codon =       stop_codon_hit == TRUE
     ) %>%
     dplyr::mutate(removal_type = "excluded_hit", .after = stop_codon_hit) %>%
     # add names of sequences without a hit
     tibble::add_row(
         target_name = names(seqs_nohit)[!names(seqs_nohit) %in% .$target_name], 
-        removal_type = "no_hit"
+        removal_type = "no_hit",
+    ) %>%
+    # add sequences removed for being too short
+    tibble::add_row(
+        target_name = names(seqs_subset[seqs_subset %>% lengths() %>% unname() < min_length_trimmed]),
+        removal_type = "length",
+        fail_max_evalue =       FALSE,
+        fail_min_score =        FALSE,
+        # fail_max_hits =         FALSE,
+        fail_min_acc =          FALSE,
+        fail_max_gap_start =    FALSE,
+        fail_max_gap_end =      FALSE,
+        fail_stop_codon =       FALSE
     )
 
-readr::write_csv(seqs_removed_tibble, file = "removed_full.csv")
+readr::write_csv(seqs_removed_tibble, file = "removed_trimmed.csv")
 
 ### outputs
 
+# removed seqs
+seqs_removed <- seqs[names(seqs) %in% seqs_removed_tibble$target_name]
 
 # check all sequences are either retained or removed
-if ( length(seqs_subset) + length(seqs_nohit) != length(seqs) ){
+if ( length(seqs_long) + nrow(seqs_removed_tibble) != length(seqs) ){
     stop("ERROR: Sum of retained and removed sequences does not equal the number of input sequences")
 }
 
 # write fasta of subsetted sequences
-if ( !is.null(seqs_subset) && length(seqs_subset) > 0 ){
+if ( !is.null(seqs_long) && length(seqs_long) > 0 ){
     write_fasta(
-        seqs_subset, 
-        file = paste0("retained_full.fasta"), 
+        seqs_long, 
+        file = paste0("retained_trimmed.fasta"), 
         compress = FALSE
         )
 } else {
-    file.create(paste0("retained_full.fasta"))
+    file.create(paste0("retained_trimmed.fasta"))
 }
 
 # write fasta of excluded (filtered-out) sequences
-if ( !is.null(seqs_nohit) && length(seqs_nohit) > 0 ){
+if ( !is.null(seqs_removed) && length(seqs_removed) > 0 ){
     write_fasta(
-        seqs_nohit, 
-        file = paste0("removed_full.fasta"), 
+        seqs_removed, 
+        file = paste0("removed_trimmed.fasta"), 
         compress = FALSE
         )
 } else {
-    file.create(paste0("removed_full.fasta"))
-}
-
-# write trimmed translations
-if (!is.null(translations_subset) && length(translations_subset) > 0){
-    ape::write.FASTA(
-      translations_subset,
-      file = paste0("translations_retained.fasta")
-    )  
-} else {
-    file.create(paste0("translations_retained.fasta"))
+    file.create(paste0("removed_trimmed.fasta"))
 }

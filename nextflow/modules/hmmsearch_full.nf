@@ -1,5 +1,5 @@
-process HMMSEARCH {
-    def module_name = "hmmsearch"
+process HMMSEARCH_FULL {
+    def module_name = "hmmsearch_full"
     tag "-"
     // label "very_high"
     time '10.m'
@@ -9,10 +9,10 @@ process HMMSEARCH {
 
     input:
     tuple path(fasta_file), path(translations, name: 'translations.fasta')
-    path(hmm, name: 'hmm.gz')
+    path(hmm, name: 'full.hmm')
 
     output: 
-    tuple path(fasta_file), path("hmmer_domtblout.txt"),        emit: hmmer_output
+    tuple path(fasta_file), path(translations), path("hmmer_domtblout.txt"),        emit: hmmer_output
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -28,7 +28,7 @@ process HMMSEARCH {
         ${projectDir} \
         ${task.cpus} \
         translations.fasta \
-        hmm.gz
+        full.hmm
     
     """
 }

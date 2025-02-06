@@ -359,7 +359,8 @@ primers_list <-
 # primer = element of primer_list
 # msa = complete alignment including primers 
 primer_check <- function(primer, msa, location_threshold = location_threshold){
-  
+    
+    # browser()
     # DA sequence alignments for given primer
     p.dap <- msa[names(msa) %>% stringr::str_starts(primer[[1]])]
     
@@ -368,16 +369,33 @@ primer_check <- function(primer, msa, location_threshold = location_threshold){
     lapply(
         p.dap, # apply to each sequence of DSS object
         function(x){
-            # find gaps
+           # browser()  
+          # find gaps
             da.gap_pos <- 
                 x %>%
                 as.character() %>%
                 stringr::str_locate_all(., "-+") %>% .[[1]]
             # find start and end of nucleotides
-            da.start <- da.gap_pos[1,2] + 1
-            da.start <- unname(da.start)
-            da.end <- da.gap_pos[nrow(da.gap_pos),1] - 1
-            da.end <- unname(da.end)
+            if ( da.gap_pos %>% nrow() > 1 ){
+                # if more than 1 stretch of gaps
+                da.start <- da.gap_pos[1,2] + 1 # get nucleotide just after end of first gap
+                da.start <- unname(da.start)
+                da.end <- da.gap_pos[nrow(da.gap_pos),1] - 1 # get nucleotide just before start of last gap
+                da.end <- unname(da.end)  
+            } else if ( da.gap_pos %>% nrow() == 1 ){
+                # if only one gap
+                if ( da.gap_pos[1,1] == 1 ){ 
+                    da.start <- da.gap_pos[1,2] + 1 # get nucleotide just after end of gap
+                    da.start <- unname(da.start)
+                    da.end <- length(x) # primer sequence ends at length of alignment sequence (since no downstream gap)
+                    da.end <- unname(da.end)
+                } else if ( da.gap_pos[1,2] == length(x) ){ 
+                    da.start <- 1 # primer sequence starts at 1 (since no upstream gap)
+                    da.start <- unname(da.start)
+                    da.end <- da.gap_pos[1,1] - 1 # get nucleotide just before start of gap
+                    da.end <- unname(da.end)  
+                } else {stop(paste0("For ",names(x)," da.gap_pos not valid"))}
+            } else {stop(paste0("For ",names(x)," da.gap_pos not valid"))}
             # return positions separated by /
             return(paste0(da.start, "/", da.end))
         }

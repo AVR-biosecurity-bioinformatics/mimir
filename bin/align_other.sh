@@ -8,8 +8,8 @@ set -u
 # $4 = other.fasta
 
 
-# if only one sequence in file, skip alignment
-if [[ $( grep -c "^>" $3 ) > 1 ]]; then 
+# if 'other' sequence file does not contain sequences, skip alignment
+if [[ $( grep -c "^>" $4 ) > 0 ]]; then 
     # align
     mafft \
         --nuc \
@@ -24,3 +24,10 @@ else
     cp $3 all.aligned.fasta
 fi 
 
+# throw error if output file is empty
+if [ -s all.aligned.fasta ]; then
+    echo "Finished aligning all sequences"        
+else 
+    echo "alignment output file is empty"
+    exit 1
+fi

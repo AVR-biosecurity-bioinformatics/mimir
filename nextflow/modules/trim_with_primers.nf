@@ -1,5 +1,5 @@
-process TRIM_TO_PRIMERS {
-    def module_name = "trim_to_primers"
+process TRIM_WITH_PRIMERS {
+    def module_name = "trim_with_primers"
     tag "-"
     // label "medium"
     time '1.h'
@@ -29,7 +29,7 @@ process TRIM_TO_PRIMERS {
     #!/usr/bin/env Rscript
     
     ### defining Nextflow environment variables as R variables
-    ## input channel variables
+    ## input channel variables   
     fasta_file =                    "${fasta_file}"
     primer_fwd =                    "${primer_fwd}"
     primer_rev =                    "${primer_rev}"

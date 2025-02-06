@@ -8,12 +8,13 @@ include { ADD_TAXID_GENBANK                                                 } fr
 include { ALIGN_BATCH as ALIGN_SPECIES                                                 } from '../modules/align_batch'
 include { ALIGN_CORE                                                 } from '../modules/align_core'
 include { ALIGN_OTHER                                                 } from '../modules/align_other'
-include { ALIGN_PRIMERS                                                 } from '../modules/align_primers'
+include { ALIGN_PRIMERS_TO_DATABASE                                                 } from '../modules/align_primers_to_database'
+include { ALIGN_PRIMERS_TO_SEED                                                 } from '../modules/align_primers_to_seed'
 include { ALIGN_SINGLE as ALIGN_OUTPUT                                                 } from '../modules/align_single'
+include { BUILD_TRIMMED_HMM                                                 } from '../modules/build_trimmed_hmm'
 include { CLUSTER_SEQUENCES                                                 } from '../modules/cluster_sequences'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                            } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                           } from '../modules/combine_chunks'
-include { DISAMBIGUATE_PRIMERS                                                 } from '../modules/disambiguate_primers'
 include { EXTRACT_BOLD                                                 } from '../modules/extract_bold'
 // include { FETCH_BOLD                                                } from '../modules/fetch_bold'
 include { FETCH_GENBANK                                             } from '../modules/fetch_genbank'
@@ -25,7 +26,8 @@ include { FORMAT_OUTPUT                                         } from '../modul
 include { GET_BOLD_DATABASE                                         } from '../modules/get_bold_database'
 include { GET_CORE_SEQUENCES                                         } from '../modules/get_core_sequences'
 include { GET_NCBI_TAXONOMY                                         } from '../modules/get_ncbi_taxonomy'
-include { HMMSEARCH                                         } from '../modules/hmmsearch'
+include { HMMSEARCH_FULL                                         } from '../modules/hmmsearch_full'
+include { HMMSEARCH_TRIMMED                                         } from '../modules/hmmsearch_trimmed'
 include { IMPORT_INTERNAL                                                 } from '../modules/import_internal'
 include { MAKE_MERGE_TABLE                                                 } from '../modules/make_merge_table'
 include { MATCH_BOLD                                                 } from '../modules/match_bold'
@@ -36,6 +38,7 @@ include { MERGE_SPLITS as MERGE_SPLITS_FAMILY                         } from '..
 include { MERGE_SPLITS as MERGE_SPLITS_SPECIES                             } from '../modules/merge_splits'
 include { PARSE_MARKER                                                 } from '../modules/parse_marker'
 include { PARSE_TARGETS                                                 } from '../modules/parse_targets'
+include { PROCESS_PRIMERS                                                 } from '../modules/process_primers'
 include { PRUNE_GROUPS                                                 } from '../modules/prune_groups'
 include { QUERY_GENBANK                                                 } from '../modules/query_genbank'
 include { REFORMAT_NAMES                                                 } from '../modules/reformat_names'
@@ -50,11 +53,14 @@ include { SORT_BY_LINEAGE as SORT_BY_LINEAGE_1                                  
 include { SORT_BY_LINEAGE as SORT_BY_LINEAGE_2                                                } from '../modules/sort_by_lineage'
 include { SPLIT_BY_RANK as SPLIT_BY_FAMILY                                                } from '../modules/split_by_rank'
 include { SPLIT_BY_RANK as SPLIT_BY_SPECIES                                                } from '../modules/split_by_rank'
+include { STOCKHOLM_TO_FASTA                                                 } from '../modules/stockholm_to_fasta'
 include { SUMMARISE_COUNTS                                                 } from '../modules/summarise_counts'
 include { SUMMARISE_TAXA                                                 } from '../modules/summarise_taxa'
 include { TRAIN_IDTAXA                                                 } from '../modules/train_idtaxa'
 include { TRANSLATE_SEQUENCES                                                 } from '../modules/translate_sequences'
-include { TRIM_TO_PRIMERS                                                 } from '../modules/trim_to_primers'
+include { TRIM_HMM_SEED                                                 } from '../modules/trim_hmm_seed'
+include { TRIM_WITH_PRIMERS                                                 } from '../modules/trim_with_primers'
+include { TRIM_WITH_HMM                                                 } from '../modules/trim_with_hmm'
 // include { TRIM_PHMM                                                 } from '../modules/trim_phmm'
 
 
@@ -136,7 +142,8 @@ workflow TAXRETURN {
         ch_targets,
         ch_target_ranks,
         ch_entrez_key,
-        GET_NCBI_TAXONOMY.out.synonyms
+        GET_NCBI_TAXONOMY.out.synonyms,
+        GET_NCBI_TAXONOMY.out.ncbi_gencodes
     )
 
     //// TODO: How does current PARSE_TARGETS implementation work with --target_taxa as a list?
@@ -151,6 +158,41 @@ workflow TAXRETURN {
     PARSE_MARKER (
         ch_marker
     )
+
+    //// processes relevant to trimming sequences
+    if ( params.trim_to_primers ) {
+        
+        //// get disambiguated and translated primer sequences
+        PROCESS_PRIMERS (
+            params.primer_fwd,
+            params.primer_rev,
+            PARSE_TARGETS.out.gencodes,
+            PARSE_MARKER.out.type
+        )
+
+        //// convert seed alignment to fasta format
+        STOCKHOLM_TO_FASTA (
+            PARSE_MARKER.out.seed
+        )
+
+        //// align translated primers to PHMM seed alignment
+        ALIGN_PRIMERS_TO_SEED (
+            STOCKHOLM_TO_FASTA.out.fasta,
+            PROCESS_PRIMERS.out.translated
+        )
+
+        //// trim seed alignment to primer region
+        TRIM_HMM_SEED (
+            ALIGN_PRIMERS_TO_SEED.out.fasta
+        )
+
+        //// build trimmed PHMM from trimmed seed alignment
+        BUILD_TRIMMED_HMM (
+            TRIM_HMM_SEED.out.fasta
+        )
+
+    }
+
 
     /*
     Get Genbank sequences
@@ -399,14 +441,14 @@ workflow TAXRETURN {
     )
 
     //// search translated sequences for hits against PHMM model
-    HMMSEARCH (
+    HMMSEARCH_FULL (
         TRANSLATE_SEQUENCES.out.translations,
         PARSE_MARKER.out.phmm
     )
 
     //// filter sequences by HMMSEARCH output
     FILTER_HMM (
-        HMMSEARCH.out.hmmer_output,
+        HMMSEARCH_FULL.out.hmmer_output,
         params.hmm_max_evalue,
         params.hmm_min_score,
         params.hmm_max_hits,
@@ -416,7 +458,8 @@ workflow TAXRETURN {
 
     //// combine and save intermediate file 
     if ( params.save_intermediate ) {
-        FILTER_HMM.out.fasta
+        FILTER_HMM.out.retained
+            .map { nucleotide, protein -> nucleotide } // get just nucleotide sequences
             .collectFile ( 
                 name: "filter_hmm.fasta",
                 storeDir: "./output/results",
@@ -446,18 +489,83 @@ workflow TAXRETURN {
             )
     }
 
-    ////
-
     //// count number of sequences passing PHMM filter
-    ch_count_filter_hmm = FILTER_HMM.out.fasta.countFasta().combine(["filter_hmm"]) 
+    ch_count_filter_hmm = FILTER_HMM.out.retained.map { nucleotide, protein -> nucleotide }.countFasta().combine(["filter_hmm"]) 
 
-    ch_filter_output = FILTER_HMM.out.fasta
-        .filter{ it.size()>0 } // remove empty files
-        .collect()
+    //// trim further to primer region if required
+    if ( params.trim_to_primers ){
+        //// do a second round of hmm searching using trimmed PHMM
+        HMMSEARCH_TRIMMED (
+            FILTER_HMM.out.retained,
+            BUILD_TRIMMED_HMM.out.hmm
+        )
+
+        //// trim to trimmed HMM region
+        TRIM_WITH_HMM (
+            HMMSEARCH_TRIMMED.out.hmmer_output,
+            params.hmm_max_evalue,
+            params.hmm_min_score,
+            params.hmm_max_hits,
+            params.hmm_min_acc,
+            params.hmm_max_gap,
+            params.min_length_trimmed
+        )
+
+        //// combine and save intermediate file 
+        if ( params.save_intermediate ) {
+            TRIM_WITH_HMM.out.fasta
+                .collectFile ( 
+                    name: "trim_with_hmm.fasta",
+                    storeDir: "./output/results",
+                    cache: 'lenient'
+                )
+        }
+
+        //// combine and save excluded sequences
+        if ( params.save_intermediate ) {
+            TRIM_WITH_HMM.out.removed_fasta
+                .collectFile ( 
+                    name: "trim_with_hmm.removed.fasta",
+                    storeDir: "./output/results",
+                    cache: 'lenient'
+                )
+        }
+
+        //// combine and save excluded sequence table
+        if ( params.save_intermediate ) {
+            TRIM_WITH_HMM.out.removed_csv
+                .collectFile ( 
+                    name: "trim_with_hmm.removed.csv",
+                    storeDir: "./output/results",
+                    cache: 'lenient',
+                    keepHeader: true, 
+                    skip: 1
+                )
+        }
+
+        //// count number of sequences passing trimming with PHMM (above min length)
+        ch_count_hmm_trim = TRIM_WITH_HMM.out.fasta.countFasta().combine(["hmm_trim"]) 
+
+        //// create output channel
+        ch_hmm_output = TRIM_WITH_HMM.out.fasta 
+            .filter { it.size() > 0 }
+            .collect ()
+
+    } else {
+        //// null count channel
+        ch_count_hmm_trim = Channel.of(["NA", "hmm_trim"])
+
+        //// create output channel
+        ch_hmm_output = FILTER_HMM.out.retained
+            .map { nucleotide, protein -> nucleotide }
+            .filter { it.size() > 0 } // remove empty files
+            .collect ()
+    }
+
 
     //// combine sequences into one .fasta file and dealign
     COMBINE_CHUNKS_1 ( 
-        ch_filter_output,
+        ch_hmm_output,
         "true"
     )
  
@@ -637,95 +745,10 @@ workflow TAXRETURN {
     Database output
     */
 
-    if ( params.trim_to_primers || params.aligned_output ) {
+    // if ( params.trim_to_primers || params.aligned_output ) {
+    if ( params.aligned_output ) {
         
-        // ////// 'old' alignment method based on merging
-        
-        // //// sort .fasta by lineage string to reduce the number of files that need to be merged after splitting 
-        // SORT_BY_LINEAGE_2 (
-        //     COMBINE_CHUNKS_2.out.fasta
-        // )
-
-        // //// split database by family 
-        // SPLIT_BY_FAMILY (
-        //     SORT_BY_LINEAGE_2.out.fasta,
-        //     "family"
-        // )
-
-        // //// group files with the same name
-        // SPLIT_BY_FAMILY.out.fasta
-        //     .flatten()
-        //     .map { file ->
-        //         [ file.name , file ] }
-        //     .groupTuple( by: 0 )
-        //     // branch channel depending on the number of files in each tuple
-        //     .branch { file_name, file_list ->
-        //         no_merge: file_list.size() == 1
-        //             return file_list
-        //         merge: file_list.size() > 1
-        //             return file_list
-        //     } 
-        //     .set { ch_split_family_output }
-
-        // //// group merging files into groups of 1000 families for merging
-        // ch_split_family_output.merge
-        //     .buffer ( size: 1000, remainder: true )
-        //     .flatten ()
-        //     .collect ()
-        //     .set { ch_merge_splits_family_input }
-
-        // //// merge files from the same species across the different chunks
-        // MERGE_SPLITS_FAMILY (
-        //     ch_merge_splits_family_input
-        // )
-
-        // //// collect and flatten merged and unmerged family-level .fastas
-        // ch_split_family_output.no_merge
-        //     .flatten ()
-        //     .mix ( MERGE_SPLITS_FAMILY.out.fasta.flatten() )
-        //     .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
-        //     .flatten ()
-        //     .set { ch_align_family_input }
-
-        // //// align each family of the database
-        // ALIGN_OUTPUT (
-        //     ch_align_family_input
-        // )
-
-        // //// collect alignments into list, branching based on number of alignments (only merge if more than one)
-        // ALIGN_OUTPUT.out.aligned_fasta
-        //     .collect ()
-        //     .branch { file_list ->
-        //         no_merge: file_list.size() == 1
-        //             return file_list
-        //         merge: file_list.size() > 1
-        //             return file_list
-        //     }
-        //     .set { ch_aligned_families }
-
-        // //// make merge table for mafft merge
-        // MAKE_MERGE_TABLE (
-        //     ch_aligned_families.merge
-        // )
-
-        // //// merge msas with mafft merge
-        // MERGE_ALIGNMENTS (
-        //     MAKE_MERGE_TABLE.out.fasta_table
-        // )
-
-        // ch_merged_alignments = Channel.empty()
-
-        // ch_merged_alignments
-        //     .mix ( MERGE_ALIGNMENTS.out.aligned_fasta )
-        //     .set { ch_merged_alignments }
-
-        // //// mix merged and non-merged channels to complete the optional process path
-        // ch_aligned_families.no_merge
-        //     .mix ( ch_merged_alignments )
-        //     .first () // convert to value channel
-        //     .set { ch_aligned_database }
-
-        //// new alignment method based on mafft-sparsecore.rb (add sequences to a core alignment)
+        //// whole-database alignment method based on mafft-sparsecore.rb (adding sequences to a core alignment)
 
         //// define 'core' and 'other' sequences based on taxonomy and length
         GET_CORE_SEQUENCES (
@@ -755,72 +778,62 @@ workflow TAXRETURN {
                 )
         }
 
-        //// trim database to primer region
-        if ( params.trim_to_primers ){
+        ch_formatting_input = ch_aligned_database
 
-            //// convert degenerate primer sequences to all possible sequence combinations
-            DISAMBIGUATE_PRIMERS (
-                params.primer_fwd,
-                params.primer_rev
-            )
+        // //// trim database to primer region
+        // if ( params.trim_to_primers ){
 
-            //// split into individual primer sequences for alignment
-            DISAMBIGUATE_PRIMERS.out.fasta
-                .splitFasta ( by: 1, file: true )
-                .set { ch_disambiguated_primers }
+        //     //// split into individual primer sequences for alignment
+        //     PROCESS_PRIMERS.out.nuc_fasta
+        //         .splitFasta ( by: 1, file: true )
+        //         .set { ch_disambiguated_primers }
 
-            //// add primer sequences to database alignment, output only the primer sequence (with gaps)
-            ALIGN_PRIMERS (
-                ch_aligned_database,
-                ch_disambiguated_primers
-            )
+        //     //// add primer sequences to database alignment, output only the primer sequence (with gaps)
+        //     ALIGN_PRIMERS_TO_DATABASE (
+        //         ch_aligned_database,
+        //         ch_disambiguated_primers
+        //     )
 
-            //// merge individual primer alignments into one alignment with the database
-            ch_aligned_database
-                .mix ( ALIGN_PRIMERS.out.fasta )
-                .collectFile ( name: 'merged_primers.fasta', newLine: true )
-                .set { ch_merged_primer_alignment }
+        //     //// merge individual primer alignments into one alignment with the database
+        //     ch_aligned_database
+        //         .mix ( ALIGN_PRIMERS_TO_DATABASE.out.fasta )
+        //         .collectFile ( name: 'merged_primers.fasta', newLine: true )
+        //         .set { ch_merged_primer_alignment }
 
-            //// trim alignment to primers
-            TRIM_TO_PRIMERS (
-                ch_merged_primer_alignment,
-                params.primer_fwd,
-                params.primer_rev,
-                params.remove_primers,
-                params.max_primer_mismatches,
-                params.min_length_trimmed
-            )
+        //     //// trim alignment to primers
+        //     TRIM_WITH_PRIMERS (
+        //         ch_merged_primer_alignment,
+        //         params.primer_fwd,
+        //         params.primer_rev,
+        //         params.remove_primers,
+        //         params.max_primer_mismatches,
+        //         params.min_length_trimmed
+        //     )
 
-            //// save TRIM_TO_PRIMERS output
-            if ( params.save_intermediate ) {
-                TRIM_TO_PRIMERS.out.fasta
-                    .collectFile ( 
-                        name: "trim_to_primers.fasta",
-                        storeDir: "./output/results"
-                    )
-            }
+        //     //// save TRIM_TO_PRIMERS output
+        //     if ( params.save_intermediate ) {
+        //         TRIM_WITH_PRIMERS.out.fasta
+        //             .collectFile ( 
+        //                 name: "trim_with_primers.fasta",
+        //                 storeDir: "./output/results"
+        //             )
+        //     }
 
-            //// save TRIM_TO_PRIMERS removed sequences
-            if ( params.save_intermediate ) {
-                TRIM_TO_PRIMERS.out.removed
-                    .collectFile ( 
-                        name: "trim_to_primers.removed.fasta",
-                        storeDir: "./output/results"
-                    )
-            }
+        //     //// save TRIM_TO_PRIMERS removed sequences
+        //     if ( params.save_intermediate ) {
+        //         TRIM_WITH_PRIMERS.out.removed
+        //             .collectFile ( 
+        //                 name: "trim_with_primers.removed.fasta",
+        //                 storeDir: "./output/results"
+        //             )
+        //     }
 
-            ch_count_trim_to_primers = TRIM_TO_PRIMERS.out.fasta.countFasta().combine(["trim_to_primers"])
+        //     ch_count_trim_with_primers = TRIM_WITH_PRIMERS.out.fasta.countFasta().combine(["trim_with_primers"])
 
-            ch_formatting_input = TRIM_TO_PRIMERS.out.fasta
-
-        } else {
-            ch_count_trim_to_primers = Channel.of(["NA", "trim_to_primers"])
-
-            ch_formatting_input = ch_aligned_database
-        }
+        //     ch_formatting_input = TRIM_WITH_PRIMERS.out.fasta
 
     } else {
-        ch_count_trim_to_primers = Channel.of(["NA", "trim_to_primers"])
+        // ch_count_trim_with_primers = Channel.of(["NA", "trim_with_primers"])
 
         ch_formatting_input = COMBINE_CHUNKS_2.out.fasta
     }
@@ -855,12 +868,13 @@ workflow TAXRETURN {
     ch_count_input                  .view{ "${it[1]}: ${it[0]}" }
     ch_count_remove_unclassified    .view{ "${it[1]}: ${it[0]}" }
     ch_count_filter_hmm             .view{ "${it[1]}: ${it[0]}" }
+    ch_count_hmm_trim               .view{ "${it[1]}: ${it[0]}" }
     ch_count_remove_exact           .view{ "${it[1]}: ${it[0]}" }
     ch_count_remove_ambiguous       .view{ "${it[1]}: ${it[0]}" }
     ch_count_remove_tax_outliers    .view{ "${it[1]}: ${it[0]}" }
     ch_count_remove_seq_outliers    .view{ "${it[1]}: ${it[0]}" }
     ch_count_prune_groups           .view{ "${it[1]}: ${it[0]}" }
-    ch_count_trim_to_primers        .view{ "${it[1]}: ${it[0]}" }
+    // ch_count_trim_with_primers      .view{ "${it[1]}: ${it[0]}" }
 
     //// collect count channels into a csv
     ch_counts_file = Channel.empty()
@@ -874,12 +888,13 @@ workflow TAXRETURN {
         .concat ( ch_count_input                    .combine([7]) )
         .concat ( ch_count_remove_unclassified      .combine([8]) )
         .concat ( ch_count_filter_hmm               .combine([9]) )
-        .concat ( ch_count_remove_exact             .combine([10]) )
-        .concat ( ch_count_remove_ambiguous         .combine([11]) )
-        .concat ( ch_count_remove_tax_outliers      .combine([12]) )
-        .concat ( ch_count_remove_seq_outliers      .combine([13]) )
-        .concat ( ch_count_prune_groups             .combine([14]) )
-        .concat ( ch_count_trim_to_primers          .combine([15]) )
+        .concat ( ch_count_hmm_trim                 .combine([10]) )
+        .concat ( ch_count_remove_exact             .combine([11]) )
+        .concat ( ch_count_remove_ambiguous         .combine([12]) )
+        .concat ( ch_count_remove_tax_outliers      .combine([13]) )
+        .concat ( ch_count_remove_seq_outliers      .combine([14]) )
+        .concat ( ch_count_prune_groups             .combine([15]) )
+        // .concat ( ch_count_trim_with_primers        .combine([16]) )
         .map { sequences, process, order -> "$sequences,$process,$order" }
         .collectFile ( name: 'counts.csv', seed: "sequences,process,order", newLine: true, cache: false )
         .set { ch_counts_file }

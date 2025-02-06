@@ -14,6 +14,7 @@ case ${3} in
         CODING="true"
         TYPE="mitochondrial"
         PHMM_URL="https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/PF00115?annotation=hmm"
+        SEED_URL="https://www.ebi.ac.uk/interpro/wwwapi//entry/pfam/PF00115/?annotation=alignment:seed&download"
         ;;
     
     # "28S")
@@ -34,6 +35,10 @@ case ${3} in
 
 esac
 
-# download HMM from InterPro
-curl -o hmm.gz $PHMM_URL
-### TODO: make this download more robust
+### TODO: make these downloads more robust
+
+# download PHMM from InterPro and unzip
+curl $PHMM_URL | gunzip > full.hmm
+
+# download seed alignment for PHMM from InterPro and unzip
+curl $SEED_URL | gunzip > seed.stockholm

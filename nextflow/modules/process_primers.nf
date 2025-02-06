@@ -1,22 +1,21 @@
-process FILTER_HMM {
-    def module_name = "filter_hmm"
+process PROCESS_PRIMERS {
+    def module_name = "process_primers"
     tag "-"
-    label "small"
+    // label "medium"
+    time '10.m'
+    memory '2.GB'
+    cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple path(fasta_file), path(translations), path(hmmer_output, name: 'hmmer_domtblout.txt')
-    val(hmm_max_evalue)
-    val(hmm_min_score)
-    val(hmm_max_hits)
-    val(hmm_min_acc)
-    val(hmm_max_gap)
+    val(primer_fwd)
+    val(primer_rev)
+    path(gencodes_file)
+    val(marker_type)
 
     output: 
-    tuple path("retained_full.fasta"), path("translations_retained.fasta"),  emit: retained  
-    path("removed_full.fasta"),                                              emit: removed_fasta
-    path("removed_full.csv"),                                                emit: removed_csv
-
+    path("primers.fasta"),                                  emit: nuc_fasta
+    path("translated.fasta"),                               emit: translated
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -29,14 +28,10 @@ process FILTER_HMM {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =            "${fasta_file}"
-    translations =          "${translations}" 
-    hmmer_output =          "${hmmer_output}"
-    hmm_max_evalue =        "${hmm_max_evalue}"
-    hmm_min_score =         "${hmm_min_score}"
-    hmm_max_hits =          "${hmm_max_hits}"
-    hmm_min_acc =           "${hmm_min_acc}"
-    hmm_max_gap =           "${hmm_max_gap}"
+    primer_fwd =                    "${primer_fwd}"
+    primer_rev =                    "${primer_rev}"
+    gencodes_file =                 "${gencodes_file}"
+    marker_type =                   "${marker_type}"
 
     ## global variables
     projectDir = "$projectDir"

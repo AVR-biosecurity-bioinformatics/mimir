@@ -1,18 +1,14 @@
-process DISAMBIGUATE_PRIMERS {
-    def module_name = "disambiguate_primers"
+process TRIM_HMM_SEED {
+    def module_name = "trim_hmm_seed"
     tag "-"
-    // label "medium"
-    time '10.m'
-    memory '2.GB'
-    cpus 1
+    label "small"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(primer_fwd)
-    val(primer_rev)
+    path(fasta_file)
 
     output: 
-    path("primers.fasta"),                                  emit: fasta
+    path("seed_trimmed.fasta"),                            emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -25,9 +21,8 @@ process DISAMBIGUATE_PRIMERS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    primer_fwd =                    "${primer_fwd}"
-    primer_rev =                    "${primer_rev}"
-
+    fasta_file =             "${fasta_file}"
+    
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

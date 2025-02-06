@@ -46,7 +46,8 @@ nf_vars <- c(
     "taxon",
     "taxon_rank",
     "entrez_key",
-    "ncbi_synonyms_file"
+    "ncbi_synonyms_file",
+    "ncbi_gencodes_file"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -77,6 +78,9 @@ if ( taxon_rank == "no_ranks" ){
 
 # import ncbi synonyms tibble
 ncbi_synonyms <- readRDS(ncbi_synonyms_file)
+
+# import ncbi synonyms tibble
+ncbi_gencodes <- readRDS(ncbi_gencodes_file)
 
 # sorted NCBI ranks from Supplemental Table 3 in Schoch et al 2020 (https://doi.org/10.1093%2Fdatabase%2Fbaaa062)
 sorted_ranks <- c(
@@ -265,6 +269,12 @@ if (!taxon_rank %in% bold_validranks){
     bold_rank <- taxon_rank
 }
 
+### get genetic codes for taxon (TODO: add support for lists of taxa, using taxize::lowest_common)
+taxon_gencodes <- 
+    ncbi_gencodes %>%
+    dplyr::filter(tax_id == ncbi_id) %>%
+    dplyr::select(tax_id, tax_name, gencode, mtgencode, plgencode, hdgencode)
+
 ### save output files
 # NCBI name
 write(taxon_name, paste0(taxon,"_name.txt"), ncolumns = 1, sep = "\n")
@@ -276,3 +286,5 @@ write(bold_names, paste0(taxon, "_bold_names.txt"), ncolumns = 1, sep = "\n")
 write(bold_ids, paste0(taxon,"_bold_ids.txt"), ncolumns = 1, sep = "\n")
 # BOLD taxon rank
 write(bold_rank, paste0(taxon, "_bold_rank.txt"), ncolumns = 1, sep = "\n")
+# gencodes for rank
+saveRDS(taxon_gencodes, paste0(taxon, "_gencodes.rds"))
