@@ -43,15 +43,19 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "fasta_file",
+    "gb_file",
+    "accessions_file",
     "ncbi_rankedlineage_noname"
     )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-# read in fasta file as DNAbin
-seqs <-  ape::read.FASTA(fasta_file)
+# read in sequences GenBank flat file
+gb_raw <- scan(file = gb_file, what = "", sep = "\n", quiet = TRUE)
+
+# read in accessions file
+accessions <- scan(file = accessions_file, what = "", sep = "\n", quiet = TRUE)
 
 # read in ncbi tax file
 ncbi_rankedlineage_noname <-   readRDS(ncbi_rankedlineage_noname)
@@ -59,6 +63,66 @@ ncbi_rankedlineage_noname <-   readRDS(ncbi_rankedlineage_noname)
 
 ### run code
 
+# Truncate record at last // to avoid broken records
+gb <- tryCatch(
+    { gb_raw[1:max(which(grepl("^//", gb_raw)))] }, 
+    error = function(e){
+        warning("Failed parsing")
+        print(max(which(grepl("^//", gb_raw))))
+        return(NULL)
+    }
+)
+
+# check for accessions
+if(sum(grepl("ACCESSION", gb)) < 1){
+  stop("No accessions in GenBank flat file")
+}
+
+# lines where the sequence starts and stops
+start <- which(grepl("^ORIGIN", gb))
+stop <- which(grepl("^//", gb))
+
+# check for malformed start and stops and remove if present
+good_records <- stringr::str_detect(gb[stop-1], "[0-9] [a-z-]")
+stop <- stop[good_records]
+
+# check same number of start and stop positions
+if (length(start) == length(stop)){
+    n_seqs <- length(start)
+} else {
+    stop("Incorrect length of start and stop")
+}
+
+# extract nucleotide sequence for each record 
+seqs <- vector("character", length = n_seqs)
+for (l in 1:n_seqs){
+    seqs[[l]] <- toupper(paste(stringr::str_remove_all(gb[(start[l]+1):(stop[l]-1)], "[^A-Za-z]"), collapse=""))
+}
+
+# get versions (accession with version decimal)
+seq_ver <- gsub("+VERSION +", "", grep("VERSION", gb, value = TRUE))
+
+# get taxids
+seq_taxid <- grep("db_xref=\\\"taxon:", gb, value = TRUE) %>% stringr::str_remove_all("( +/db_xref=\"taxon:)|(\\\")")
+
+# build sequence names
+seq_names <- paste0(seq_ver,"|",seq_taxid)
+
+# name sequences
+names(seqs) <- seq_names[good_records]
+
+# make DNAbin object
+seqs <- char2DNAbin(seqs)
+
+# check if any sequence names and accessions don't match 
+if (any ( !names(seqs) %>% stringr::str_starts( stringr::str_flatten(accessions, "|")))) {
+  stop("One or more accessions not found in parsed sequence names")
+}
+if (length(seqs) != length(accessions)){
+  stop("Number of sequences parsed does not equal number of accessions")
+}
+
+## add taxonomic lineage string
 # get names of sequences (.fasta header)
 seq_names <- names(seqs)
 

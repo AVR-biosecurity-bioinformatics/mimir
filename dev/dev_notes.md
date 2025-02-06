@@ -200,6 +200,17 @@ NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model asset
 # on lepidoptera (also a test of total pipeline)
 NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Lepidoptera --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --remove_unclassified any_ranks --trim_to_primers --primer_fwd CCHGAYATRGCHTTYCCHCG --primer_rev TCDGGRTGNCCRAARAAYCA --min_length_trimmed 350
 
+## tests post-phmm-rework merge
+# siphonaptera bold only
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7509 --target_ranks order --bold_db_path ./input --marker COI --add_root --use_genbank false --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --aligned_output
+
+# siphonaptera genbank only
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa 7509 --target_ranks order --bold_db_path ./input --marker COI --add_root --use_bold false --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --aligned_output
+
+# neuroptera genbank + bold
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model assets/folmer_fullength_model.rds --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxa Neuroptera --target_ranks order --bold_db_path ./input --marker COI --add_root --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --aligned_output --remove_unclassified any_ranks
+
+
 ```
 
 

@@ -8,8 +8,8 @@ process RENAME_GENBANK {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
-    val(ncbi_rankedlineage_noname)
+    tuple path(gb_file), path(accessions_file)
+    path(ncbi_rankedlineage_noname)
 
     output: 
     path("renamed.fasta"),                    emit: fasta
@@ -25,8 +25,9 @@ process RENAME_GENBANK {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                    "${fasta_file}"
-    ncbi_rankedlineage_noname =           "${ncbi_rankedlineage_noname}"
+    gb_file =                           "${gb_file}"
+    accessions_file =                   "${accessions_file}"
+    ncbi_rankedlineage_noname =         "${ncbi_rankedlineage_noname}"
 
     ## global variables
     projectDir = "$projectDir"

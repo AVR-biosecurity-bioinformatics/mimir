@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 process FETCH_GENBANK {
     def module_name = "fetch_genbank"
-    tag "$acc_list"
+    tag "-"
     time 10.m
     cpus 1
     memory 1.GB
@@ -9,11 +9,11 @@ process FETCH_GENBANK {
     maxForks 10
 
     input:
-    path(acc_list)
+    path(acc_list, name: 'accessions.txt')
     val(entrez_key)
 
     output:
-    tuple path("*.fasta"), path("*.taxids.txt"),                  emit: fetched_seqs
+    tuple path("sequences.gb"), path("accessions.txt"),                  emit: fetched_seqs
 
     // publishDir "${projectDir}/output/modules/${module_name}", mode: 'copy'
 
@@ -28,7 +28,7 @@ process FETCH_GENBANK {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        ${acc_list} \
+        accessions.txt \
         ${entrez_key}
     
     """

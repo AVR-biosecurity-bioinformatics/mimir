@@ -215,14 +215,14 @@ workflow TAXRETURN {
             ch_entrez_key
         )
 
-        //// add NCBI taxid to header of Genbank sequences 
-        ADD_TAXID_GENBANK (
-            FETCH_GENBANK.out.fetched_seqs
-        )
+        // //// add NCBI taxid to header of Genbank sequences 
+        // ADD_TAXID_GENBANK (
+        //     FETCH_GENBANK.out.fetched_seqs
+        // )
 
         //// reformat sequence names to contain taxonomic lineage
         RENAME_GENBANK (
-            ADD_TAXID_GENBANK.out.fasta,
+            FETCH_GENBANK.out.fetched_seqs,
             GET_NCBI_TAXONOMY.out.rankedlineage_noname
         )
 
