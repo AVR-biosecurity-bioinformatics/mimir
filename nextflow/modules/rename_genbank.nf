@@ -13,6 +13,7 @@ process RENAME_GENBANK {
 
     output: 
     path("renamed.fasta"),                    emit: fasta
+    path("accessions_failed.txt"),            emit: accessions_failed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -24,7 +25,7 @@ process RENAME_GENBANK {
     #!/usr/bin/env Rscript
     
     ### defining Nextflow environment variables as R variables
-    ## input channel variables
+    ### input channel variables
     gb_file =                           "${gb_file}"
     accessions_file =                   "${accessions_file}"
     ncbi_rankedlineage_noname =         "${ncbi_rankedlineage_noname}"

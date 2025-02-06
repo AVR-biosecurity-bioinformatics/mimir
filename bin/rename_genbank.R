@@ -96,13 +96,23 @@ for (l in 1:n_seqs){
 }
 
 # function to format GB record into named sequence
-sequence_from_record <- function(x){
+sequence_from_gb_record <- function(x){
     # get versions (accession with version decimal)
     seq_ver <- gsub("+VERSION +", "", grep("VERSION", x, value = TRUE))
     # get taxids
     seq_taxid <- grep("db_xref=\\\"taxon:", x, value = TRUE) %>% stringr::str_remove_all("( +/db_xref=\"taxon:)|(\\\")")
-    # get sequence
-    sequence <- toupper(paste(stringr::str_remove_all(gb[(which(grepl("^ORIGIN", x))+1):(which(grepl("^//", x))-1)], "[^A-Za-z]"), collapse=""))
+    # get "ORIGIN" line (just before nucleotide sequence)
+    seq_start <- which(grepl("^ORIGIN", x))
+    # get "//" line just after sequence
+    seq_end <- which(grepl("^//", x))
+    # check if there is a sequence
+    if ( length(seq_start) == 0 || length(seq_end) == 0 ){
+        print(paste0("No sequence available for ", seq_ver))
+        return(NULL)
+    } else {
+        # get sequence
+        sequence <- toupper(paste(stringr::str_remove_all(x[(seq_start+1):(seq_end-1)], "[^A-Za-z]"), collapse=""))
+    }
     # check only one version, taxid and sequence
     if(length(seq_ver) > 1){
         stop(paste0("More than one sequence version:", stringr::str_flatten_comma(seq_ver)))
@@ -118,8 +128,13 @@ sequence_from_record <- function(x){
     if(length(sequence) > 1){
         stop(paste0("More than one sequence string:", stringr::str_flatten_comma(sequence)))
     }
+    # check sequence contains only valid nucleotide characters
+    if ( sequence %>% stringr::str_detect("[^GATCRYMKSWHBVDN]") ){
+        stop(paste0("Sequence string for ", seq_ver, " contains non-IUPAC characters"))
+    }
     # name sequence
     names(sequence) <- paste0(seq_ver,"|",seq_taxid)
+    print(paste0("Parsed sequence ",seq_ver))
     return(sequence)
 }
 
@@ -127,17 +142,20 @@ sequence_from_record <- function(x){
 seqs <- 
     lapply(
         records, 
-        sequence_from_record
+        sequence_from_gb_record
     ) %>%
+    # remove null elements (no sequence)
+    purrr::discard(is.null) %>%
     unlist() %>%
     char2DNAbin()
 
-# check if any sequence names and accessions don't match 
-if (any ( !names(seqs) %>% stringr::str_starts( stringr::str_flatten(accessions, "|")))) {
-    stop("One or more accessions not found in parsed sequence names")
-}
-if (length(seqs) != length(accessions)){
-    stop("Number of sequences parsed does not equal number of accessions")
+# write list of accessions not parsed into sequences
+seq_accessions <- names(seqs) %>% stringr::str_extract(., "^.+(?=\\|)")
+noseq_accessions <- accessions[!accessions %in% seq_accessions] 
+if ( length(noseq_accessions) > 0 ){
+    write_lines(noseq_accessions, "accessions_failed.txt")
+} else {
+    file.create("accessions_failed.txt")
 }
 
 ## add taxonomic lineage string
