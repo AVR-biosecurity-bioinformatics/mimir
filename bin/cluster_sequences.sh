@@ -25,7 +25,7 @@ mmseqs linclust \
 	tmp \
 	--min-seq-id $5 \
 	--threads $2 \
-	--kmer-per-seq 500 \
+	--kmer-per-seq 2000 \
 	--split-memory-limit ${SPLIT_MEMORY_LIMIT}K
 
 # tsv output
