@@ -216,9 +216,10 @@ NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --phmm_model asset
 ## testing taxon list as input
 
 # Neuroptera + Siphonaptera
-NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_list test/taxon_list.csv --bold_db_path ./input --marker COI
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_list test/taxon_list.csv --bold_db_path ./input --marker COI --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length 200 --min_length_trimmed 200
 
-
+# marine input (50 families)
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_list test/marine_family_list.csv --bold_db_path ./input --marker COI
 ```
 
 

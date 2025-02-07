@@ -243,28 +243,37 @@ if (!taxon_rank %in% bold_validranks){
     bold_rank <- downstream_valid_rank
 
 } else { ## if target rank is in BOLD ranks...
-    ## convert taxon name to BOLD ID
-    bold_ids <- 
-        taxize::get_boldid(
-            sci = taxon_name,
-            messages = FALSE,
-            fuzzy = FALSE,
-            rank = rank_query
-        )[1] %>%
-            as.integer()
-
-    ## convert BOLD ID to BOLD taxon name
-    bold_names <-
-        taxize::id2name(
-            id = bold_ids, 
-            db = "bold"
-        )[[1]]$name
-
-    # check BOLD and NCBI taxon names are the same
-    if (!identical(taxon_name, bold_names)) {
-        stop ( paste0("ERROR: Taxonomic names in NCBI ('",taxon_name,"') and BOLD ('",bold_names,"') are not identical!"))
+    # search NCBI synonyms list to get vector of possible alternative matches at the correct rank
+    taxon_synonyms <- 
+        ncbi_synonyms %>%
+        dplyr::filter(
+            stringr::str_detect(tax_id, as.character(ncbi_id)) & 
+            rank == taxon_rank
+        ) %>%
+        dplyr::pull(name_txt)
+    # combine NCBI names and synonyms into one vector
+    possible_names <- c(taxon_name, taxon_synonyms)
+    # get BOLD taxa
+    bold_taxa <- 
+        # search bold for matching names
+        taxize::get_boldid_(
+            sci = possible_names, 
+            rank = taxon_rank
+        ) %>%
+        # combine results
+        dplyr::bind_rows() %>%
+        # remove results that don't have a taxid
+        dplyr::filter(!is.na(taxid)) 
+    # check any taxa returned
+    if (nrow(bold_taxa) == 0 ) {
+        stop(paste0("No BOLD taxon could be found that matches ", taxon_name))
     }
-
+    # remove rows that have their parent taxon in the list of taxa
+    bold_taxa_filtered <- bold_taxa[is.na(with(bold_taxa, match(parentname, taxon))),]
+    # get bold IDs
+    bold_ids <- bold_taxa_filtered %>% dplyr::pull(taxid)
+    # get BOLD taxon names
+    bold_names <- bold_taxa_filtered %>% dplyr::pull(taxon)
     # get BOLD taxon rank 
     bold_rank <- taxon_rank
 }
