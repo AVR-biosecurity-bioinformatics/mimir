@@ -69,10 +69,20 @@ readr::write_csv(counts_summary, "counts_summary.csv")
 # plot
 counts_plot <- 
     counts_summary %>% 
+    dplyr::mutate(
+        label = dplyr::case_when(
+            is.na(sequences) ~ "NA",
+            .default = as.character(sequences)
+        ),
+        sequences = dplyr::case_when(
+            is.na(sequences) ~ 0,
+            .default = sequences
+        )
+    ) %>%
     ggplot2::ggplot(., aes(x = sequences, y = process)) +
     geom_col() +
     geom_text(
-        aes(label = sequences, x = sequences + (max(sequences)* 0.02)), # label 2% past end of column
+        aes(label = label, x = sequences + (max(sequences)* 0.02)), # label 2% past end of column
         hjust = 0, 
         size = 2
     ) +  
