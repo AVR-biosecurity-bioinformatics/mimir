@@ -3,6 +3,7 @@ process PARSE_TARGETS {
     tag "-"
     label "small"
     container "jackscanlan/piperline-multi:0.0.1"
+    maxForks 5
 
     input:
     tuple val(taxon), val(taxon_rank)

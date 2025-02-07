@@ -5,6 +5,7 @@ process QUERY_GENBANK {
     cpus 1
     time 2.h
     memory 4.GB
+    maxForks 10
     container "emehinovic72/edirect:latest"
 
     input:
