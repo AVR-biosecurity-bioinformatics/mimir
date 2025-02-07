@@ -5,8 +5,7 @@ process PARSE_TARGETS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(taxon)
-    val(taxon_rank)
+    tuple val(taxon), val(taxon_rank)
     val(entrez_key)
     val(ncbi_synonyms_file)
     val(ncbi_gencodes_file)
@@ -15,10 +14,9 @@ process PARSE_TARGETS {
     tuple path("*_name.txt"), val(taxon_rank),                      emit: taxon_name
     tuple path("*_ncbi_id.txt"), val(taxon_rank),                   emit: taxon_id_rank
     path("*_ncbi_id.txt"),                                          emit: ncbi_id
-    path("*_bold_names.txt"),                                       emit: bold_names
+    tuple path("*_bold_names.txt"), path("*_bold_rank.txt"),        emit: bold
     path("*_bold_ids.txt"),                                         emit: bold_ids
-    path("*_bold_rank.txt"),                                        emit: bold_rank
-    path("*_gencodes.rds"),                                         emit: gencodes
+    path("*_gencodes.csv"),                                         emit: gencodes
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -30,7 +28,7 @@ process PARSE_TARGETS {
     #!/usr/bin/env Rscript
     
     ### defining Nextflow environment variables as R variables
-    ## input channel variables
+    ### input channel variables
     taxon =                     "${taxon}"
     taxon_rank =                "${taxon_rank}"
     entrez_key =                "${entrez_key}"

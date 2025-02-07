@@ -53,9 +53,15 @@ lapply(nf_vars, nf_var_check)
 ### process variables 
 
 # import gencodes tibble
-gencodes <- readRDS(gencodes_file)
+gencodes <- readr::read_delim(gencodes_file, delim = ",")
 
-# select correct genetic code based on marker type
+# code from modelr::typical 
+find_typical <- function(x, ...) {
+    counts <- table(x, exclude = NULL)
+    names(counts)[max(counts) == counts]
+}
+
+# select genetic code type based on marker type and then the most frequent code 
 genetic_code <- 
     gencodes %>%
     dplyr::mutate(
@@ -67,7 +73,8 @@ genetic_code <-
         )
     ) %>%
     dplyr::pull(code) %>%
-    as.character()
+    as.character() %>%
+    find_typical()
 
 # check only one genetic code
 if ( length(genetic_code) != 1 ){

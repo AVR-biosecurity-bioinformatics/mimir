@@ -287,4 +287,4 @@ write(bold_ids, paste0(taxon,"_bold_ids.txt"), ncolumns = 1, sep = "\n")
 # BOLD taxon rank
 write(bold_rank, paste0(taxon, "_bold_rank.txt"), ncolumns = 1, sep = "\n")
 # gencodes for rank
-saveRDS(taxon_gencodes, paste0(taxon, "_gencodes.rds"))
+readr::write_delim(taxon_gencodes, paste0(taxon, "_gencodes.csv"), delim = ",")

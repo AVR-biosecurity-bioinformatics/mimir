@@ -7,9 +7,7 @@ process EXTRACT_BOLD {
     // fair true
 
     input:
-    tuple path(db_tsv_file), path(db_meta_file)
-    path(bold_names_file)
-    path(bold_rank_file)
+    tuple path(db_tsv_file), path(db_meta_file), path(bold_names_file), path(bold_rank_file)
     val(marker)
 
     output: 

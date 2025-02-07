@@ -78,19 +78,28 @@ workflow TAXRETURN {
     Define channels
     */
 
-    //// channel of taxon to test
-    if ( params.target_taxa ) {
-        // split comma_separated list into Groovy list
-        ch_targets = params.target_taxa //// TODO: split comma-sep into list!
-    } else {
-        ch_targets = Channel.from(
-            // "Drosophila", "Aphis"
-            // "Scaptodrosophila", "Phylloxeridae"
-            "Drosophilidae" 
-        )
-    }
+    ch_target_taxon = channel.of ( params.target_taxon ) ?: Channel.empty()
+    ch_target_rank = channel.of ( params.target_rank ) ?: Channel.of("no_rank")
 
-    ch_target_ranks = params.target_ranks ?: Channel.of("no_ranks")
+    //// form ch_targets input channel
+    if ( ( params.target_taxon && params.target_rank ) && !params.target_list ) { // use single taxon 
+        //// combine taxon and rank into tuple for channel
+        ch_target_taxon
+            .combine ( ch_target_rank ) 
+            .set { ch_targets }
+
+        ch_targets.view()
+
+    } else if ( params.target_list ) { // else use list
+        //// split .csv into ch_targets
+        channel.fromPath ( params.target_list, checkIfExists: true, type: 'file' )
+            .splitCsv ( by: 1, header: false, strip: true )
+            .map { row -> [ row[0], row[1] ] }
+            .set { ch_targets }
+
+    } else { // else invalid
+        error "*** Invalid combination of '--target_taxon', '--target_rank' and '--target_list' ***"
+    }
 
     //// marker channel parsing
     if ( params.marker ) {
@@ -128,7 +137,7 @@ workflow TAXRETURN {
     ch_input_seqs             = Channel.empty()
 
     //// parse file path parameters as channels
-    ch_phmm             = channel.fromPath( params.phmm_model, checkIfExists: true ).first()
+    // ch_phmm             = channel.fromPath( params.phmm_model, checkIfExists: true ).first()
 
     /*
     Set up pipeline
@@ -140,7 +149,6 @@ workflow TAXRETURN {
     //// convert input taxon/taxa into NCBI and BOLD tax IDs
     PARSE_TARGETS (
         ch_targets,
-        ch_target_ranks,
         ch_entrez_key,
         GET_NCBI_TAXONOMY.out.synonyms,
         GET_NCBI_TAXONOMY.out.ncbi_gencodes
@@ -159,6 +167,11 @@ workflow TAXRETURN {
         ch_marker
     )
 
+    //// collect target gencodes .csvs into a single file
+    PARSE_TARGETS.out.gencodes
+        .collectFile ( name: 'gencodes.csv', keepHeader: true, skip: 1 )
+        .set { ch_target_gencodes }
+
     //// processes relevant to trimming sequences
     if ( params.trim_to_primers ) {
         
@@ -166,7 +179,7 @@ workflow TAXRETURN {
         PROCESS_PRIMERS (
             params.primer_fwd,
             params.primer_rev,
-            PARSE_TARGETS.out.gencodes,
+            ch_target_gencodes,
             PARSE_MARKER.out.type
         )
 
@@ -191,6 +204,10 @@ workflow TAXRETURN {
             TRIM_HMM_SEED.out.fasta
         )
 
+        ch_trimmed_hmm = BUILD_TRIMMED_HMM.out.hmm.first()
+
+    } else {
+        ch_trimmed_hmm = Channel.empty()
     }
 
 
@@ -257,11 +274,14 @@ workflow TAXRETURN {
             )
             .set { ch_bold_db_chunks }
 
+        //// combine each chunk with the taxon name and rank from PARSE_TARGETS
+        ch_bold_db_chunks
+            .combine ( PARSE_TARGETS.out.bold ) 
+            .set { ch_extract_bold_input }
+
         //// extract sequences from BOLD database file
         EXTRACT_BOLD (
-            ch_bold_db_chunks,
-            PARSE_TARGETS.out.bold_names,
-            PARSE_TARGETS.out.bold_rank,
+            ch_extract_bold_input,
             PARSE_MARKER.out.bold_query
         )
 
@@ -497,7 +517,7 @@ workflow TAXRETURN {
         //// do a second round of hmm searching using trimmed PHMM
         HMMSEARCH_TRIMMED (
             FILTER_HMM.out.retained,
-            BUILD_TRIMMED_HMM.out.hmm
+            ch_trimmed_hmm
         )
 
         //// trim to trimmed HMM region
