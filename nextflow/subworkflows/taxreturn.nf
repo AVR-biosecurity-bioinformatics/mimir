@@ -88,8 +88,6 @@ workflow TAXRETURN {
             .combine ( ch_target_rank ) 
             .set { ch_targets }
 
-        ch_targets.view()
-
     } else if ( params.target_list ) { // else use list
         //// split .csv into ch_targets
         channel.fromPath ( params.target_list, checkIfExists: true, type: 'file' )
