@@ -2,7 +2,7 @@ process TRAIN_IDTAXA {
     def module_name = "train_idtaxa"
     tag "-"
     // label "medium"
-    time '4.h'
+    time '12.h'
     memory '64.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
