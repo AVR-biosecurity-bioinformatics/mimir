@@ -1,14 +1,19 @@
-process FILTER_PHMM {
-    def module_name = "filter_phmm"
+process FILTER_TAX_OUTLIERS {
+    def module_name = "filter_tax_outliers"
     tag "-"
-    label "small"
+    // label "medium"
+    time '1.h'
+    memory '16.GB'
+    cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple path(fasta_file), path(phmm_model_file), val(coding)
+    path(fasta_file)
+    path(cluster_tsv)
+    val(db_file)
 
     output: 
-    path("filter_phmm.fasta"),                            emit: fasta
+    path("seqs_decontaminated.fasta"),                                  emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -21,9 +26,9 @@ process FILTER_PHMM {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =             "${fasta_file}"
-    phmm_model_file =        "${phmm_model_file}"
-    coding =                 "${coding}"
+    fasta_file =                   "${fasta_file}"
+    cluster_tsv =                   "${cluster_tsv}"
+    db_file =                     "${db_file}"
 
     ## global variables
     projectDir = "$projectDir"

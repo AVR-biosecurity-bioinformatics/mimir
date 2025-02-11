@@ -1,5 +1,5 @@
-process REMOVE_AMBIGUOUS {
-    def module_name = "remove_ambiguous"
+process FILTER_AMBIGUOUS {
+    def module_name = "filter_ambiguous"
     tag "-"
     label "very_small"
     container "cicirello/gnu-on-alpine:3.20.3"
@@ -8,7 +8,7 @@ process REMOVE_AMBIGUOUS {
     path(fasta_file)
 
     output: 
-    path("remove_ambiguous.fasta"),      emit: fasta
+    path("filter_ambiguous.fasta"),      emit: fasta
     path("removed.fasta"),          emit: removed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'

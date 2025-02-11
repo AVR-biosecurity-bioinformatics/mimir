@@ -1,15 +1,14 @@
-process REMOVE_UNCLASSIFIED {
-    def module_name = "remove_unclassified"
+process FILTER_DUPLICATES {
+    def module_name = "filter_duplicates"
     tag "-"
     label "very_small"
     container "staphb/seqkit:2.8.2"
 
     input:
     path(fasta_file)
-    val(remove_unclassified)
 
     output: 
-    path("remove_unclassified.fasta"),      emit: fasta
+    path("seqs_deduplicated.fasta"),                            emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -21,11 +20,11 @@ process REMOVE_UNCLASSIFIED {
     #!/usr/bin/env bash
 
     ### run module code
-    source ${module_name}.sh \
+    bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${fasta_file}" \
-        ${remove_unclassified}
-    
+        ${fasta_file} 
+        
     """
+
 }

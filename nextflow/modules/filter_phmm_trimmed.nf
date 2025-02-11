@@ -1,5 +1,5 @@
-process TRIM_WITH_HMM {
-    def module_name = "trim_with_hmm"
+process FILTER_PHMM_TRIMMED {
+    def module_name = "filter_phmm_trimmed"
     tag "-"
     label "small"
     container "jackscanlan/piperline-multi:0.0.1"

@@ -7,7 +7,7 @@ set -u
 # $3 = fasta_file
 # $4 = '--remove_unclassified' parameter
 
-OUTPUT_FILE="remove_unclassified.fasta"
+OUTPUT_FILE="filter_unclassified.fasta"
 
 case ${4} in 
 

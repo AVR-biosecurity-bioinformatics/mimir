@@ -1,19 +1,19 @@
-process REMOVE_TAX_OUTLIERS {
-    def module_name = "remove_tax_outliers"
-    tag "-"
+process FILTER_SEQ_OUTLIERS {
+    def module_name = "filter_seq_outliers"
+    // tag "-"
     // label "medium"
     time '1.h'
-    memory '16.GB'
+    memory '4.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(fasta_file)
-    path(cluster_tsv)
-    val(db_file)
+    path(fasta_files)
+    val(dist_threshold)
 
     output: 
-    path("seqs_decontaminated.fasta"),                                  emit: fasta
+    path("*.retained.fasta"),                                  emit: retained_fasta
+    path("*.removed.fasta"),                                  emit: removed_fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -26,9 +26,8 @@ process REMOVE_TAX_OUTLIERS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
-    cluster_tsv =                   "${cluster_tsv}"
-    db_file =                     "${db_file}"
+    fasta_files =                   "${fasta_files}"
+    dist_threshold =                "${dist_threshold}"
 
     ## global variables
     projectDir = "$projectDir"
