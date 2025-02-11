@@ -39,7 +39,7 @@ elif [[ "$3" =~ .tar.gz$ ]]; then
 # if bold_db_url is a URL (hopefully valid)
 elif [[ "$4" =~ ^https?:// ]]; then
     # get name of database from URL
-    DB_NAME=$( echo "$4" | grep -Po "(?<=id=).+?(?=&uid)" ) # using Perl-style grep so don't have to escape ()
+    DB_NAME=$( echo "$4" | sed -e 's/^.*?id=//g' | sed -e 's/&uid=.*$//g' ) 
     # download file 
     curl -o "$DB_NAME.tar.gz" "$4"
     # uncompress file

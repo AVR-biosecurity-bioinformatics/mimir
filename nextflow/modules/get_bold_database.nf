@@ -3,7 +3,8 @@ process GET_BOLD_DATABASE {
     def module_name = "get_bold_database"
     tag "-"
     label "small"
-    container "cicirello/gnu-on-alpine:3.20.3"
+    // container "cicirello/gnu-on-alpine:3.20.3"
+    container "ellerbrock/alpine-bash-curl-ssl:0.3.0"
 
     input:
     val(bold_db_path)
