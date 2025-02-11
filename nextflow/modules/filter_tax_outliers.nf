@@ -14,6 +14,7 @@ process FILTER_TAX_OUTLIERS {
 
     output: 
     path("seqs_decontaminated.fasta"),                                  emit: fasta
+    path("removed.fasta"),                                              emit: removed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

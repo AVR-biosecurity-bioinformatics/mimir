@@ -8,8 +8,8 @@ process FILTER_AMBIGUOUS {
     path(fasta_file)
 
     output: 
-    path("filter_ambiguous.fasta"),      emit: fasta
-    path("removed.fasta"),          emit: removed
+    path("filter_ambiguous.fasta"),         emit: fasta
+    path("removed.fasta"),                  emit: removed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -20,7 +20,7 @@ process FILTER_AMBIGUOUS {
     """
     #!/usr/bin/env bash
 
-    #### run module code
+    ### run module code
     source ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \

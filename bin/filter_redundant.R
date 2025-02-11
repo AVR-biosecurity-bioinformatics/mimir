@@ -257,6 +257,10 @@ seqs_pruned <-
         remove_unclassified = remove_unclassified # remove sequences with unclassified taxonomic ranks 
     )
 
+
+# sequences removed
+seqs_removed <- seqs[!names(seqs) %in% names(seqs_pruned)]
+
 # save filtered sequences as .rds file
 # saveRDS(seqs_pruned, "seqs_pruned.rds")
 
@@ -269,4 +273,14 @@ if ( !length(seqs_pruned) == 0 ){
     )
 } else {
     file.create(paste0("seqs_pruned.fasta"))
+}
+
+# write removed sequences
+if ( !length(seqs_removed) == 0 ){
+    write_fasta(
+        seqs_removed,
+        file = "removed.fasta"
+    )
+} else {
+    file.create("removed.fasta")
 }

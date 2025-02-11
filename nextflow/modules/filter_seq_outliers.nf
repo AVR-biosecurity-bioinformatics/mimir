@@ -13,7 +13,7 @@ process FILTER_SEQ_OUTLIERS {
 
     output: 
     path("*.retained.fasta"),                                  emit: retained_fasta
-    path("*.removed.fasta"),                                  emit: removed_fasta
+    path("*.removed.fasta"),                                   emit: removed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

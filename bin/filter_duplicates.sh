@@ -6,10 +6,18 @@ set -u
 # $2 = threads
 # $3 = fasta_file
 
-# remove exact duplocates
+# remove exact duplicates based on name
 seqkit rmdup \
     --by-name \
     --line-width 0 \
+    --dup-seqs-file removed.fasta \
     < $3 \
     > seqs_deduplicated.fasta
 
+# touch removed.fasta if doesn't exist
+if [ -f removed.fasta ]; then
+    echo "Finished deduplicating sequences"
+else 
+    touch removed.fasta
+    echo "Finished deduplicating sequences -- 'removed.fasta' created directly"
+fi 

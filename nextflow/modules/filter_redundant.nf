@@ -13,6 +13,7 @@ process FILTER_REDUNDANT {
 
     output: 
     path("seqs_pruned.fasta"),                emit: fasta
+    path("removed.fasta"),                    emit: removed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

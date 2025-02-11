@@ -59,13 +59,9 @@ clusters <- read_delim(cluster_tsv, col_names = c("representative","sequence_nam
 
 ## params parsing 
 cluster_rank <- stringr::str_split_1(params.cluster_rank, ",")
-
 cluster_threshold <- as.numeric(params.cluster_threshold)
-
 cluster_confidence <- as.numeric(params.cluster_confidence)
-
 cluster_nstart <- as.numeric(params.cluster_nstart)
-
 quiet <- FALSE
 
 ### run code
@@ -164,12 +160,12 @@ find_mixed_new <- function(y) {
     }
     res <- 
         data.frame(
-        listed = y[mixed],
-        consensus = rep(consensus, sum(mixed)),
-        consensus_seqid = rep(consensus_seqid,sum(mixed)),
-        confidence = sum(!mixedu)/nu,
-        cluster_size = nu,
-        stringsAsFactors = FALSE
+            listed = y[mixed],
+            consensus = rep(consensus, sum(mixed)),
+            consensus_seqid = rep(consensus_seqid,sum(mixed)),
+            confidence = sum(!mixedu)/nu,
+            cluster_size = nu,
+            stringsAsFactors = FALSE
         ) %>%
         tibble::rownames_to_column("Acc")
     return(res)
@@ -212,112 +208,12 @@ if (!is.null(mixed_clusters)){
     rem_pattern <- stringr::str_c(rem, collapse = "|")
     # Remove any accessions that were found to be in mixed clusters
     seqs_decontaminated <- seqs[!stringr::str_starts(names(seqs), rem_pattern)]
+    # store removed sequenced
+    seqs_removed <- seqs[stringr::str_starts(names(seqs), rem_pattern)]
 } else {
     seqs_decontaminated <- seqs
+    seqs_removed <- NULL
 }
-
-
-
-
-# ### new implementation (a single rank this time)
-
-# # get the taxonomic lineage of each sequence as a tibble/df
-# lineage <- 
-#     names(seqs) %>%
-#     tibble::as_tibble(column_name = "value") %>%
-#     tidyr::separate(col=value, into=c("id", "lineage_string"), sep=";", extra="merge") %>%
-#     tidyr::separate(col=lineage_string, into=c("kingdom","phylum", "class", "order", "family", "genus", "species"), sep=";", extra="merge") %>%
-#     tidyr::separate(col=id, into=c("seqid", "taxid"), sep="\\|", extra="merge") 
-
-# # cluster all the sequences by a particular threshold
-# # output is a vector of cluster IDs (non-unique), where the name is the full sequence name (ie. fasta header)
-# otus <- 
-#     kmer::otu(
-#         seqs, 
-#         k = 5, 
-#         threshold = cluster_threshold
-#     )
-# # get the taxon names for each sequence at the rank specified
-# rank_taxa <- lineage %>% pull(!!cluster_rank)
-# # # get taxids (although currently not used)
-# # rank_taxids <- lineage %>% pull(taxid)
-# # name the taxon name vector using the sequence ids (ie. accession)
-# names(rank_taxa) <- lineage$seqid
-# # get a vector of clusters + seq names where the rank of interest is not "Unclassified" (unclassified breaks mixed cluster detection)
-# f <- as.factor(otus[!rank_taxa %>% stringr::str_detect("^Unclassified$")])
-# # remove 'otus' object to save memory
-# rm(otus)
-# # vector of taxon names at the given rank for classified sequences
-# rank_classified <- rank_taxa[!rank_taxa %>% stringr::str_detect("^Unclassified$")]
-# # make list where each element is an otu cluster, with the members are the accessions and the taxa 
-# splitlist <- split(rank_classified, f)
-# # keep lists where there are more than two members (otherwise can't determine consensus (n = 2) or it is unnecessary (n = 1))
-# splitlist <- splitlist[tabulate(f) > 2]
-# # define new function to find mixed clusters, returns a df where "Acc" column is the accession of a potentially bad sequence
-# find_mixed_new <- function(y) {
-#     hashes <- paste0(gsub("\\|.*$", "\\1", names(y)), y)
-#     yu <- y[!duplicated(hashes)]
-#     if (length(unique(yu)) < 2) {
-#         return(NULL)
-#     }
-#     # Tabulate taxon names
-#     tab <- sort(table(yu), decreasing = TRUE)
-#     consensus <- names(tab)[1] # get the consensus taxon name (highest abundance)
-#     consensus_taxid <- gsub("^.*\\|", "\\1", names(y)[y==consensus][1]) # get a representative member of taxon
-#     mixed <- y != consensus # potential misannotated (including duplicates)
-#     mixedu <- yu != consensus # potential misannotated (unique only)
-#     nu <- length(mixedu) # number of unique sequences
-#     #Check if there is a clear consensus
-#     if (tab[1] == tab[2]){
-#         consensus <- NA
-#         consensus_taxid <- NA
-#     }
-#     res <- 
-#         data.frame(
-#         listed = y[mixed],
-#         consensus = rep(consensus, sum(mixed)),
-#         consensus_taxid = rep(consensus_taxid,sum(mixed)),
-#         confidence = sum(!mixedu)/nu,
-#         cluster_size = nu,
-#         stringsAsFactors = FALSE
-#         ) %>%
-#         tibble::rownames_to_column("Acc")
-#     return(res)
-# }
-# # apply find_mixed_new to list of clusters
-# mixedtab <- lapply(splitlist, find_mixed_new)
-# # remove lists where the function returned NULL
-# mixedtab <- mixedtab[!vapply(mixedtab, is.null, logical(1))]
-
-# if (length(mixedtab) == 0) {
-#       if (!quiet) {cat("No mixed clusters at", cluster_rank,   "rank \n")}
-#     mixed_clusters <- NULL
-# } else if (length(mixedtab) > 0){
-#     mixedtab <- dplyr::bind_rows(mixedtab, .id="cluster")
-#     mixedtab <- mixedtab[mixedtab$confidence >= cluster_confidence, ]
-#     mixedtab <- mixedtab[order(mixedtab$confidence, decreasing = TRUE), ]
-#     if (!quiet) {cat("identified", length(unique(mixedtab$cluster)), "mixed clusters at", cluster_rank, "rank \n")}
-#     mixed_clusters <- 
-#         mixedtab %>%
-#         dplyr::mutate(
-#             rank = cluster_rank,
-#             threshold = cluster_threshold
-#         ) %>%
-#         dplyr::mutate_if(is.factor, as.character)
-# }
-
-
-# if (!is.null(mixed_clusters)){
-#     # Get accession numbers to remove
-#     rem <- mixed_clusters$Acc
-#     # create searching pattern
-#     rem_pattern <- stringr::str_c(rem, collapse = "|")
-#     # Remove any accessions that were found to be in mixed clusters
-#     seqs_decontaminated <- seqs[!stringr::str_starts(names(seqs), rem_pattern)]
-# } else {
-#     seqs_decontaminated <- seqs
-# }
-
 
 # write fasta output
 write_fasta(
@@ -325,3 +221,12 @@ write_fasta(
     file = "seqs_decontaminated.fasta", 
     compress = FALSE
 )
+
+if ( is.null(seqs_removed) ){
+    file.create("removed.fasta")
+} else {
+    write_fasta(
+        seqs_removed, 
+        "removed.fasta"
+    )
+}

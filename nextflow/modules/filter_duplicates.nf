@@ -9,6 +9,7 @@ process FILTER_DUPLICATES {
 
     output: 
     path("seqs_deduplicated.fasta"),                            emit: fasta
+    path("removed.fasta"),                                      emit: removed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

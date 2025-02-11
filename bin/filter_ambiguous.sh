@@ -27,6 +27,6 @@ cat $FASTA | \
 # capture removed sequences
 cat $FASTA | \
 	awk -vRS=">" -vORS="" -vFS="\n" -vOFS="\n" '
-    	NR>1 && $2!~/[RYSWKMBDHVNIUryswkmbdhvniu]/ {print ">"$0}
+    	NR>1 && $2~/[RYSWKMBDHVNIUryswkmbdhvniu]/ {print ">"$0}
   		' - \
 	> removed.fasta

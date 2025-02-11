@@ -162,7 +162,7 @@ write_fasta <- function(x, file = "", compress = FALSE, quiet=FALSE) {
   } else {
     writeLines(res)
   }
-  if(!quiet){message("Wrote ", length(tmp), " seqeuences to ", file)}
+  if(!quiet){message("Wrote ", length(tmp), " sequences to ", file)}
   invisible(NULL)
 }
 

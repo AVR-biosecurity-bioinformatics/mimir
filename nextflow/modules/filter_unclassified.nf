@@ -10,6 +10,7 @@ process FILTER_UNCLASSIFIED {
 
     output: 
     path("filter_unclassified.fasta"),      emit: fasta
+    path("removed.fasta"),                  emit: removed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
