@@ -13,7 +13,12 @@ This pipeline is being developed by a team at [Agriculture Victoria Research](ht
 
 ### Notes on usage
 
-#### BOLD database 
+#### Fetching sequences from GenBank
+
+It is strongly recommended users obtain an [NCBI API key](https://support.nlm.nih.gov/kbArticle/?pn=KA-05317) and supply it to the pipeline using `--entrez_key`. This will increase the rate at which sequences can be fetched from GenBank and will speed up the pipeline. 
+
+
+#### Fetching sequences from BOLD 
 
 Best way to access Barcode of Life Data ([BOLD](https://www.boldsystems.org/index.php)) data at the moment is with a direct link to the latest [complete database package](https://bench.boldsystems.org/index.php/datapackages/Latest). You'll need to [create an account](https://bench.boldsystems.org/index.php/MAS_Management_NewUserApp) with BOLD, which will allow you to generate a URL that will download the complete database package (>2 GB compressed) for 24 hours. Input an active URL into the pipeline in the following format, making sure to wrap the URL in quotes: `--bold_db_url "https://www.boldsystems.org/index.php/API_Datapackage?id=BOLD_Public.06-Sep-2024&uid=166f4b93030986"`
 
@@ -23,14 +28,18 @@ If you have already downloaded a complete BOLD data package, either from a previ
 
 We are also looking into ways of downloading sequence data from BOLD using the [`bold`](https://docs.ropensci.org/bold/index.html) R package, but this method is inherently less reliable due to unpredictable rate-limiting from the BOLD website. 
 
-#### Target taxon/taxa
+#### Target taxa
 
-For the best compatibility between source databases (ie. Genbank and BOLD), only taxa from the following ranks should be used as `--target_taxa`: kingdom, phylum, class, order, family, genus, or species. This is because intermediate ranks, like "subfamily" and "tribe", are not available for all sequences. If a database comprising only an intermediate rank is needed, we recommend filtering a larger database using a known list of component taxa, or using such a list as the input to the pipeline. 
+There are two ways to tell Mimir which taxonomic group(s) (ie. targets) you would like the database to focus on. For a single taxon, use `--target_taxon` to specify a valid NCBI taxon name or UID, and `--target_rank` to specify its taxonomic rank. For multiple taxa, use `--target_list` to supply a two-column .csv that has the NCBI taxon name or UID (column 1) and the taxon rank (column 2), with one row for each taxon.
 
-Currently, the pipeline parses input taxa through the NCBI taxonomy, so `--target_taxa` must be a recognised NCBI taxon name (eg. "Insecta"), or even better, an NCBI taxid number (eg. "50557"). Taxids are preferred as they are unambiguous, while taxon names are sometimes shared between different taxa (a good example is "Drosophila" belonging to three taxids: 7215, 32281 and 2081351). To assist with (but not completely solve) taxon name disambiguation, `--target_rank` must also be used to supply the taxonomic rank of the taxon name (eg. "class" for "Insecta"); this also helps taxonomic harmonisation between the NCBI and BOLD taxonomies. 
+For the best compatibility between source databases (ie. Genbank and BOLD), only taxa from the following ranks should be used as targets: kingdom, phylum, class, order, family, genus, or species. This is because intermediate ranks, like "subfamily" and "tribe", are not available for all sequences. If a database comprising only an intermediate rank is needed, we recommend filtering a larger database using a known list of component taxa, or using such a list as the input to the pipeline. 
+
+Currently, the pipeline parses input taxa through [NCBI Taxonomy](https://www.ncbi.nlm.nih.gov/taxonomy), so each target taxon name must be a recognised NCBI taxon name (eg. `Insecta`), or even better, an NCBI taxid number/UID (eg. `50557`). Taxids are preferred as they are unambiguous, while taxon names are sometimes shared between different taxa (a good example is `Drosophila` belonging to three taxids: `7215`, `32281` and `2081351`). To assist with (but not completely solve) taxon name disambiguation, `--target_rank` must also be used to supply the taxonomic rank of the taxon name (eg. `class` for `Insecta`); this also helps taxonomic harmonisation between the NCBI and BOLD taxonomies. 
 
 #### Markers/barcodes
 
-At the moment, only two markers are supported: COI and 28S. More markers will be available soon. 
+Specify your barcode marker using `--marker`, eg. `--marker COI`. At the moment, only one marker is supported: `COI` (cytochrome oxidase 1). More markers will be available soon. The pipeline uses protein-based profile hidden Markov models (PHMMs) from [InterPro](https://www.ebi.ac.uk/interpro/) to detect, filter and trim input sequences to the specific barcode. Support for user-defined PHMMs will come in the future. 
 
-A key input into the pipeline is a profile hidden Markov model (PHMM) of your marker of interest, which is used to distinguish between 'on-target' and erroneous sequences in external (and internal) data sources. A model for insect COI is contained in this repository at `./assets/folmer_fullength_model.rds`, but models for other markers need to be provided by the user. A method to generate a PHMM from high-quality internal sequences will be available soon. 
+#### Primer-based trimming
+
+Often users will want to trim database sequences to a particular region amplified by a primer pair. Mimir does this by using user-specified primer sequences to trim the barcode's PHMM and using that to trim each sequence. To enable primer-based trimming, use `--trim_to_primers` and specify your primer sequences using `--primer_fwd` and `--primer_rev`. Base ambiguity/degeneracy is supported, and the pipeline will try to determine the correct strand orientation of the primers relative to the barcode PHMM. 
