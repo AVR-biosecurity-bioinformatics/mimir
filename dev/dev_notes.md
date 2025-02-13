@@ -228,7 +228,10 @@ NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364dd
 NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Chrysomelidae --target_rank family --bold_db_path ./input --marker COI --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length 200 --min_length_trimmed 200
 
 ## new bold database 2025-01-25
-NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7509 --target_rank order --bold_db_url "https://bench.boldsystems.org/index.php/API_Datapackage?id=BOLD_Public.24-Jan-2025&uid=167aa8d5962dc5" --marker COI --add_root --use_genbank false --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7509 --target_rank order --bold_db_path ./input --marker COI --add_root --use_genbank false --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 
+
+# neuroptera
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Neuroptera --target_rank order --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 
 
 ```
 

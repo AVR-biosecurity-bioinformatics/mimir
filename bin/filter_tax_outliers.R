@@ -44,8 +44,7 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "fasta_file",
-    "cluster_tsv",
-    "db_file"
+    "cluster_tsv"
     )
 lapply(nf_vars, nf_var_check)
 

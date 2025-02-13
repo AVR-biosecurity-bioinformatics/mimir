@@ -1,21 +1,20 @@
-process FILTER_TAX_OUTLIERS {
-    def module_name = "filter_tax_outliers"
+process SEQUENCE_TRACKER {
+    def module_name = "sequence_tracker"
     tag "-"
-    // label "medium"
-    time '1.h'
+    time '30.m'
     memory '16.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(fasta_file)
-    path(cluster_tsv)
+    path(source_fates_file, name: 'sources_fates.csv')
 
     output: 
-    path("seqs_decontaminated.fasta"),                                  emit: fasta
-    path("removed.fasta"),                                              emit: removed
+    path("fates_plot.pdf"),                     emit: fates_plot
+    path("sf_meta.csv"),                        emit: sf_meta
+    path("taxa_summary.csv"),                   emit: taxa_summary
 
-    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
@@ -23,15 +22,15 @@ process FILTER_TAX_OUTLIERS {
     def module_script = "${module_name}.R"
     """
     #!/usr/bin/env Rscript
-    
+      
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
-    cluster_tsv =                   "${cluster_tsv}"
+    sources_fates_file = "sources_fates.csv"
 
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
+
 
     tryCatch({
     ### source functions and themes, load packages, and import Nextflow params
