@@ -186,7 +186,8 @@ ggsave("fates_plot.pdf", fates_plot, height = 4, width = 6)
 
 
 ## taxonomic summary
-taxa_summary <- 
+# summarise all steps other than input
+taxa_summary_most <- 
     sf_meta %>%
     dplyr::group_by(fate) %>%
     dplyr::summarise_all(n_distinct) %>%
@@ -200,6 +201,27 @@ taxa_summary <-
         genus,
         species
     ) %>%
-    dplyr::arrange(fate)
+    dplyr::arrange(fate) %>%
+    dplyr::rename(step = fate)
+
+# summarise input
+taxa_summary_input <- 
+    sf_meta %>%
+    dplyr::summarise_all(n_distinct) %>%
+    dplyr::select(
+        kingdom, 
+        phylum,
+        class,
+        order,
+        family,
+        genus,
+        species    
+    ) %>%
+    dplyr::mutate(step = "input") %>%
+    dplyr::relocate(step)
+
+# combine into a single table
+taxa_summary <- 
+    dplyr::bind_rows(taxa_summary_input, taxa_summary_most)
 
 readr::write_csv(taxa_summary, "taxa_summary.csv")
