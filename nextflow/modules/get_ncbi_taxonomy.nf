@@ -8,6 +8,7 @@ process GET_NCBI_TAXONOMY {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
+    val(dummy_value)
 
     output: 
     path("./ncbi_taxdump"),                     emit: db_path

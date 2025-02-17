@@ -140,7 +140,9 @@ workflow TAXRETURN {
     */
 
     //// get NCBI taxonomy file
-    GET_NCBI_TAXONOMY ()
+    GET_NCBI_TAXONOMY (
+        "dummy"
+    )
 
     //// convert input taxon/taxa into NCBI and BOLD tax IDs
     PARSE_TARGETS (
