@@ -44,7 +44,8 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "fasta_files",
-    "internal_names_file"
+    "internal_names_file",
+    "max_group_size"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -67,7 +68,7 @@ if (internal_names_file == "no_file" ){
 }
 
 ## parse params
-max_group_size <- as.numeric(params.max_group_size)
+max_group_size <- as.numeric(max_group_size)
 
 prune_method <- params.prune_method
 

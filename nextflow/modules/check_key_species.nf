@@ -1,22 +1,21 @@
-process FILTER_REDUNDANT {
-    def module_name = "filter_redundant"
-    // tag "-"
-    // label "medium"
+process CHECK_KEY_SPECIES {
+    def module_name = "check_key_species"
+    tag "-"
     time '30.m'
-    memory '8.GB'
+    memory '16.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(fasta_files)
-    val(internal_names_file)
-    val(max_group_size)
+    path(sf_meta_file, name: 'sf_meta.csv')
+    path(key_species_list, name: 'key_species_list.txt')
 
     output: 
-    path("seqs_pruned.fasta"),                emit: fasta
-    path("removed.fasta"),                    emit: removed
+    path("*.seqnames.txt"),                emit: seq_names
+    path("key_sequences.csv"),             emit: key_sequences_csv
+    path("key_species_summary.csv"),       emit: summary
 
-    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
@@ -24,16 +23,16 @@ process FILTER_REDUNDANT {
     def module_script = "${module_name}.R"
     """
     #!/usr/bin/env Rscript
-    
+      
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_files =                   "${fasta_files}"
-    internal_names_file =           "${internal_names_file}"
-    max_group_size =                "${max_group_size}"
+    sf_meta_file = "sf_meta.csv"
+    key_species_list = "key_species_list.txt"
 
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
+
 
     tryCatch({
     ### source functions and themes, load packages, and import Nextflow params

@@ -12,6 +12,7 @@ include { ALIGN_PRIMERS_TO_DATABASE                                             
 include { ALIGN_PRIMERS_TO_SEED                                                 } from '../modules/align_primers_to_seed'
 include { ALIGN_SINGLE as ALIGN_OUTPUT                                                 } from '../modules/align_single'
 include { BUILD_TRIMMED_HMM                                                 } from '../modules/build_trimmed_hmm'
+include { CHECK_KEY_SPECIES                                                 } from '../modules/check_key_species'
 include { CLUSTER_SEQUENCES                                                 } from '../modules/cluster_sequences'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                            } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                           } from '../modules/combine_chunks'
@@ -78,6 +79,7 @@ workflow TAXRETURN {
 
     ch_target_taxon = channel.of ( params.target_taxon ) ?: Channel.empty()
     ch_target_rank = channel.of ( params.target_rank ) ?: Channel.of("no_rank")
+    ch_key_species_list = channel.fromPath ( params.key_species_list, checkIfExists: true, type: 'file' )
 
     //// form ch_targets input channel
     if ( ( params.target_taxon && params.target_rank ) && !params.target_list ) { // use single taxon 
@@ -90,6 +92,7 @@ workflow TAXRETURN {
         //// split .csv into ch_targets
         channel.fromPath ( params.target_list, checkIfExists: true, type: 'file' )
             .splitCsv ( by: 1, header: false, strip: true )
+            .unique()
             .map { row -> [ row[0], row[1] ] }
             .set { ch_targets }
 
@@ -491,6 +494,7 @@ workflow TAXRETURN {
             .set { ch_fates_filter_unclassified }
 
         FILTER_UNCLASSIFIED.out.fasta
+            .filter { it.size() > 0 }
             .set { ch_translate_sequences_input }
 
     } else {
@@ -500,6 +504,7 @@ workflow TAXRETURN {
         ch_fates_filter_unclassified = Channel.empty()
 
         ch_input_seqs
+            .filter { it.size() > 0 }
             .set { ch_translate_sequences_input }
     }
 
@@ -837,7 +842,8 @@ workflow TAXRETURN {
     //// remove reundant sequences from each species, preferentially retaining internal sequences
     FILTER_REDUNDANT (
         FILTER_SEQ_OUTLIERS.out.retained_fasta,
-        ch_internal_names
+        ch_internal_names,
+        params.max_group_size
     )
 
     //// save FILTER_REDUNDANT output
@@ -912,60 +918,7 @@ workflow TAXRETURN {
 
         ch_formatting_input = ch_aligned_database
 
-        // //// trim database to primer region
-        // if ( params.trim_to_primers ){
-
-        //     //// split into individual primer sequences for alignment
-        //     PROCESS_PRIMERS.out.nuc_fasta
-        //         .splitFasta ( by: 1, file: true )
-        //         .set { ch_disambiguated_primers }
-
-        //     //// add primer sequences to database alignment, output only the primer sequence (with gaps)
-        //     ALIGN_PRIMERS_TO_DATABASE (
-        //         ch_aligned_database,
-        //         ch_disambiguated_primers
-        //     )
-
-        //     //// merge individual primer alignments into one alignment with the database
-        //     ch_aligned_database
-        //         .mix ( ALIGN_PRIMERS_TO_DATABASE.out.fasta )
-        //         .collectFile ( name: 'merged_primers.fasta', newLine: true )
-        //         .set { ch_merged_primer_alignment }
-
-        //     //// trim alignment to primers
-        //     TRIM_WITH_PRIMERS (
-        //         ch_merged_primer_alignment,
-        //         params.primer_fwd,
-        //         params.primer_rev,
-        //         params.remove_primers,
-        //         params.max_primer_mismatches,
-        //         params.min_length_trimmed
-        //     )
-
-        //     //// save TRIM_TO_PRIMERS output
-        //     if ( params.save_intermediate ) {
-        //         TRIM_WITH_PRIMERS.out.fasta
-        //             .collectFile ( 
-        //                 name: "trim_with_primers.fasta",
-        //                 storeDir: "./output/results"
-        //             )
-        //     }
-
-        //     //// save TRIM_TO_PRIMERS removed sequences
-        //     if ( params.save_intermediate ) {
-        //         TRIM_WITH_PRIMERS.out.removed
-        //             .collectFile ( 
-        //                 name: "trim_with_primers.removed.fasta",
-        //                 storeDir: "./output/results"
-        //             )
-        //     }
-
-        //     ch_count_trim_with_primers = TRIM_WITH_PRIMERS.out.fasta.countFasta().combine(["trim_with_primers"])
-
-        //     ch_formatting_input = TRIM_WITH_PRIMERS.out.fasta
-
     } else {
-        // ch_count_trim_with_primers = Channel.of(["NA", "trim_with_primers"])
 
         ch_formatting_input = COMBINE_CHUNKS_2.out.fasta
     }
@@ -984,11 +937,6 @@ workflow TAXRETURN {
             name: "format_output.fasta",
             storeDir: "./output/results"
         )
-
-    // //// summarise number of taxa in database
-    // SUMMARISE_TAXA (
-    //     FORMAT_OUTPUT.out.fasta
-    // )
 
     //// sequence counts for debugging
     if ( params.debug_mode ){
@@ -1047,30 +995,30 @@ workflow TAXRETURN {
         .collectFile ( name: 'sources_fates.csv', seed: "name,source,fate", newLine: true, cache: false )
         .set { ch_sources_fates_file }
 
-    ch_sources_fates_file.view()
-
-    // input seqs name file: ch_input_names_file
-    
+   
     //// process the source and fate of every sequences through the pipeline
     SEQUENCE_TRACKER (
         ch_sources_fates_file
     )
 
-    //// summarise the count of sequences output from stage of the pipeline
-    // SUMMARISE_COUNTS (
-    //     ch_counts_file
+    //// check for sequences belonging to key species
+    CHECK_KEY_SPECIES (
+        SEQUENCE_TRACKER.out.sf_meta,
+        ch_key_species_list
+    )
+
+    //// validate sequences from 
+    // VALIDATE_KEY_SPECIES (
+        
     // )
 
+    
     //// train IDTAXA model
     if ( params.train_idtaxa ) {
         TRAIN_IDTAXA (
             FORMAT_OUTPUT.out.fasta
         )
     }
-    
-    // //// TODO: add proper model channel handling (with conditions)
-    // ch_models = 
-    //     Channel.empty()
     
 
 
