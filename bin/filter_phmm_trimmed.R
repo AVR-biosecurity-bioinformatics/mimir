@@ -190,40 +190,12 @@ hits_retained <-
         !( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed ) 
     )
 
-
-# forward strand hits
-hits_fwd <- 
-    hits_retained %>%
-    dplyr::filter(frame > 0)
-
-# reverse strand hits
-hits_rev <- 
-    hits_retained %>%
-    dplyr::filter(frame < 0)
-
 # fwd seqs
-if (any(names(seqs) %in% hits_fwd$target_name)){
-    seqs_fwd <- seqs[names(seqs) %in% hits_fwd$target_name]
+if (any(names(seqs) %in% hits_retained$target_name)){
+    seqs_combined <- seqs[names(seqs) %in% hits_retained$target_name]
 } else {
-    seqs_fwd <- list() %>% as.DNAbin()
+    seqs_combined <- list() %>% as.DNAbin()
 }
-
-# rev seqs
-if (any(names(seqs) %in% hits_rev$target_name)){
-    seqs_rev <- seqs[names(seqs) %in% hits_rev$target_name]
-} else {
-    seqs_rev <- list() %>% as.DNAbin()
-}
-
-# revcomp the seqs with reverse strand hits
-seqs_revcomp <- 
-    DNAbin2DNAstringset(seqs_rev) %>%
-    Biostrings::reverseComplement(.) %>%
-    ape::as.DNAbin(.)
-
-# combine seqs both in same orientation
-seqs_combined <- 
-    concat_DNAbin(seqs_fwd, seqs_revcomp)
 
 # get sequence lengths in bases
 seq_lengths <- 
@@ -267,7 +239,7 @@ if (!all(unname(lengths(seqs_subset)) == hit_locations$pad_len)){
 seqs_long <- seqs_subset[seqs_subset %>% lengths() %>% unname() >= min_length_trimmed]
 
 # seqs without a significant hit (either no hit or an excluded hit)
-seqs_nohit <- seqs[!names(seqs) %in% c(hits_fwd$target_name, hits_rev$target_name)]
+seqs_nohit <- seqs[!names(seqs) %in% hits_retained$target_name]
 
 # save data for hits that were removed after filtering
 seqs_removed_tibble <- 
