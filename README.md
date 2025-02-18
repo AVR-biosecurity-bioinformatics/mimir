@@ -9,6 +9,74 @@ This pipeline is being developed by a team at [Agriculture Victoria Research](ht
 > This pipeline is currently **UNFINISHED** and being actively developed, with no guarantee that the code is stable or usable!
 
 
+### Typical commands
+
+Fetching COI sequences belonging to the genus *Drosophila* (NCBI taxid: 7215) from GenBank only:
+
+```
+NXF_VER=23.05.0-edge nextflow run . \
+    --target_taxon 7215 \
+    --target_rank genus \
+    --marker COI \
+    --use_bold false
+```
+
+Fetching COI sequences from the same taxon using GenBank and BOLD (using a manually generated URL to download BOLD database):
+
+```
+NXF_VER=23.05.0-edge nextflow run . \
+    --target_taxon 7215 \
+    --target_rank genus \
+    --marker COI \
+    --bold_db_url "https://www.boldsystems.org/index.php/API_Datapackage?id=BOLD_Public.06-Sep-2024&uid=166f4b93030986"
+```
+
+Fetching COI sequences from GenBank and combining with curated 'internal' sequences in the file `my_sequences.fasta`:
+
+```
+NXF_VER=23.05.0-edge nextflow run . \
+    --target_taxon 7215 \
+    --target_rank genus \
+    --marker COI \
+    --use_bold false \
+    --internal_seqs my_sequences.fasta
+```
+
+Fetching and trimming COI sequences to a primer pair, keeping sequences if >=200 bp after trimming:
+
+```
+NXF_VER=23.05.0-edge nextflow run . \
+    --target_taxon 7215 \
+    --target_rank genus \
+    --marker COI \
+    --use_bold false \
+    --trim_to_primers \
+    --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC \
+    --primer_rev GTRATWGCHCCDGCTARWACWGG \
+    --min_length_trimmed 200
+```
+
+Fetching COI sequences from a list of taxa in `target_list_file.csv`:
+
+```
+NXF_VER=23.05.0-edge nextflow run . \
+    --target_list target_list_file.csv \
+    --marker COI \
+    --use_bold false
+```
+
+Keeping only sequences that are classified at every key rank:
+```
+NXF_VER=23.05.0-edge nextflow run . \
+    --target_taxon 7215 \
+    --target_rank genus \
+    --marker COI \
+    --use_bold false \
+    --remove_unclassified any_ranks
+```
+
+
+
 
 
 ### Notes on usage
@@ -27,6 +95,17 @@ If you have already downloaded a complete BOLD data package, either from a previ
 > TODO: Add ability for BOLD login details to be given to pipeline instead of generated URL.  
 
 We are also looking into ways of downloading sequence data from BOLD using the [`bold`](https://docs.ropensci.org/bold/index.html) R package, but this method is inherently less reliable due to unpredictable rate-limiting from the BOLD website. 
+
+#### Internal sequences
+
+A common goal of building a reference database is to combine sequences from public databases ('external' sequences) with high-quality, curated sequences the user generated themselves or otherwise trusts ('internal' sequences). You can supply internal sequences (in a `.fasta` file) to Mimir with `--internal_seqs`, and they will be processed alongside external sequences. 
+
+The only limitation currently is that the `.fasta` headers of the internal sequences must be in the following format: `acc|taxid;kingdom;phylum;class;order;family;genus;species`, where:
+- `acc` is a unique sequence accession/id, eg. `GBMH0095-06`
+- `taxid` is a numerical taxonomic ID, either from NCBI (and prefixed with `NCBI:`), BOLD (prefix: `BOLD:`) or internal use (prefix: `INTERNAL:`). For example: a sequence from *Drosophila melanogaster* would have a taxid of `NCBI:7227`
+- `kingdom` to `species` is the taxonomic lineage, using names from NCBI Taxonomy. For example, a *Drosophila melanogaster* sequence would have the following lineage: `Metazoa;Arthropoda;Insecta;Diptera;Drosophilidae;Drosophila;Drosophila melanogaster`
+
+
 
 #### Target taxa
 
