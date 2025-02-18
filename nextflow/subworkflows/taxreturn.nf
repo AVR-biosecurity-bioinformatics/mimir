@@ -259,6 +259,7 @@ workflow TAXRETURN {
 
     //// save names of BOLD sequences
     ch_genbank_fasta
+        .collect()
         .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
@@ -346,6 +347,7 @@ workflow TAXRETURN {
 
     //// save names of BOLD sequences
     ch_bold_fasta
+        .collect()
         .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
@@ -359,6 +361,7 @@ workflow TAXRETURN {
 
     //// save names of mito sequences
     ch_mito_fasta
+        .collect()
         .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
@@ -372,6 +375,7 @@ workflow TAXRETURN {
 
     //// save names of genome sequences
     ch_genome_fasta
+        .collect()
         .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
@@ -404,6 +408,7 @@ workflow TAXRETURN {
 
         //// save names of internal sequences
         ch_internal_fasta
+            .collect()
             .flatten()
             .splitFasta ( by: 1, record: [ header:true ] )
             .map { record -> record.header }
@@ -458,13 +463,13 @@ workflow TAXRETURN {
             )
     }
 
-    //// save names of all input sequences
-    ch_input_seqs
-        .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .collectFile ( name: 'input_names.txt', newLine: true, cache: true )
-        .set { ch_input_names_file }
+    // //// save names of all input sequences
+    // ch_input_seqs
+    //     .flatten()
+    //     .splitFasta ( by: 1, record: [ header:true ] )
+    //     .map { record -> record.header }
+    //     .collectFile ( name: 'input_names.txt', newLine: true, cache: true )
+    //     .set { ch_input_names_file }
 
 
     
@@ -493,6 +498,8 @@ workflow TAXRETURN {
 
         //// sequence names that failed filter
         FILTER_UNCLASSIFIED.out.removed
+            .collect()
+            .flatten()
             .splitFasta ( by: 1, record: [ header:true ] )
             .map { record -> record.header }
             .combine ( [ "filter_unclassified" ] )
@@ -577,6 +584,8 @@ workflow TAXRETURN {
 
     //// sequence names that failed filter
     FILTER_PHMM_FULL.out.removed_fasta
+        .collect()
+        .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "filter_phmm_full" ] )
@@ -641,6 +650,8 @@ workflow TAXRETURN {
 
         //// sequence names that failed filter
         FILTER_PHMM_TRIMMED.out.removed_fasta
+            .collect()
+            .flatten()
             .splitFasta ( by: 1, record: [ header:true ] )
             .map { record -> record.header }
             .combine ( [ "filter_phmm_trimmed" ] )
@@ -693,6 +704,8 @@ workflow TAXRETURN {
 
     //// sequence names that failed filter
     FILTER_DUPLICATES.out.removed
+        .collect()
+        .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "filter_duplicates" ] )
@@ -720,6 +733,8 @@ workflow TAXRETURN {
 
         //// sequence names that failed filter
         FILTER_AMBIGUOUS.out.removed
+            .collect()
+            .flatten()
             .splitFasta ( by: 1, record: [ header:true ] )
             .map { record -> record.header }
             .combine ( [ "filter_ambiguous" ] )
@@ -765,6 +780,8 @@ workflow TAXRETURN {
 
     //// sequence names that failed filter
     FILTER_TAX_OUTLIERS.out.removed
+        .collect()
+        .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "filter_tax_outliers" ] )
@@ -850,6 +867,7 @@ workflow TAXRETURN {
 
     //// sequence names that failed filter
     FILTER_SEQ_OUTLIERS.out.removed
+        .collect()
         .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
@@ -880,6 +898,8 @@ workflow TAXRETURN {
 
     //// sequence names that failed filter
     FILTER_REDUNDANT.out.removed
+        .collect()
+        .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "filter_redundant" ] )
@@ -889,6 +909,8 @@ workflow TAXRETURN {
 
     //// sequence names included in final datasase
     FILTER_REDUNDANT.out.fasta
+        .collect()
+        .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "final_database" ] )
