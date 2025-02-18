@@ -1,7 +1,7 @@
 process VALIDATE_KEY_SPECIES {
     def module_name = "validate_key_species"
     tag "-"
-    time '30.m'
+    time '4.h'
     memory '16.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
