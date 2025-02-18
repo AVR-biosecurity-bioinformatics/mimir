@@ -16,6 +16,8 @@ include { CHECK_KEY_SPECIES                                                 } fr
 include { CLUSTER_SEQUENCES                                                 } from '../modules/cluster_sequences'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                            } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                           } from '../modules/combine_chunks'
+include { CONCAT_CSV as CONCAT_FATES                           } from '../modules/concat_csv'
+include { CONCAT_CSV as CONCAT_SOURCES                           } from '../modules/concat_csv'
 include { EXTRACT_BOLD                                                 } from '../modules/extract_bold'
 // include { FETCH_BOLD                                                } from '../modules/fetch_bold'
 include { FETCH_GENBANK                                             } from '../modules/fetch_genbank'
@@ -35,6 +37,7 @@ include { GET_NCBI_TAXONOMY                                         } from '../m
 include { HMMSEARCH_FULL                                         } from '../modules/hmmsearch_full'
 include { HMMSEARCH_TRIMMED                                         } from '../modules/hmmsearch_trimmed'
 include { IMPORT_INTERNAL                                                 } from '../modules/import_internal'
+include { JOIN_SOURCES_FATES                                                 } from '../modules/join_sources_fates'
 include { MAKE_MERGE_TABLE                                                 } from '../modules/make_merge_table'
 include { MATCH_BOLD                                                 } from '../modules/match_bold'
 // include { MATCH_INTERNAL                                                 } from '../modules/match_internal'
@@ -61,6 +64,7 @@ include { TRAIN_IDTAXA                                                 } from '.
 include { TRANSLATE_SEQUENCES                                                 } from '../modules/translate_sequences'
 include { TRIM_HMM_SEED                                                 } from '../modules/trim_hmm_seed'
 include { TRIM_WITH_PRIMERS                                                 } from '../modules/trim_with_primers'
+include { VALIDATE_KEY_SPECIES                                                 } from '../modules/validate_key_species'
 
 
 
@@ -259,6 +263,8 @@ workflow TAXRETURN {
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "genbank" ])
+        .map { name, source -> "$name,$source" }
+        .collectFile ( name: 'ch_genbank_fasta.csv', seed: "name,source", newLine: true, cache: true )
         .set { ch_source_genbank }
     
     /*
@@ -344,6 +350,8 @@ workflow TAXRETURN {
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "bold" ])
+        .map { name, source -> "$name,$source" }
+        .collectFile ( name: 'ch_bold_fasta.csv', seed: "name,source", newLine: true, cache: true )
         .set { ch_source_bold }
 
     //// count number of mitochondrial sequences 
@@ -355,6 +363,8 @@ workflow TAXRETURN {
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "mito" ])
+        .map { name, source -> "$name,$source" }
+        .collectFile ( name: 'ch_mito_fasta.csv', seed: "name,source", newLine: true, cache: true )
         .set { ch_source_mito }
 
     //// count number of genome assembly-derived sequences 
@@ -366,6 +376,8 @@ workflow TAXRETURN {
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "genome" ])
+        .map { name, source -> "$name,$source" }
+        .collectFile ( name: 'ch_genome_fasta.csv', seed: "name,source", newLine: true, cache: true )
         .set { ch_source_genome }
 
 
@@ -396,6 +408,8 @@ workflow TAXRETURN {
             .splitFasta ( by: 1, record: [ header:true ] )
             .map { record -> record.header }
             .combine ( [ "internal" ])
+            .map { name, source -> "$name,$source" }
+            .collectFile ( name: 'ch_internal_fasta.csv', seed: "name,source", newLine: true, cache: true )
             .set { ch_source_internal }
 
     } else {
@@ -449,20 +463,11 @@ workflow TAXRETURN {
         .flatten()
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
-        .collectFile ( name: 'input_names.txt', newLine: true, cache: false )
+        .collectFile ( name: 'input_names.txt', newLine: true, cache: true )
         .set { ch_input_names_file }
 
 
-    //// collect sequence origins into .csv
-    Channel.empty()
-        .concat ( ch_source_genbank )
-        .concat ( ch_source_bold )
-        .concat ( ch_source_mito )
-        .concat ( ch_source_genome )
-        .concat ( ch_source_internal )
-        .unique() // remove duplicated sequences
-        .set { ch_sources }
-
+    
     /*
     Sequence filtering
     */
@@ -491,6 +496,8 @@ workflow TAXRETURN {
             .splitFasta ( by: 1, record: [ header:true ] )
             .map { record -> record.header }
             .combine ( [ "filter_unclassified" ] )
+            .map { name, fate -> "$name,$fate" }
+            .collectFile ( name: 'ch_fates_filter_unclassified.csv', seed: "name,fate", newLine: true, cache: true )
             .set { ch_fates_filter_unclassified }
 
         FILTER_UNCLASSIFIED.out.fasta
@@ -573,6 +580,8 @@ workflow TAXRETURN {
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "filter_phmm_full" ] )
+        .map { name, fate -> "$name,$fate" }
+        .collectFile ( name: 'ch_fates_filter_phmm_full.csv', seed: "name,fate", newLine: true, cache: true )
         .set { ch_fates_filter_phmm_full }
 
 
@@ -635,6 +644,8 @@ workflow TAXRETURN {
             .splitFasta ( by: 1, record: [ header:true ] )
             .map { record -> record.header }
             .combine ( [ "filter_phmm_trimmed" ] )
+            .map { name, fate -> "$name,$fate" }
+            .collectFile ( name: 'ch_fates_filter_phmm_trimmed.csv', seed: "name,fate", newLine: true, cache: true )
             .set { ch_fates_filter_phmm_trimmed }
 
         //// create output channel
@@ -685,6 +696,8 @@ workflow TAXRETURN {
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "filter_duplicates" ] )
+        .map { name, fate -> "$name,$fate" }
+        .collectFile ( name: 'ch_fates_filter_duplicates.csv', seed: "name,fate", newLine: true, cache: true )
         .set { ch_fates_filter_duplicates }
 
     //// remove ambiguous 
@@ -710,6 +723,8 @@ workflow TAXRETURN {
             .splitFasta ( by: 1, record: [ header:true ] )
             .map { record -> record.header }
             .combine ( [ "filter_ambiguous" ] )
+            .map { name, fate -> "$name,$fate" }
+            .collectFile ( name: 'ch_fates_filter_ambiguous.csv', seed: "name,fate", newLine: true, cache: true )
             .set { ch_fates_filter_ambiguous }
 
         FILTER_AMBIGUOUS.out.fasta
@@ -753,6 +768,8 @@ workflow TAXRETURN {
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "filter_tax_outliers" ] )
+        .map { name, fate -> "$name,$fate" }
+        .collectFile ( name: 'ch_fates_filter_tax_outliers.csv', seed: "name,fate", newLine: true, cache: true )
         .set { ch_fates_filter_tax_outliers }
 
     //// sort .fasta by lineage string to reduce the number of files that need to be merged after splitting 
@@ -837,6 +854,8 @@ workflow TAXRETURN {
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "filter_seq_outliers" ] )
+        .map { name, fate -> "$name,$fate" }
+        .collectFile ( name: 'ch_fates_filter_seq_outliers.csv', seed: "name,fate", newLine: true, cache: true )
         .set { ch_fates_filter_seq_outliers }
 
     //// remove reundant sequences from each species, preferentially retaining internal sequences
@@ -864,6 +883,8 @@ workflow TAXRETURN {
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "filter_redundant" ] )
+        .map { name, fate -> "$name,$fate" }
+        .collectFile ( name: 'ch_fates_filter_redundant.csv', seed: "name,fate", newLine: true, cache: true )
         .set { ch_fates_filter_redundant }
 
     //// sequence names included in final datasase
@@ -871,6 +892,8 @@ workflow TAXRETURN {
         .splitFasta ( by: 1, record: [ header:true ] )
         .map { record -> record.header }
         .combine ( [ "final_database" ] )
+        .map { name, fate -> "$name,$fate" }
+        .collectFile ( name: 'ch_fates_final_database.csv', seed: "name,fate", newLine: true, cache: true )
         .set { ch_fates_final_database }
 
     //// combine pruned .fasta files into a single file
@@ -978,7 +1001,23 @@ workflow TAXRETURN {
         .collectFile ( name: 'counts.csv', seed: "sequences,process,order", newLine: true, cache: false )
         .set { ch_counts_file }
 
-    //// collect sequence fates and combine with sources into a .csv
+
+    //// collect sequence origins into a list of .csv files for concatenation
+    Channel.empty()
+        .concat ( ch_source_genbank )
+        .concat ( ch_source_bold )
+        .concat ( ch_source_mito )
+        .concat ( ch_source_genome )
+        .concat ( ch_source_internal )
+        .collect ()
+        .set { ch_sources }
+
+    //// concat sequence sources into one .csv
+    CONCAT_SOURCES (
+        ch_sources
+    )
+
+    //// collect sequence fates into a list of .csv files for concatenation
     Channel.empty()
         .concat ( ch_fates_filter_unclassified )
         .concat ( ch_fates_filter_phmm_full )
@@ -989,16 +1028,23 @@ workflow TAXRETURN {
         .concat ( ch_fates_filter_seq_outliers )
         .concat ( ch_fates_filter_redundant )
         .concat ( ch_fates_final_database )
-        .unique() // remove duplicated 
-        .join ( ch_sources, by: 0, failOnMismatch: true, failOnDuplicate: true ) 
-        .map { name, fate, source -> "$name,$source,$fate" }
-        .collectFile ( name: 'sources_fates.csv', seed: "name,source,fate", newLine: true, cache: false )
-        .set { ch_sources_fates_file }
+        .collect ()
+        .set { ch_fates }
 
-   
+    //// concat sequence fates into one .csv
+    CONCAT_FATES (
+        ch_fates
+    )
+
+    //// join fates and sources together into a single .csv
+    JOIN_SOURCES_FATES (
+        CONCAT_SOURCES.out.csv,
+        CONCAT_FATES.out.csv
+    )
+
     //// process the source and fate of every sequences through the pipeline
     SEQUENCE_TRACKER (
-        ch_sources_fates_file
+        JOIN_SOURCES_FATES.out.csv
     )
 
     //// check for sequences belonging to key species
@@ -1007,11 +1053,14 @@ workflow TAXRETURN {
         ch_key_species_list
     )
 
-    //// validate sequences from 
-    // VALIDATE_KEY_SPECIES (
-        
-    // )
+    ch_key_sequence_names = CHECK_KEY_SPECIES.out.seq_names.flatten()
 
+    //// validate sequences from 
+    VALIDATE_KEY_SPECIES (
+        ch_key_sequence_names,
+        FORMAT_OUTPUT.out.fasta,
+        params.add_root
+    )
     
     //// train IDTAXA model
     if ( params.train_idtaxa ) {
