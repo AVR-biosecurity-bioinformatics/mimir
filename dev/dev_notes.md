@@ -238,7 +238,17 @@ NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364dd
 
 NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Drosophilidae --target_rank family --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --key_species_list ./test/key_species_test.txt --max_group_size 2
 
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7215 --target_rank genus --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --key_species_list ./test/key_species_test.txt --max_group_size 1
+
 NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Aphididae --target_rank family --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --key_species_list ./test/key_species_aphid.txt --max_group_size 2
+
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Aphididae --target_rank family --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --key_species_list ./test/key_species_aphid.txt --max_group_size 2
+
+## testing new filter_redundant code
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7215 --target_rank genus --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200
+
+# Anthomyiidae (contains Delia platura)
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 30062 --target_rank family --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 
 
 
 # testing marine list

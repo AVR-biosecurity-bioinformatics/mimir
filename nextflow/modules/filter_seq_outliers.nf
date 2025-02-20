@@ -8,7 +8,7 @@ process FILTER_SEQ_OUTLIERS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(fasta_files)
+    tuple path(fasta_files), path(counts_file)
     val(dist_threshold)
 
     output: 
@@ -25,8 +25,9 @@ process FILTER_SEQ_OUTLIERS {
     #!/usr/bin/env Rscript
     
     ### defining Nextflow environment variables as R variables
-    ## input channel variables
+    ### input channel variables
     fasta_files =                   "${fasta_files}"
+    counts_file =                   "${counts_file}"
     dist_threshold =                "${dist_threshold}"
 
     ## global variables

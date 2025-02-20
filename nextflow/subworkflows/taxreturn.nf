@@ -52,6 +52,7 @@ include { QUERY_GENBANK                                                 } from '
 include { REFORMAT_NAMES                                                 } from '../modules/reformat_names'
 include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
 include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
+include { SELECT_FINAL_SEQUENCES                                                } from '../modules/select_final_sequences'
 include { SEQUENCE_TRACKER                                                } from '../modules/sequence_tracker'
 include { SORT_BY_LINEAGE as SORT_BY_LINEAGE_1                                                } from '../modules/sort_by_lineage'
 include { SORT_BY_LINEAGE as SORT_BY_LINEAGE_2                                                } from '../modules/sort_by_lineage'
@@ -83,7 +84,12 @@ workflow TAXRETURN {
 
     ch_target_taxon = channel.of ( params.target_taxon ) ?: Channel.empty()
     ch_target_rank = channel.of ( params.target_rank ) ?: Channel.of("no_rank")
-    ch_key_species_list = channel.fromPath ( params.key_species_list, checkIfExists: true, type: 'file' )
+    
+    if ( params.key_species_list ){
+        ch_key_species_list = channel.fromPath ( params.key_species_list, checkIfExists: true, type: 'file' )
+    } else {
+        ch_key_species_list = Channel.empty()
+    }
 
     //// form ch_targets input channel
     if ( ( params.target_taxon && params.target_rank ) && !params.target_list ) { // use single taxon 
@@ -257,15 +263,9 @@ workflow TAXRETURN {
     //// count number of sequences downloaded from Genbank
     ch_count_genbank = ch_genbank_fasta.countFasta().combine(["genbank"])
 
-    //// save names of BOLD sequences
+    //// collect genbank sequences
     ch_genbank_fasta
-        .collect()
-        .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .combine ( [ "genbank" ])
-        .map { name, source -> "$name,$source" }
-        .collectFile ( name: 'ch_genbank_fasta.csv', seed: "name,source", newLine: true, cache: true )
+        .collectFile ( name: 'genbank.fasta', newLine: true, cache: true )
         .set { ch_source_genbank }
     
     /*
@@ -347,13 +347,7 @@ workflow TAXRETURN {
 
     //// save names of BOLD sequences
     ch_bold_fasta
-        .collect()
-        .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .combine ( [ "bold" ])
-        .map { name, source -> "$name,$source" }
-        .collectFile ( name: 'ch_bold_fasta.csv', seed: "name,source", newLine: true, cache: true )
+        .collectFile ( name: 'bold.fasta', newLine: true, cache: true )
         .set { ch_source_bold }
 
     //// count number of mitochondrial sequences 
@@ -361,13 +355,7 @@ workflow TAXRETURN {
 
     //// save names of mito sequences
     ch_mito_fasta
-        .collect()
-        .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .combine ( [ "mito" ])
-        .map { name, source -> "$name,$source" }
-        .collectFile ( name: 'ch_mito_fasta.csv', seed: "name,source", newLine: true, cache: true )
+        .collectFile ( name: 'mito.fasta', newLine: true, cache: true )
         .set { ch_source_mito }
 
     //// count number of genome assembly-derived sequences 
@@ -375,13 +363,7 @@ workflow TAXRETURN {
 
     //// save names of genome sequences
     ch_genome_fasta
-        .collect()
-        .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .combine ( [ "genome" ])
-        .map { name, source -> "$name,$source" }
-        .collectFile ( name: 'ch_genome_fasta.csv', seed: "name,source", newLine: true, cache: true )
+        .collectFile ( name: 'genome.fasta', newLine: true, cache: true )
         .set { ch_source_genome }
 
 
@@ -408,13 +390,7 @@ workflow TAXRETURN {
 
         //// save names of internal sequences
         ch_internal_fasta
-            .collect()
-            .flatten()
-            .splitFasta ( by: 1, record: [ header:true ] )
-            .map { record -> record.header }
-            .combine ( [ "internal" ])
-            .map { name, source -> "$name,$source" }
-            .collectFile ( name: 'ch_internal_fasta.csv', seed: "name,source", newLine: true, cache: true )
+            .collectFile ( name: 'internal.fasta', newLine: true, cache: true )
             .set { ch_source_internal }
 
     } else {
@@ -498,13 +474,7 @@ workflow TAXRETURN {
 
         //// sequence names that failed filter
         FILTER_UNCLASSIFIED.out.removed
-            .collect()
-            .flatten()
-            .splitFasta ( by: 1, record: [ header:true ] )
-            .map { record -> record.header }
-            .combine ( [ "filter_unclassified" ] )
-            .map { name, fate -> "$name,$fate" }
-            .collectFile ( name: 'ch_fates_filter_unclassified.csv', seed: "name,fate", newLine: true, cache: true )
+            .collectFile ( name: 'filter_unclassified.fasta', newLine: true, cache: false )
             .set { ch_fates_filter_unclassified }
 
         FILTER_UNCLASSIFIED.out.fasta
@@ -584,13 +554,7 @@ workflow TAXRETURN {
 
     //// sequence names that failed filter
     FILTER_PHMM_FULL.out.removed_fasta
-        .collect()
-        .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .combine ( [ "filter_phmm_full" ] )
-        .map { name, fate -> "$name,$fate" }
-        .collectFile ( name: 'ch_fates_filter_phmm_full.csv', seed: "name,fate", newLine: true, cache: true )
+        .collectFile ( name: 'filter_phmm_full.fasta', newLine: true, cache: false )
         .set { ch_fates_filter_phmm_full }
 
 
@@ -650,13 +614,7 @@ workflow TAXRETURN {
 
         //// sequence names that failed filter
         FILTER_PHMM_TRIMMED.out.removed_fasta
-            .collect()
-            .flatten()
-            .splitFasta ( by: 1, record: [ header:true ] )
-            .map { record -> record.header }
-            .combine ( [ "filter_phmm_trimmed" ] )
-            .map { name, fate -> "$name,$fate" }
-            .collectFile ( name: 'ch_fates_filter_phmm_trimmed.csv', seed: "name,fate", newLine: true, cache: true )
+            .collectFile ( name: 'filter_phmm_trimmed.fasta', newLine: true, cache: false )
             .set { ch_fates_filter_phmm_trimmed }
 
         //// create output channel
@@ -704,13 +662,7 @@ workflow TAXRETURN {
 
     //// sequence names that failed filter
     FILTER_DUPLICATES.out.removed
-        .collect()
-        .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .combine ( [ "filter_duplicates" ] )
-        .map { name, fate -> "$name,$fate" }
-        .collectFile ( name: 'ch_fates_filter_duplicates.csv', seed: "name,fate", newLine: true, cache: true )
+        .collectFile ( name: 'filter_duplicates.fasta', newLine: true, cache: false )
         .set { ch_fates_filter_duplicates }
 
     //// remove ambiguous 
@@ -733,13 +685,7 @@ workflow TAXRETURN {
 
         //// sequence names that failed filter
         FILTER_AMBIGUOUS.out.removed
-            .collect()
-            .flatten()
-            .splitFasta ( by: 1, record: [ header:true ] )
-            .map { record -> record.header }
-            .combine ( [ "filter_ambiguous" ] )
-            .map { name, fate -> "$name,$fate" }
-            .collectFile ( name: 'ch_fates_filter_ambiguous.csv', seed: "name,fate", newLine: true, cache: true )
+            .collectFile ( name: 'filter_ambiguous.fasta', newLine: true, cache: false )
             .set { ch_fates_filter_ambiguous }
 
         FILTER_AMBIGUOUS.out.fasta
@@ -780,13 +726,7 @@ workflow TAXRETURN {
 
     //// sequence names that failed filter
     FILTER_TAX_OUTLIERS.out.removed
-        .collect()
-        .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .combine ( [ "filter_tax_outliers" ] )
-        .map { name, fate -> "$name,$fate" }
-        .collectFile ( name: 'ch_fates_filter_tax_outliers.csv', seed: "name,fate", newLine: true, cache: true )
+        .collectFile ( name: 'filter_tax_outliers.fasta', newLine: true, cache: false )
         .set { ch_fates_filter_tax_outliers }
 
     //// sort .fasta by lineage string to reduce the number of files that need to be merged after splitting 
@@ -838,12 +778,36 @@ workflow TAXRETURN {
         .mix ( MERGE_SPLITS_SPECIES.out.fasta.flatten() )
         .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
         .flatten ()
-        .buffer ( size: 100, remainder: true ) 
-        .set { ch_align_input }
+        .buffer ( size: 500, remainder: true ) 
+        .set { ch_filter_redundant_input }
+
+    //// filter out redundant (ie. identical and contained) sequences within each species, counting the number of sequences absorbed
+    FILTER_REDUNDANT (
+        ch_filter_redundant_input
+    )
+
+    //// save FILTER_REDUNDANT output
+    if ( params.save_intermediate ) {
+        FILTER_REDUNDANT.out.fasta.map{fasta, csv -> fasta}
+            .flatten()
+            .collectFile ( 
+                name: "filter_redundant.fasta",
+                storeDir: "./output/results"
+            )
+    }
+
+    //// count number of sequences passing group pruning
+    ch_count_filter_redundant = FILTER_REDUNDANT.out.fasta.map{fasta, csv -> fasta}.flatten().countFasta().combine(["filter_redundant"])
+
+    //// sequence names that failed filter
+    FILTER_REDUNDANT.out.removed
+        .flatten()
+        .collectFile ( name: 'filter_redundant.fasta', newLine: true, cache: false )
+        .set { ch_fates_filter_redundant }
 
     //// align species-level .fasta in batches
     ALIGN_SPECIES (
-        ch_align_input
+        FILTER_REDUNDANT.out.fasta
     )
 
     //// remove sequence outliers from species clusters
@@ -867,60 +831,43 @@ workflow TAXRETURN {
 
     //// sequence names that failed filter
     FILTER_SEQ_OUTLIERS.out.removed
-        .collect()
         .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .combine ( [ "filter_seq_outliers" ] )
-        .map { name, fate -> "$name,$fate" }
-        .collectFile ( name: 'ch_fates_filter_seq_outliers.csv', seed: "name,fate", newLine: true, cache: true )
+        .collectFile ( name: 'filter_seq_outliers.fasta', newLine: true, cache: false )
         .set { ch_fates_filter_seq_outliers }
 
     //// remove reundant sequences from each species, preferentially retaining internal sequences
-    FILTER_REDUNDANT (
+    SELECT_FINAL_SEQUENCES (
         FILTER_SEQ_OUTLIERS.out.retained_fasta,
         ch_internal_names,
         params.max_group_size
     )
 
-    //// save FILTER_REDUNDANT output
+    //// save SELECT_FINAL_SEQUENCES output
     if ( params.save_intermediate ) {
-        FILTER_REDUNDANT.out.fasta
+        SELECT_FINAL_SEQUENCES.out.fasta
             .flatten()
             .collectFile ( 
-                name: "filter_redundant.fasta",
+                name: "select_final_sequences.fasta",
                 storeDir: "./output/results"
             )
     }
 
     //// count number of sequences passing group pruning
-    ch_count_filter_redundant = FILTER_REDUNDANT.out.fasta.flatten().countFasta().combine(["filter_redundant"])
+    ch_count_select_final_sequences = SELECT_FINAL_SEQUENCES.out.fasta.flatten().countFasta().combine(["select_final_sequences"])
 
     //// sequence names that failed filter
-    FILTER_REDUNDANT.out.removed
-        .collect()
-        .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .combine ( [ "filter_redundant" ] )
-        .map { name, fate -> "$name,$fate" }
-        .collectFile ( name: 'ch_fates_filter_redundant.csv', seed: "name,fate", newLine: true, cache: true )
-        .set { ch_fates_filter_redundant }
+    SELECT_FINAL_SEQUENCES.out.removed
+        .collectFile ( name: 'select_final_sequences.fasta', newLine: true, cache: false )
+        .set { ch_fates_select_final_sequences }
 
     //// sequence names included in final datasase
-    FILTER_REDUNDANT.out.fasta
-        .collect()
-        .flatten()
-        .splitFasta ( by: 1, record: [ header:true ] )
-        .map { record -> record.header }
-        .combine ( [ "final_database" ] )
-        .map { name, fate -> "$name,$fate" }
-        .collectFile ( name: 'ch_fates_final_database.csv', seed: "name,fate", newLine: true, cache: true )
+    SELECT_FINAL_SEQUENCES.out.fasta
+        .collectFile ( name: 'final_database.fasta', newLine: true, cache: false )
         .set { ch_fates_final_database }
 
     //// combine pruned .fasta files into a single file
     COMBINE_CHUNKS_2 ( 
-        FILTER_REDUNDANT.out.fasta.flatten().collect(),
+        SELECT_FINAL_SEQUENCES.out.fasta.flatten().collect(),
         "false"
     )
 
@@ -998,30 +945,32 @@ workflow TAXRETURN {
         ch_count_filter_duplicates                      .view{ "${it[1]}: ${it[0]}" }
         ch_count_filter_ambiguous                       .view{ "${it[1]}: ${it[0]}" }
         ch_count_filter_tax_outliers                    .view{ "${it[1]}: ${it[0]}" }
-        ch_count_filter_seq_outliers                    .view{ "${it[1]}: ${it[0]}" }
         ch_count_filter_redundant                       .view{ "${it[1]}: ${it[0]}" }
+        ch_count_filter_seq_outliers                    .view{ "${it[1]}: ${it[0]}" }
+        ch_count_select_final_sequences                       .view{ "${it[1]}: ${it[0]}" }
     }
 
-    //// collect count channels into a csv
-    Channel.empty()
-        .concat ( ch_count_genbank                  .combine([1]) )
-        .concat ( ch_count_bold                     .combine([2]) )
-        .concat ( ch_count_mito                     .combine([3]) )
-        .concat ( ch_count_genome                   .combine([4]) )
-        .concat ( ch_count_internal                 .combine([5]) )
-        .concat ( ch_count_external                 .combine([6]) )
-        .concat ( ch_count_input                    .combine([7]) )
-        .concat ( ch_count_filter_unclassified      .combine([8]) )
-        .concat ( ch_count_filter_phmm_full         .combine([9]) )
-        .concat ( ch_count_filter_phmm_trimmed      .combine([10]) )
-        .concat ( ch_count_filter_duplicates        .combine([11]) )
-        .concat ( ch_count_filter_ambiguous         .combine([12]) )
-        .concat ( ch_count_filter_tax_outliers      .combine([13]) )
-        .concat ( ch_count_filter_seq_outliers      .combine([14]) )
-        .concat ( ch_count_filter_redundant         .combine([15]) )
-        .map { sequences, process, order -> "$sequences,$process,$order" }
-        .collectFile ( name: 'counts.csv', seed: "sequences,process,order", newLine: true, cache: false )
-        .set { ch_counts_file }
+    // //// collect count channels into a csv
+    // Channel.empty()
+    //     .concat ( ch_count_genbank                  .combine([1]) )
+    //     .concat ( ch_count_bold                     .combine([2]) )
+    //     .concat ( ch_count_mito                     .combine([3]) )
+    //     .concat ( ch_count_genome                   .combine([4]) )
+    //     .concat ( ch_count_internal                 .combine([5]) )
+    //     .concat ( ch_count_external                 .combine([6]) )
+    //     .concat ( ch_count_input                    .combine([7]) )
+    //     .concat ( ch_count_filter_unclassified      .combine([8]) )
+    //     .concat ( ch_count_filter_phmm_full         .combine([9]) )
+    //     .concat ( ch_count_filter_phmm_trimmed      .combine([10]) )
+    //     .concat ( ch_count_filter_duplicates        .combine([11]) )
+    //     .concat ( ch_count_filter_ambiguous         .combine([12]) )
+    //     .concat ( ch_count_filter_tax_outliers      .combine([13]) )
+    //     .concat ( ch_count_filter_redundant         .combine([14]) )
+    //     .concat ( ch_count_filter_seq_outliers      .combine([15]) )
+    //     .concat ( ch_count_select_final_sequences   .combine([16]) )
+    //     .map { sequences, process, order -> "$sequences,$process,$order" }
+    //     .collectFile ( name: 'counts.csv', seed: "sequences,process,order", newLine: true, cache: false )
+    //     .set { ch_counts_file }
 
 
     //// collect sequence origins into a list of .csv files for concatenation
@@ -1036,7 +985,8 @@ workflow TAXRETURN {
 
     //// concat sequence sources into one .csv
     CONCAT_SOURCES (
-        ch_sources
+        ch_sources,
+        "sources"
     )
 
     //// collect sequence fates into a list of .csv files for concatenation
@@ -1047,15 +997,17 @@ workflow TAXRETURN {
         .concat ( ch_fates_filter_duplicates )
         .concat ( ch_fates_filter_ambiguous )
         .concat ( ch_fates_filter_tax_outliers )
-        .concat ( ch_fates_filter_seq_outliers )
         .concat ( ch_fates_filter_redundant )
+        .concat ( ch_fates_filter_seq_outliers )
+        .concat ( ch_fates_select_final_sequences )
         .concat ( ch_fates_final_database )
         .collect ()
         .set { ch_fates }
 
     //// concat sequence fates into one .csv
     CONCAT_FATES (
-        ch_fates
+        ch_fates,
+        "fates"
     )
 
     //// join fates and sources together into a single .csv
@@ -1069,21 +1021,26 @@ workflow TAXRETURN {
         JOIN_SOURCES_FATES.out.csv
     )
 
-    //// check for sequences belonging to key species
-    CHECK_KEY_SPECIES (
-        SEQUENCE_TRACKER.out.sf_meta,
-        ch_key_species_list
-    )
 
-    ch_key_sequence_names = CHECK_KEY_SPECIES.out.seq_names.flatten()
+    if ( params.key_species_list ){
 
-    //// validate sequences from 
-    VALIDATE_KEY_SPECIES (
-        ch_key_sequence_names,
-        FORMAT_OUTPUT.out.fasta,
-        params.add_root
-    )
-    
+        //// check for sequences belonging to key species
+        CHECK_KEY_SPECIES (
+            SEQUENCE_TRACKER.out.sf_meta,
+            ch_key_species_list
+        )
+
+        ch_key_sequence_names = CHECK_KEY_SPECIES.out.seq_names.flatten()
+
+        //// validate sequences from 
+        VALIDATE_KEY_SPECIES (
+            ch_key_sequence_names,
+            FORMAT_OUTPUT.out.fasta,
+            params.add_root
+        )
+        
+    }
+
     //// train IDTAXA model
     if ( params.train_idtaxa ) {
         TRAIN_IDTAXA (

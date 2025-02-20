@@ -8,7 +8,8 @@ process CONCAT_CSV {
     container "cicirello/gnu-on-alpine:3.20.3"
 
     input:
-    path('input*.csv')
+    path(fasta_list, name: '*')
+    val(data_type)
 
     output: 
     path("output.csv"),                            emit: csv
@@ -22,11 +23,29 @@ process CONCAT_CSV {
     #!/usr/bin/env bash
 
     ### run module code
-    # combine files
-    awk 'FNR==1 && NR!=1{next;}{print}' input*.csv > output_unsorted.csv
 
-    # sort output file (ignoring header)
-    cat output_unsorted.csv | awk 'NR<2{print \$0;next}{print \$0| "sort -k 1 -t ,"}' > output.csv
+    # make header based on "data_type"
+    if [[ "$data_type" == "sources" ]]; then 
+        echo "name,source" > header.csv
+    elif [[ "$data_type" == "fates" ]]; then 
+        echo "name,fate" > header.csv
+    else 
+        echo "Data type not valid"
+        exit 1
+    fi
+
+    # loop through input .fasta files, appending headers and file basename into a .csv file
+    touch output.csv
+    for i in $fasta_list; do
+        BASENAME=\$( basename \$i .fasta )
+        awk -v BASENAME="\$BASENAME" -v RS=">" -v ORS="\n" -v FS="[\r\n]+" -v OFS="\n" 'NR>1 { print \$1 "," BASENAME }' \$i >> output_noheader.csv
+    done
+
+    # append header to file, then sort, ignoring header
+    cat header.csv output_noheader.csv | \
+        awk 'NR<2{print \$0;next}{print \$0| "sort -k 1 -t ,"}' \
+        > output.csv
+
         
     """
 

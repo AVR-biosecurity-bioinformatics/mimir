@@ -1,21 +1,22 @@
-process SEQUENCE_TRACKER {
-    def module_name = "sequence_tracker"
-    tag "-"
-    // time '30.m'
-    // memory '16.GB'
-    // cpus 1
-    label "sequence_tracker"
+process SELECT_FINAL_SEQUENCES {
+    def module_name = "select_final_sequences"
+    // tag "-"
+    // label "medium"
+    time '30.m'
+    memory '8.GB'
+    cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(source_fates_file, name: 'sources_fates.csv')
+    path(fasta_files)
+    val(internal_names_file)
+    val(max_group_size)
 
     output: 
-    path("fates_plot.pdf"),                     emit: fates_plot
-    path("sf_meta.csv"),                        emit: sf_meta
-    path("taxa_summary.csv"),                   emit: taxa_summary
+    path("selected.fasta"),                emit: fasta
+    path("removed.fasta"),                    emit: removed
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
@@ -23,15 +24,16 @@ process SEQUENCE_TRACKER {
     def module_script = "${module_name}.R"
     """
     #!/usr/bin/env Rscript
-      
+    
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    sources_fates_file = "sources_fates.csv"
+    fasta_files =                   "${fasta_files}"
+    internal_names_file =           "${internal_names_file}"
+    max_group_size =                "${max_group_size}"
 
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
-
 
     tryCatch({
     ### source functions and themes, load packages, and import Nextflow params

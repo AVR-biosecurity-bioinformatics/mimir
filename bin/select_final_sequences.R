@@ -269,11 +269,11 @@ seqs_removed <- seqs[!names(seqs) %in% names(seqs_pruned)]
 if ( !length(seqs_pruned) == 0 ){
     write_fasta(
         seqs_pruned, 
-        file = paste0("seqs_pruned.fasta"), 
+        file = paste0("selected.fasta"), 
         compress = FALSE
     )
 } else {
-    file.create(paste0("seqs_pruned.fasta"))
+    file.create(paste0("selected.fasta"))
 }
 
 # write removed sequences
