@@ -30,7 +30,7 @@ process RENAME_GENBANK {
     accessions_file =                   "${accessions_file}"
     ncbi_rankedlineage_noname =         "${ncbi_rankedlineage_noname}"
 
-    ## global variables
+    ### global variables
     projectDir = "$projectDir"
     params_dict = "$params"
 

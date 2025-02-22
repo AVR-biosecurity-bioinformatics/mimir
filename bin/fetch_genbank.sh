@@ -16,7 +16,6 @@ fi
 
 ACC_LIST=${3}
 
-
 ## fetch sequences as GenBank flat file
 epost \
 	-input $ACC_LIST \

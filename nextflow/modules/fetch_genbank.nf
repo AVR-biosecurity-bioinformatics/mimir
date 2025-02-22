@@ -2,9 +2,7 @@
 process FETCH_GENBANK {
     def module_name = "fetch_genbank"
     tag "-"
-    time 10.m
-    cpus 1
-    memory 1.GB
+    label "fetch_genbank"
     container "emehinovic72/edirect:latest"
     maxForks 10
 
@@ -24,7 +22,7 @@ process FETCH_GENBANK {
     """
     #!/usr/bin/env bash
 
-    ### run module code
+    #### run module code
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \

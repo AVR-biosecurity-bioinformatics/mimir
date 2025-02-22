@@ -122,3 +122,19 @@ Specify your barcode marker using `--marker`, eg. `--marker COI`. At the moment,
 #### Primer-based trimming
 
 Often users will want to trim database sequences to a particular region amplified by a primer pair. Mimir does this by using user-specified primer sequences to trim the barcode's PHMM and using that to trim each sequence. To enable primer-based trimming, use `--trim_to_primers` and specify your primer sequences using `--primer_fwd` and `--primer_rev`. Base ambiguity/degeneracy is supported, and the pipeline will try to determine the correct strand orientation of the primers relative to the barcode PHMM. 
+
+
+### Software
+
+Mimir uses the following software tools and packages, via [Docker Hub](https://hub.docker.com/) containers: 
+- `any2fasta`
+- `BBMap`
+- `Biostrings`
+- `clustalo`
+- `DECIPHER`
+- `edirect`
+- `hmmer`
+- `mafft`
+- `mmseqs2`
+- `seqkit`
+- `tidyverse`

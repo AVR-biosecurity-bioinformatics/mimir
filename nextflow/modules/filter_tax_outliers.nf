@@ -1,10 +1,10 @@
 process FILTER_TAX_OUTLIERS {
     def module_name = "filter_tax_outliers"
     tag "-"
-    // label "medium"
-    time '1.h'
-    memory '16.GB'
-    cpus 1
+    label "filter_tax_outliers"
+    // time '1.h'
+    // memory '16.GB'
+    // cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
