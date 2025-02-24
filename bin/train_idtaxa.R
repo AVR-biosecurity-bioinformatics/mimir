@@ -43,7 +43,10 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "fasta_file"
+    "fasta_file",
+    "max_group_size",
+    "max_iterations",
+    "allow_group_removal"
 )
 lapply(nf_vars, nf_var_check)
 
@@ -54,9 +57,9 @@ seqs <- ape::read.FASTA(fasta_file)
 
 # params
 orient <- FALSE
-max_group_size <- as.numeric(params.idtaxa_max_group_size)
-max_iterations <- as.numeric(params.idtaxa_max_iterations)
-if ( params.idtaxa_allow_group_removal == "true" ){
+max_group_size <- as.numeric(max_group_size)
+max_iterations <- as.numeric(max_iterations)
+if ( allow_group_removal == "true" ){
     allow_group_removal <- TRUE
 } else {
     allow_group_removal <- FALSE
@@ -111,44 +114,64 @@ train <- seqs[!remove]
 taxonomy <- gsub("(.*)(Root;)", "\\2", names(train))
 remove <- logical(length(train))
 
-for (i in seq_len(max_iterations)) {
-  if (!quiet) {message("Training iteration: ", i, "\n", sep="")}
-  # train the classifier
-  trainingSet <- DECIPHER::LearnTaxa(train[!remove], taxonomy[!remove], taxid)
+# only run once if max_iterations = 1
+if ( max_iterations == 1 ){
+    message("Training first and only iteration\n")
+    trainingSet <- DECIPHER::LearnTaxa(train, taxonomy, taxid)
+} else if ( max_iterations > 1 ){
+    
+    for (i in seq_len(max_iterations)) {
 
-  # look for problem sequences
-  probSeqs <- trainingSet$problemSequences$Index
-  if (length(probSeqs)==0) {
-    if (!quiet) {message("No problem sequences remaining.\n")}
-    break
-  } else if (length(probSeqs)==length(probSeqsPrev) &&
-             all(probSeqsPrev==probSeqs)) {
-    if (!quiet) {message("Iterations converged.\n")}
-    break
-  }
-  if (i==max_iterations)
-    break
-  probSeqsPrev <- probSeqs
-  gc()
-  # remove any problem sequences
-  index <- which(!remove)[probSeqs]
-  remove[index] <- TRUE # remove all problem sequences
-  if (!allow_group_removal) {
-    # replace any removed groups
-    missing <- !(u_groups %in% groups[!remove])
-    missing <- u_groups[missing]
-    if (length(missing) > 0) {
-      index <- index[groups[index] %in% missing]
-      remove[index] <- FALSE # don't remove
+        if (!quiet) {message("Training iteration: ", i, "\n", sep="")}
+        # train the classifier
+        trainingSet <- DECIPHER::LearnTaxa(train[!remove], taxonomy[!remove], taxid)
+
+        # look for problem sequences
+        probSeqs <- trainingSet$problemSequences$Index
+        if (length(probSeqs)==0) {
+            if (!quiet) {message("No problem sequences remaining.\n")}
+            break
+        } else if (length(probSeqs)==length(probSeqsPrev) &&
+                    all(probSeqsPrev==probSeqs)) {
+            if (!quiet) {message("Iterations converged.\n")}
+            break
+        }
+        if (i==max_iterations)
+            break
+        probSeqsPrev <- probSeqs
+        gc()
+        # remove any problem sequences
+        index <- which(!remove)[probSeqs]
+        remove[index] <- TRUE # remove all problem sequences
+        if (!allow_group_removal) {
+            # replace any removed groups
+            missing <- !(u_groups %in% groups[!remove])
+            missing <- u_groups[missing]
+            if (length(missing) > 0) {
+            index <- index[groups[index] %in% missing]
+            remove[index] <- FALSE # don't remove
+            }
+            gc()
+        }
+        
+        gc()
+
     }
-    gc()
-  }
-  gc()
+
+    if (!quiet) {message(paste0(sum(remove), " sequences removed"))}
+    if (!quiet) {message(paste0(length(probSeqs), " problem sequences remaining"))}
+
+} else {
+    stop(paste0("'", max_iterations, "'' is not a valid number of max_iterations"))
 }
-
-
-if (!quiet) {message(paste0(sum(remove), " sequences removed"))}
-if (!quiet) {message(paste0(length(probSeqs), " problem sequences remaining"))}
 
 # save model
 saveRDS(trainingSet, "idtaxa_model.rds")
+
+# save problem sequences
+problem_sequences_df <- trainingSet$problemSequences
+readr::write_csv(problem_sequences_df, "problem_sequences.csv")
+
+# save problem groups
+problem_groups_vec <- trainingSet$problemGroups
+readr::write_lines(problem_groups_vec, "problem_groups.txt")

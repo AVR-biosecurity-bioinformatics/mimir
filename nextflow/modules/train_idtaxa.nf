@@ -8,10 +8,15 @@ process TRAIN_IDTAXA {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(fasta_file)
+    path(fasta_file)
+    val(max_group_size)
+    val(max_iterations)
+    val(allow_group_removal)
 
     output: 
-    path("idtaxa_model.rds"),                  emit: model
+    path("idtaxa_model.rds"),                   emit: model
+    path("problem_sequences.csv"),              emit: problem_seqs
+    path("problem_groups.txt"),                 emit: problem_groups
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -25,6 +30,9 @@ process TRAIN_IDTAXA {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     fasta_file =                   "${fasta_file}"
+    max_group_size =               "${max_group_size}"
+    max_iterations =               "${max_iterations}"
+    allow_group_removal =          "${allow_group_removal}"
 
     ## global variables
     projectDir = "$projectDir"
