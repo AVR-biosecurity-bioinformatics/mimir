@@ -1044,7 +1044,10 @@ workflow TAXRETURN {
     //// train IDTAXA model
     if ( params.train_idtaxa ) {
         TRAIN_IDTAXA (
-            FORMAT_OUTPUT.out.fasta
+            FORMAT_OUTPUT.out.fasta,
+            params.idtaxa_max_group_size,
+            params.idtaxa_max_iterations,
+            params.idtaxa_allow_group_removal
         )
     }
     
