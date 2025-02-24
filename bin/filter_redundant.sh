@@ -18,19 +18,24 @@ for i in $FASTA_LIST; do
     # get basename of input file
     BASENAME=$( basename $i .fasta )
 
-    # absorb identical sequences and containments, merging names of duplicate sequences into the header of retained sequence (delim: >)
-    dedupe.sh \
-        mergenames=t \
-        absorbrc=f \
-        overwrite=t \
-        uniquenames=f \
-        in=$i \
-        out=${BASENAME}.dd.fasta \
-        outd=outd.fasta
+    # only run dedupe.sh if more than one sequence
+    if [[ $( grep -c "^>" $i ) > 1 ]]; then   
+        # absorb identical sequences and containments, merging names of duplicate sequences into the header of retained sequence (delim: >)
+        dedupe.sh \
+            mergenames=t \
+            absorbrc=f \
+            overwrite=t \
+            uniquenames=f \
+            in=$i \
+            out=${BASENAME}.dd.fasta \
+            outd=outd.fasta
 
-    # add removed sequences to the bulk removed.fasta file
-    cat outd.fasta >> removed.fasta
-
+        # add removed sequences to the bulk removed.fasta file
+        cat outd.fasta >> removed.fasta
+    else 
+        echo "Skipping dedupe.sh for ${BASENAME}"
+        cp $i ${BASENAME}.dd.fasta
+    fi
     # extract just headers from .fasta 
     grep ">" ${BASENAME}.dd.fasta > headers.txt
 
