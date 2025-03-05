@@ -45,7 +45,8 @@ nf_vars <- c(
     "params_dict",
     "gb_file",
     "accessions_file",
-    "ncbi_rankedlineage_noname"
+    "ncbi_rankedlineage_noname",
+    "placeholder_as_unclassified"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -60,6 +61,14 @@ accessions <- scan(file = accessions_file, what = "", sep = "\n", quiet = TRUE)
 # read in ncbi tax file
 ncbi_rankedlineage_noname <-   readRDS(ncbi_rankedlineage_noname)
 
+# parse params.placeholder_as_unclassified
+if ( placeholder_as_unclassified == "true" ){
+    placeholder_as_unclassified <- TRUE
+} else if ( placeholder_as_unclassified == "false" ){
+    placeholder_as_unclassified <- FALSE
+} else {
+    stop("'placeholder_as_unclassified' is not 'true' or 'false'")
+}
 
 ### run code
 
@@ -178,6 +187,18 @@ seq_names_header <-
     seq_names_tibble %>%
     # add ncbi taxonomic information per taxid, limited to the allowed ranks
     dplyr::left_join(., ncbi_rankedlineage_noname, by = dplyr::join_by(taxid == tax_id)) %>%
+    # conditionally replace 'placeholder' species names (eg. "Genus sp. XYZ") with "Unclassified"
+    {
+        if (placeholder_as_unclassified) {
+            dplyr::mutate(
+                .,
+                species = dplyr::case_when(
+                    stringr::str_detect(species, " [:alnum:]+\\. ") ~ "Unclassified",
+                    .default = species 
+                )
+            )
+        } else { . }
+    } %>%
     dplyr::mutate(
         dplyr::across(species:kingdom, .fns = ~replace(., is.na(.), "Unclassified")), # replace NA in ranks columns with "Unclassifed"
         dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "[ \\/:\\(\\)&,'#<>]", "_")), # replace problematic characters in lineage string with underscores

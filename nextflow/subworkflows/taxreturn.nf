@@ -251,7 +251,8 @@ workflow TAXRETURN {
         //// reformat sequence names to contain taxonomic lineage
         RENAME_GENBANK (
             FETCH_GENBANK.out.fetched_seqs,
-            GET_NCBI_TAXONOMY.out.rankedlineage_noname
+            GET_NCBI_TAXONOMY.out.rankedlineage_noname,
+            params.placeholder_as_unclassified
         )
 
         //// populate empty ch_genbank_fasta channel
@@ -305,7 +306,8 @@ workflow TAXRETURN {
         MATCH_BOLD (
             EXTRACT_BOLD.out.tibble, 
             GET_NCBI_TAXONOMY.out.lineageparents,
-            GET_NCBI_TAXONOMY.out.synonyms
+            GET_NCBI_TAXONOMY.out.synonyms,
+            params.placeholder_as_unclassified
         )
 
         //// refactor output channels so caching is valid 

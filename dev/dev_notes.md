@@ -250,6 +250,11 @@ NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364dd
 # Anthomyiidae (contains Delia platura)
 NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 30062 --target_rank family --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 
 
+## testing placeholder_as_unclassified 
+# Drosophila genus
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7215 --target_rank genus --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --max_group_size 1 --placeholder_as_unclassified
+
+
 
 # testing marine list
 NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_list ./test/marine_family_list.csv --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --key_species_list ./test/marine_species_list.txt

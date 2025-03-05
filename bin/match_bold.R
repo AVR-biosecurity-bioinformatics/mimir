@@ -45,7 +45,8 @@ nf_vars <- c(
     "params_dict",
     "seq_tibble",
     "ncbi_lineageparents",
-    "ncbi_synonyms"
+    "ncbi_synonyms",
+    "placeholder_as_unclassified"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -72,6 +73,15 @@ allowed_ranks <-
         "genus",
         "species"
     )
+
+# parse params.placeholder_as_unclassified
+if ( placeholder_as_unclassified == "true" ){
+    placeholder_as_unclassified <- TRUE
+} else if ( placeholder_as_unclassified == "false" ){
+    placeholder_as_unclassified <- FALSE
+} else {
+    stop("'placeholder_as_unclassified' is not 'true' or 'false'")
+}
 
 ### run code
 
@@ -282,6 +292,18 @@ bold_seqs <-
 ## create FASTA format from sequence tibble
 bold_seqs_prefasta <- 
     bold_seqs %>%
+    # conditionally replace 'placeholder' species names (eg. "Genus sp. XYZ") with "Unclassified"
+    {
+        if (placeholder_as_unclassified) {
+            dplyr::mutate(
+                .,
+                species = dplyr::case_when(
+                    stringr::str_detect(species, " [:alnum:]+\\. ") ~ "Unclassified",
+                    .default = species 
+                )
+            )
+        } else { . }
+    } %>%
     tidyr::unite("id", c(seqid, taxid), sep = "|") %>% # combine ids into a single column
     tidyr::unite("ranks", kingdom:species, sep = ";") %>% # combine ranks into a single column
     dplyr::mutate(
