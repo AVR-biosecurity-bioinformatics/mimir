@@ -67,5 +67,6 @@ do
     fi
 done
 
-
-
+# clean up now to save time cleaning later
+rm *.headers.txt
+rm *.trunc.fasta

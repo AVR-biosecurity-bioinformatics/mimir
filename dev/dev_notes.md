@@ -254,6 +254,8 @@ NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364dd
 # Drosophila genus
 NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7215 --target_rank genus --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --max_group_size 1 --placeholder_as_unclassified
 
+## testing hashing 
+NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7215 --target_rank genus --use_genbank false --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --min_length_trimmed 200 --max_group_size 1 --placeholder_as_unclassified
 
 
 # testing marine list

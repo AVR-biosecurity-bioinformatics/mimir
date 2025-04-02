@@ -54,3 +54,9 @@ for i in $FASTA_LIST; do
         > ${BASENAME}.retained.fasta
 
 done 
+
+# clean up now to save time cleaning later
+rm *.dd.fasta
+rm outd.fasta
+rm primary.txt
+rm counts.txt

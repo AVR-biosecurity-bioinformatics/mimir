@@ -201,9 +201,9 @@ seq_names_header <-
     } %>%
     dplyr::mutate(
         dplyr::across(species:kingdom, .fns = ~replace(., is.na(.), "Unclassified")), # replace NA in ranks columns with "Unclassifed"
-        dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "[ \\/:\\(\\)&,'#<>]", "_")), # replace problematic characters in lineage string with underscores
-        dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "_+", "_")), # replace two or more underscores in a row with a single underscore in lineage string
-        dplyr::across(tidyselect::everything(), .fns = ~stringr::str_replace_all(., " ", "_")), # replace all spaces with underscores
+        # dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "[ \\/:\\(\\)&,'#<>]", "_")), # replace problematic characters in lineage string with underscores
+        # dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "_+", "_")), # replace two or more underscores in a row with a single underscore in lineage string
+        # dplyr::across(tidyselect::everything(), .fns = ~stringr::str_replace_all(., " ", "_")), # replace all spaces with underscores
         taxid = stringr::str_replace(taxid, "^", "NCBI:") # reformat taxid to have NCBI-specific prefix
     ) %>%
     dplyr::relocate( # reorder columns
