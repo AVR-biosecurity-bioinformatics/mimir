@@ -4,68 +4,52 @@
 
 
 //// modules to import
-include { ADD_TAXID_GENBANK                                                 } from '../modules/add_taxid_genbank'
-include { ALIGN_BATCH as ALIGN_SPECIES                                                 } from '../modules/align_batch'
+include { ALIGN_BATCH as ALIGN_SPECIES                               } from '../modules/align_batch'
 include { ALIGN_CORE                                                 } from '../modules/align_core'
-include { ALIGN_OTHER                                                 } from '../modules/align_other'
-include { ALIGN_PRIMERS_TO_DATABASE                                                 } from '../modules/align_primers_to_database'
-include { ALIGN_PRIMERS_TO_SEED                                                 } from '../modules/align_primers_to_seed'
-include { ALIGN_SINGLE as ALIGN_OUTPUT                                                 } from '../modules/align_single'
-include { BUILD_TRIMMED_HMM                                                 } from '../modules/build_trimmed_hmm'
-include { CHECK_KEY_SPECIES                                                 } from '../modules/check_key_species'
-include { CLUSTER_SEQUENCES                                                 } from '../modules/cluster_sequences'
-include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                            } from '../modules/combine_chunks'
-include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                           } from '../modules/combine_chunks'
-include { CONCAT_CSV as CONCAT_FATES                           } from '../modules/concat_csv'
-include { CONCAT_CSV as CONCAT_SOURCES                           } from '../modules/concat_csv'
-include { EXTRACT_BOLD                                                 } from '../modules/extract_bold'
-// include { FETCH_BOLD                                                } from '../modules/fetch_bold'
-include { FETCH_GENBANK                                             } from '../modules/fetch_genbank'
-// include { FETCH_MITO                                                } from '../modules/fetch_mito'
-include { FILTER_AMBIGUOUS                                                 } from '../modules/filter_ambiguous'
-include { FILTER_DUPLICATES                                                 } from '../modules/filter_duplicates'
-include { FILTER_PHMM_FULL                                                 } from '../modules/filter_phmm_full'
-include { FILTER_PHMM_TRIMMED                                                 } from '../modules/filter_phmm_trimmed'
-include { FILTER_REDUNDANT                                                 } from '../modules/filter_redundant'
-include { FILTER_SEQ_OUTLIERS                                                 } from '../modules/filter_seq_outliers'
-include { FILTER_TAX_OUTLIERS                                                 } from '../modules/filter_tax_outliers'
-include { FILTER_UNCLASSIFIED                                                 } from '../modules/filter_unclassified'
-include { FORMAT_OUTPUT                                         } from '../modules/format_output'
-include { GET_BOLD_DATABASE                                         } from '../modules/get_bold_database'
+include { ALIGN_OTHER                                                } from '../modules/align_other'
+include { ALIGN_PRIMERS_TO_SEED                                      } from '../modules/align_primers_to_seed'
+include { BUILD_TRIMMED_HMM                                          } from '../modules/build_trimmed_hmm'
+include { CHECK_KEY_SPECIES                                          } from '../modules/check_key_species'
+include { CLUSTER_SEQUENCES                                          } from '../modules/cluster_sequences'
+include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
+include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                         } from '../modules/combine_chunks'
+include { CONCAT_CSV as CONCAT_FATES                                 } from '../modules/concat_csv'
+include { CONCAT_CSV as CONCAT_SOURCES                               } from '../modules/concat_csv'
+include { EXTRACT_BOLD                                               } from '../modules/extract_bold'
+include { FETCH_GENBANK                                              } from '../modules/fetch_genbank'
+include { FILTER_AMBIGUOUS                                           } from '../modules/filter_ambiguous'
+include { FILTER_DUPLICATES                                          } from '../modules/filter_duplicates'
+include { FILTER_PHMM_FULL                                           } from '../modules/filter_phmm_full'
+include { FILTER_PHMM_TRIMMED                                        } from '../modules/filter_phmm_trimmed'
+include { FILTER_REDUNDANT                                           } from '../modules/filter_redundant'
+include { FILTER_SEQ_OUTLIERS                                        } from '../modules/filter_seq_outliers'
+include { FILTER_TAX_OUTLIERS                                        } from '../modules/filter_tax_outliers'
+include { FILTER_UNCLASSIFIED                                        } from '../modules/filter_unclassified'
+include { FORMAT_OUTPUT                                              } from '../modules/format_output'
+include { GET_BOLD_DATABASE                                          } from '../modules/get_bold_database'
 include { GET_CORE_SEQUENCES                                         } from '../modules/get_core_sequences'
-include { GET_NCBI_TAXONOMY                                         } from '../modules/get_ncbi_taxonomy'
-include { HMMSEARCH_FULL                                         } from '../modules/hmmsearch_full'
-include { HMMSEARCH_TRIMMED                                         } from '../modules/hmmsearch_trimmed'
-include { IMPORT_INTERNAL                                                 } from '../modules/import_internal'
-include { JOIN_SOURCES_FATES                                                 } from '../modules/join_sources_fates'
-include { MAKE_MERGE_TABLE                                                 } from '../modules/make_merge_table'
+include { GET_NCBI_TAXONOMY                                          } from '../modules/get_ncbi_taxonomy'
+include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
+include { HMMSEARCH_TRIMMED                                          } from '../modules/hmmsearch_trimmed'
+include { IMPORT_INTERNAL                                            } from '../modules/import_internal'
+include { JOIN_SOURCES_FATES                                         } from '../modules/join_sources_fates'
 include { MATCH_BOLD                                                 } from '../modules/match_bold'
-// include { MATCH_INTERNAL                                                 } from '../modules/match_internal'
-include { MERGE_ALIGNMENTS                                                 } from '../modules/merge_alignments'
 include { MERGE_BOLD                                                 } from '../modules/merge_bold'
-include { MERGE_SPLITS as MERGE_SPLITS_FAMILY                         } from '../modules/merge_splits'
-include { MERGE_SPLITS as MERGE_SPLITS_SPECIES                             } from '../modules/merge_splits'
-include { PARSE_MARKER                                                 } from '../modules/parse_marker'
-include { PARSE_TARGETS                                                 } from '../modules/parse_targets'
-include { PROCESS_PRIMERS                                                 } from '../modules/process_primers'
-include { QUERY_GENBANK                                                 } from '../modules/query_genbank'
-include { REFORMAT_NAMES                                                 } from '../modules/reformat_names'
-include { RENAME_GENBANK                                                 } from '../modules/rename_genbank'
-include { RESOLVE_SYNONYMS                                                 } from '../modules/resolve_synonyms'
-include { SELECT_FINAL_SEQUENCES                                                } from '../modules/select_final_sequences'
-include { SEQUENCE_TRACKER                                                } from '../modules/sequence_tracker'
-include { SORT_BY_LINEAGE as SORT_BY_LINEAGE_1                                                } from '../modules/sort_by_lineage'
-include { SORT_BY_LINEAGE as SORT_BY_LINEAGE_2                                                } from '../modules/sort_by_lineage'
-include { SPLIT_BY_RANK as SPLIT_BY_FAMILY                                                } from '../modules/split_by_rank'
-include { SPLIT_BY_RANK as SPLIT_BY_SPECIES                                                } from '../modules/split_by_rank'
-include { STOCKHOLM_TO_FASTA                                                 } from '../modules/stockholm_to_fasta'
-include { SUMMARISE_COUNTS                                                 } from '../modules/summarise_counts'
-include { SUMMARISE_TAXA                                                 } from '../modules/summarise_taxa'
-include { TRAIN_IDTAXA                                                 } from '../modules/train_idtaxa'
-include { TRANSLATE_SEQUENCES                                                 } from '../modules/translate_sequences'
-include { TRIM_HMM_SEED                                                 } from '../modules/trim_hmm_seed'
-include { TRIM_WITH_PRIMERS                                                 } from '../modules/trim_with_primers'
-include { VALIDATE_KEY_SPECIES                                                 } from '../modules/validate_key_species'
+include { MERGE_SPLITS as MERGE_SPLITS_SPECIES                       } from '../modules/merge_splits'
+include { PARSE_MARKER                                               } from '../modules/parse_marker'
+include { PARSE_TARGETS                                              } from '../modules/parse_targets'
+include { PROCESS_PRIMERS                                            } from '../modules/process_primers'
+include { QUERY_GENBANK                                              } from '../modules/query_genbank'
+include { RENAME_GENBANK                                             } from '../modules/rename_genbank'
+include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
+include { SEQUENCE_TRACKER                                           } from '../modules/sequence_tracker'
+include { SORT_BY_LINEAGE as SORT_BY_LINEAGE_1                       } from '../modules/sort_by_lineage'
+include { SPLIT_BY_RANK as SPLIT_BY_SPECIES                          } from '../modules/split_by_rank'
+include { STOCKHOLM_TO_FASTA                                         } from '../modules/stockholm_to_fasta'
+include { TRAIN_IDTAXA                                               } from '../modules/train_idtaxa'
+include { TRANSLATE_SEQUENCES                                        } from '../modules/translate_sequences'
+include { TRIM_HMM_SEED                                              } from '../modules/trim_hmm_seed'
+include { VALIDATE_KEY_SPECIES                                       } from '../modules/validate_key_species'
 
 
 
@@ -225,6 +209,7 @@ workflow TAXRETURN {
     /*
     Get Genbank sequences
     */
+
     if ( params.use_genbank ) {
         //// query GenBank to get list of nucleotide IDs (including mitochondrial genomes if requested)
         QUERY_GENBANK (
@@ -242,11 +227,6 @@ workflow TAXRETURN {
             ch_genbank_acc_chunks,
             ch_entrez_key
         )
-
-        // //// add NCBI taxid to header of Genbank sequences 
-        // ADD_TAXID_GENBANK (
-        //     FETCH_GENBANK.out.fetched_seqs
-        // )
 
         //// reformat sequence names to contain taxonomic lineage
         RENAME_GENBANK (
@@ -268,7 +248,8 @@ workflow TAXRETURN {
     ch_genbank_fasta
         .collectFile ( name: 'genbank.fasta', newLine: true, cache: true )
         .set { ch_source_genbank }
-    
+
+
     /*
     Getting BOLD sequences and matching them to the NCBI database
     */
@@ -332,17 +313,7 @@ workflow TAXRETURN {
             .splitFasta( by: params.input_chunk_size, file: true )
             .set { ch_bold_fasta }
 
-        
-
-    } else {
-        //// extract sequences by querying BOLD API
-        // FETCH_BOLD (
-
-
-
-        // )
-        
-    }
+    } 
 
     //// count number of BOLD sequences
     ch_count_bold = ch_bold_fasta.countFasta().combine(["bold"])
@@ -379,11 +350,6 @@ workflow TAXRETURN {
         IMPORT_INTERNAL (
             ch_internal_seqs
         )
-
-    //     //// match the taxonomy of internal sequences to NCBI taxonomy
-    //     MATCH_INTERNAL (
-    //         IMPORT_INTERNAL.out.fasta
-    //     )
         
         //// populate and chunk internal channel
         IMPORT_INTERNAL.out.fasta
@@ -699,7 +665,7 @@ workflow TAXRETURN {
 
         ch_fates_filter_ambiguous = Channel.empty()
 
-        REMOVE_EXACT_DUPLICATES.out.fasta
+        FILTER_DUPLICATES.out.fasta
             .set { ch_cluster_sequences_input }
     }
 
@@ -951,29 +917,6 @@ workflow TAXRETURN {
         ch_count_filter_seq_outliers                    .view{ "${it[1]}: ${it[0]}" }
         ch_count_select_final_sequences                       .view{ "${it[1]}: ${it[0]}" }
     }
-
-    // //// collect count channels into a csv
-    // Channel.empty()
-    //     .concat ( ch_count_genbank                  .combine([1]) )
-    //     .concat ( ch_count_bold                     .combine([2]) )
-    //     .concat ( ch_count_mito                     .combine([3]) )
-    //     .concat ( ch_count_genome                   .combine([4]) )
-    //     .concat ( ch_count_internal                 .combine([5]) )
-    //     .concat ( ch_count_external                 .combine([6]) )
-    //     .concat ( ch_count_input                    .combine([7]) )
-    //     .concat ( ch_count_filter_unclassified      .combine([8]) )
-    //     .concat ( ch_count_filter_phmm_full         .combine([9]) )
-    //     .concat ( ch_count_filter_phmm_trimmed      .combine([10]) )
-    //     .concat ( ch_count_filter_duplicates        .combine([11]) )
-    //     .concat ( ch_count_filter_ambiguous         .combine([12]) )
-    //     .concat ( ch_count_filter_tax_outliers      .combine([13]) )
-    //     .concat ( ch_count_filter_redundant         .combine([14]) )
-    //     .concat ( ch_count_filter_seq_outliers      .combine([15]) )
-    //     .concat ( ch_count_select_final_sequences   .combine([16]) )
-    //     .map { sequences, process, order -> "$sequences,$process,$order" }
-    //     .collectFile ( name: 'counts.csv', seed: "sequences,process,order", newLine: true, cache: false )
-    //     .set { ch_counts_file }
-
 
     //// collect sequence origins into a list of .csv files for concatenation
     Channel.empty()
