@@ -193,7 +193,7 @@ seq_names_header <-
             dplyr::mutate(
                 .,
                 species = dplyr::case_when(
-                    stringr::str_detect(species, paste0(genus, " [:alnum:]+\\.( |$)")) ~ "Unclassified",
+                    stringr::str_detect(species, " [:alnum:]+\\.( |$)") ~ "Unclassified",
                     .default = species 
                 )
             )
