@@ -306,10 +306,11 @@ bold_seqs_prefasta <-
     } %>%
     tidyr::unite("id", c(seqid, taxid), sep = "|") %>% # combine ids into a single column
     tidyr::unite("ranks", kingdom:species, sep = ";") %>% # combine ranks into a single column
-    # dplyr::mutate(
-    #     ranks = stringr::str_replace_all(ranks, "[ \\/:\\(\\)&,'#<>]", "_"), # replace problematic characters in lineage string with underscores
-    #     ranks = stringr::str_replace_all(ranks, "_+", "_") # replace two or more underscores in a row with a single underscore in lineage string
-    # ) %>%
+    dplyr::mutate(
+        # ranks = stringr::str_replace_all(ranks, "[ \\/:\\(\\)&,'#<>]", "_"), # replace problematic characters in lineage string with underscores
+        # ranks = stringr::str_replace_all(ranks, "_+", "_") # replace two or more underscores in a row with a single underscore in lineage string
+        ranks = stringr::str_replace_all(ranks, " +", " ") # replace runs of spaces with a single space (to allow HMMER output parsing later)
+    ) %>%
     tidyr::unite("header", id:ranks, sep = ";") %>% # create header column
     dplyr::mutate(
         header = stringr::str_replace(header, "^", ">") # add ">" to start of header

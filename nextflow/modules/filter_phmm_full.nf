@@ -28,7 +28,7 @@ process FILTER_PHMM_FULL {
     #!/usr/bin/env Rscript
     
     ### defining Nextflow environment variables as R variables
-    ## input channel variables
+    ### input channel variables
     fasta_file =            "${fasta_file}"
     translations =          "${translations}" 
     hmmer_output =          "${hmmer_output}"

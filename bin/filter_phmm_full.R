@@ -107,29 +107,39 @@ col_types <-
 N <- length(col_types$cols)
 
 # parse space-delimited hmmer output
-# code from rhmmer: https://github.com/arendsee/rhmmer
+# code inspired by rhmmer: https://github.com/arendsee/rhmmer
 domtblout_parsed <- 
     domtblout %>%
-    sub(
-        pattern = sprintf("(%s).*", paste0(rep('\\S+', N), collapse=" +")),
-        replacement = '\\1',
-        x = .,
-        perl = TRUE
-    ) %>%
-    gsub(pattern = "  *", replacement = "\t") %>%
+    # remove all rows that begin with # as they aren't part of the table
+    .[stringr::str_detect(., "^#", negate = TRUE)] %>% 
+    # replace runs of spaces with '\t'
+    stringr::str_replace_all(., "\\s+", "\t") %>% 
+    # collapse vector to a single element
     paste0(collapse = "\n") %>%
+    # read in element as if it were a tsv file
     readr::read_tsv(
         col_names = names(col_types$cols),
-        comment = '#',
         na = '-',
         col_types = col_types,
-        lazy = FALSE,
+        lazy = FALSE, 
         progress = FALSE
+    ) %>% 
+    # replace '\t' in description column with spaces to regenerate sequence names
+    dplyr::mutate(
+        description = stringr::str_replace_all(description, "\\\t", " ")
     )
 
 # convert to single sequence hits
 hits <- 
     domtblout_parsed %>%
+    # undo HMMER splitting sequence names into two parts at the first space character
+    dplyr::mutate(
+        target_name = dplyr::if_else(
+            description != "-",
+            paste0(target_name, " ", description), 
+            target_name
+        )
+    ) %>%
     # rename 'target_name' to retain original name for later
     dplyr::rename( old_name = target_name ) %>%
     # extract stop codons from target_name
