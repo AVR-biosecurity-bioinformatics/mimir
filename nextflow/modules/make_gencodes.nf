@@ -1,28 +1,19 @@
-process GET_NCBI_TAXONOMY {
-    def module_name = "get_ncbi_taxonomy"
+process MAKE_GENCODES {
+    def module_name = "make_gencodes"
     tag "-"
     // label "small"
-    time '30.m'
+    time '5.m'
     memory '4.GB'
     cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    val(dummy_value)
+    path(ncbi_rankedlineage)
+    path(ncbi_nodes)
 
     output: 
-    path("./ncbi_taxdump"),                     emit: db_path
+    path("ncbi_gencodes.rds"),             emit: gencodes
     
-    // path("ncbi_rankedlineage.rds"),             emit: rankedlineage
-    // path("ncbi_nodes.rds"),                     emit: nodes
-    // path("ncbi_taxidnames.rds"),                emit: taxidnames
-    // path("ncbi_names.rds"),                     emit: names
-    // path("ncbi_taxidnamerank.rds"),             emit: taxidnamerank
-    // path("ncbi_synonyms.rds"),                  emit: synonyms
-    // path("ncbi_lineageparents.rds"),            emit: lineageparents
-    // path("ncbi_rankedlineage_noname.rds"),      emit: rankedlineage_noname
-    // path("ncbi_gencodes.rds"),                  emit: ncbi_gencodes
-
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
@@ -38,6 +29,8 @@ process GET_NCBI_TAXONOMY {
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
+    ncbi_rankedlineage = "$ncbi_rankedlineage"
+    ncbi_nodes = "$ncbi_nodes"
 
     tryCatch({
     ### source functions and themes, load packages, and import Nextflow params

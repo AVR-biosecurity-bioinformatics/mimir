@@ -33,6 +33,15 @@ include { HMMSEARCH_FULL                                             } from '../
 include { HMMSEARCH_TRIMMED                                          } from '../modules/hmmsearch_trimmed'
 include { IMPORT_INTERNAL                                            } from '../modules/import_internal'
 include { JOIN_SOURCES_FATES                                         } from '../modules/join_sources_fates'
+include { MAKE_GENCODES                                              } from '../modules/make_gencodes'
+include { MAKE_LINEAGEPARENTS                                        } from '../modules/make_lineageparents'
+include { MAKE_NAMES                                                 } from '../modules/make_names'
+include { MAKE_NODES                                                 } from '../modules/make_nodes'
+include { MAKE_RANKEDLINEAGE_NONAME                                  } from '../modules/make_rankedlineage_noname'
+include { MAKE_RANKEDLINEAGE                                         } from '../modules/make_rankedlineage'
+include { MAKE_SYNONYMS                                              } from '../modules/make_synonyms'
+include { MAKE_TAXIDNAMERANK                                         } from '../modules/make_taxidnamerank'
+include { MAKE_TAXIDNAMES                                            } from '../modules/make_taxidnames'
 include { MATCH_BOLD                                                 } from '../modules/match_bold'
 include { MERGE_BOLD                                                 } from '../modules/merge_bold'
 include { MERGE_SPLITS as MERGE_SPLITS_SPECIES                       } from '../modules/merge_splits'
@@ -133,7 +142,7 @@ workflow TAXRETURN {
     // ch_phmm             = channel.fromPath( params.phmm_model, checkIfExists: true ).first()
 
     /*
-    Set up pipeline
+    Process NCBI Taxonomy data
     */
 
     //// get NCBI taxonomy file
@@ -141,15 +150,67 @@ workflow TAXRETURN {
         "dummy"
     )
 
+    //// make rankedlineage tibble
+    MAKE_RANKEDLINEAGE (
+        GET_NCBI_TAXONOMY.out.db_path
+    )
+
+    //// make nodes tibble
+    MAKE_NODES (
+        GET_NCBI_TAXONOMY.out.db_path
+    )
+
+    //// make taxidnames tibble
+    MAKE_TAXIDNAMES (
+        GET_NCBI_TAXONOMY.out.db_path
+    )
+
+    //// make names tibble
+    MAKE_NAMES (
+        GET_NCBI_TAXONOMY.out.db_path
+    )
+
+    //// make gencodes tibble
+    MAKE_GENCODES (
+        MAKE_RANKEDLINEAGE.out.rankedlineage,
+        MAKE_NODES.out.nodes
+    )
+
+    //// make taxidnamerank tibble
+    MAKE_TAXIDNAMERANK (
+        MAKE_NODES.out.nodes,
+        MAKE_TAXIDNAMES.out.taxidnames
+    )
+
+    //// make synonyms tibble
+    MAKE_SYNONYMS (
+        MAKE_TAXIDNAMERANK.out.taxidnamerank,
+        MAKE_NAMES.out.names
+    )
+
+    //// make lineageparents tibble
+    MAKE_LINEAGEPARENTS (
+        MAKE_RANKEDLINEAGE.out.rankedlineage,
+        MAKE_TAXIDNAMERANK.out.taxidnamerank
+    )
+
+    //// make rankedlineage_noname tibble
+    MAKE_RANKEDLINEAGE_NONAME (
+        MAKE_RANKEDLINEAGE.out.rankedlineage,
+        MAKE_TAXIDNAMERANK.out.taxidnamerank
+    )
+
+    /* 
+    Parse inputs
+    */
+
     //// convert input taxon/taxa into NCBI and BOLD tax IDs
     PARSE_TARGETS (
         ch_targets,
         ch_entrez_key,
-        GET_NCBI_TAXONOMY.out.synonyms,
-        GET_NCBI_TAXONOMY.out.ncbi_gencodes
+        MAKE_SYNONYMS.out.synonyms,
+        MAKE_GENCODES.out.gencodes
     )
-
-    //// TODO: How does current PARSE_TARGETS implementation work with --target_taxa as a list?
 
     //// convert file text to channel value
     PARSE_TARGETS.out.taxon_id_rank
@@ -231,7 +292,7 @@ workflow TAXRETURN {
         //// reformat sequence names to contain taxonomic lineage
         RENAME_GENBANK (
             FETCH_GENBANK.out.fetched_seqs,
-            GET_NCBI_TAXONOMY.out.rankedlineage_noname,
+            MAKE_RANKEDLINEAGE_NONAME.out.rankedlineage_noname,
             params.placeholder_as_unclassified
         )
 
@@ -286,8 +347,8 @@ workflow TAXRETURN {
         //// match BOLD taxon names to NCBI taxon names
         MATCH_BOLD (
             EXTRACT_BOLD.out.tibble, 
-            GET_NCBI_TAXONOMY.out.lineageparents,
-            GET_NCBI_TAXONOMY.out.synonyms,
+            MAKE_LINEAGEPARENTS.out.lineageparents,
+            MAKE_SYNONYMS.out.synonyms,
             params.placeholder_as_unclassified
         )
 
@@ -465,7 +526,7 @@ workflow TAXRETURN {
         ch_translate_sequences_input,
         PARSE_MARKER.out.coding,
         PARSE_MARKER.out.type,
-        GET_NCBI_TAXONOMY.out.ncbi_gencodes
+        MAKE_GENCODES.out.gencodes
     )
 
     //// search translated sequences for hits against PHMM model
@@ -1001,7 +1062,7 @@ workflow TAXRETURN {
     emit:
 
     // bold_db = GET_BOLD_DATABASE.out.bold_db
-    ncbi_taxonomy = GET_NCBI_TAXONOMY.out.rankedlineage
+    ncbi_taxonomy = MAKE_RANKEDLINEAGE.out.rankedlineage
     // curated_fasta = PRUNE_GROUPS.out.fasta
     // taxa_summary = TAXA_SUMMARY.out.csv
     // idtaxa_model = TRAIN_IDTAXA.out.model
