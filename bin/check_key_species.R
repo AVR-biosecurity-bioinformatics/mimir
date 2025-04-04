@@ -83,11 +83,10 @@ find_key_sequences <- function(species_id, seq_tibble, add_root) {
             dplyr::filter(stringr::str_detect(taxid, paste0("NCBI:",species_id_valid,"$")))
     } else {
         # string
-        # convert species name into 'valid' internal format (ie. no spaces or illegal characters)
+        # convert species name into 'valid' internal format 
         species_id_valid <- 
         species_id %>% 
-        stringr::str_replace_all(., "[ \\/:\\(\\)&,'#]", "_") %>% # replace problematic characters
-        stringr::str_replace_all(., "_+", "_") # replace two or more underscores with one
+        stringr::str_replace_all(., " +", " ") # replace two or more spaces
         
         # get all sequences matching species
         species_seq_tibble <- 
