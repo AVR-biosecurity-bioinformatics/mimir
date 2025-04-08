@@ -976,7 +976,7 @@ workflow TAXRETURN {
         ch_count_filter_tax_outliers                    .view{ "${it[1]}: ${it[0]}" }
         ch_count_filter_redundant                       .view{ "${it[1]}: ${it[0]}" }
         ch_count_filter_seq_outliers                    .view{ "${it[1]}: ${it[0]}" }
-        ch_count_select_final_sequences                       .view{ "${it[1]}: ${it[0]}" }
+        ch_count_select_final_sequences                 .view{ "${it[1]}: ${it[0]}" }
     }
 
     //// collect sequence origins into a list of .csv files for concatenation

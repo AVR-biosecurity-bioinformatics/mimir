@@ -67,7 +67,8 @@ cols_fates <- c(
     filter_ambiguous = 0, 
     filter_tax_outliers = 0, 
     filter_seq_outliers = 0, 
-    filter_redundant = 0, 
+    filter_redundant = 0,     
+    select_final_sequences = 0,
     final_database = 0
 )
 
@@ -132,6 +133,7 @@ find_key_sequences <- function(species_id, seq_tibble, add_root) {
             filter_tax_outliers = 0, 
             filter_seq_outliers = 0, 
             filter_redundant = 0, 
+            select_final_sequences = 0,
             final_database = 0
         )
         
@@ -152,6 +154,7 @@ find_key_sequences <- function(species_id, seq_tibble, add_root) {
             filter_tax_outliers,
             filter_seq_outliers,
             filter_redundant,
+            select_final_sequences,
             final_database,
             .after = species
         )

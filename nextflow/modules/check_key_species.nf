@@ -25,7 +25,7 @@ process CHECK_KEY_SPECIES {
     #!/usr/bin/env Rscript
       
     ### defining Nextflow environment variables as R variables
-    ## input channel variables
+    ### input channel variables
     sf_meta_file = "sf_meta.csv"
     key_species_list = "key_species_list.txt"
 
