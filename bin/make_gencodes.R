@@ -62,11 +62,10 @@ ncbi_gencodes <-
     ncbi_rankedlineage %>%
     # remove higher ranks as not used
     dplyr::select(-realm, -domain) %>%
-    # make lineage information consistent with those found in imported sequences (ie. problematic characters replaced with underscores)
+    # make lineage information consistent with those found in imported sequences
     dplyr::mutate(
         dplyr::across(species:kingdom, .fns = ~replace(., is.na(.), "Unclassified")), # replace NA with "Unclassified"
-        dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "[ \\/:\\(\\)&,]", "_")), # replace problematic characters in lineage string with underscores
-        dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "_+", "_")) # replace two or more underscores in a row with a single underscore in lineage string
+        dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., " +", " ")) # replace runs of spaces with a single space 
     ) %>%
     # join to nodes data
     dplyr::left_join(., ncbi_nodes, by = "tax_id") %>%

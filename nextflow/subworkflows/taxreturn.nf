@@ -209,7 +209,7 @@ workflow TAXRETURN {
         ch_targets,
         ch_entrez_key,
         MAKE_SYNONYMS.out.synonyms,
-        MAKE_GENCODES.out.gencodes
+        MAKE_NODES.out.nodes
     )
 
     //// convert file text to channel value

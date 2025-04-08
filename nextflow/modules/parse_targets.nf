@@ -9,7 +9,7 @@ process PARSE_TARGETS {
     tuple val(taxon), val(taxon_rank)
     val(entrez_key)
     val(ncbi_synonyms_file)
-    val(ncbi_gencodes_file)
+    val(ncbi_nodes_file)
 
     output: 
     tuple path("*_name.txt"), val(taxon_rank),                      emit: taxon_name
@@ -29,12 +29,12 @@ process PARSE_TARGETS {
     #!/usr/bin/env Rscript
     
     ### defining Nextflow environment variables as R variables
-    ### input channel variables
+    ## input channel variables
     taxon =                     "${taxon}"
     taxon_rank =                "${taxon_rank}"
     entrez_key =                "${entrez_key}"
     ncbi_synonyms_file =        "${ncbi_synonyms_file}"
-    ncbi_gencodes_file =        "${ncbi_gencodes_file}"
+    ncbi_nodes_file =           "${ncbi_nodes_file}"
 
     ## global variables
     projectDir = "$projectDir"

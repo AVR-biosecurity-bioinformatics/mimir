@@ -24,7 +24,7 @@ process MAKE_GENCODES {
     #!/usr/bin/env Rscript
     
     ### defining Nextflow environment variables as R variables
-    ## input channel variables
+    ##  input channel variables
 
     ## global variables
     projectDir = "$projectDir"
