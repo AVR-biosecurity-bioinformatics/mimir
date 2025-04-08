@@ -53,7 +53,10 @@ lapply(nf_vars, nf_var_check)
 ### process variables 
 sf_meta <- readr::read_csv(sf_meta_file)
 
-key_species <- readr::read_lines(key_species_list) %>% as.list()
+key_species <- 
+    readr::read_lines(key_species_list) %>% 
+    stringr::str_trim() %>% 
+    as.list()
 
 # define fate columns 
 cols_fates <- c(
