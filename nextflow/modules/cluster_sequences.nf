@@ -1,11 +1,6 @@
 process CLUSTER_SEQUENCES {
     def module_name = "cluster_sequences"
-    tag "-"
-    // label "medium"
-    time '2.h'
-    memory '16.GB'
-    // memory { 1.GB + ( 1.KB *  ) }
-    cpus 4
+    // tag "-"
     container "nanozoo/mmseqs2:14.7e284--11077ba"
 
     input:

@@ -1,10 +1,6 @@
 process ALIGN_OTHER {
     def module_name = "align_other"
-    tag "-"
-    // label "very_high"
-    time '8.h'
-    memory '16.GB'
-    cpus 16
+    // tag "-"
     container "staphb/mafft:7.526"
 
 

@@ -1,9 +1,7 @@
 #!/usr/bin/env nextflow
 process GET_BOLD_DATABASE {
     def module_name = "get_bold_database"
-    tag "-"
-    label "small"
-    // container "cicirello/gnu-on-alpine:3.20.3"
+    // tag "-"
     container "ellerbrock/alpine-bash-curl-ssl:0.3.0"
 
     input:

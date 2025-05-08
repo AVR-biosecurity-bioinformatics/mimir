@@ -1,7 +1,6 @@
 process TRANSLATE_SEQUENCES {
     def module_name = "translate_sequences"
-    tag "-"
-    label "small"
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

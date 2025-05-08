@@ -12,6 +12,7 @@ set -u
 hmmsearch \
     --domtblout hmmer_domtblout.txt \
     --notextw \
+    --cpu $2 \
     $4 \
     $3 \
     > hmmer.out

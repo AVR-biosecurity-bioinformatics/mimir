@@ -1,10 +1,6 @@
 process MAKE_NODES {
     def module_name = "make_nodes"
-    tag "-"
-    // label "small"
-    time '5.m'
-    memory '8.GB'
-    cpus 1
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

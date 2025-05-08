@@ -1,10 +1,6 @@
 process FILTER_SEQ_OUTLIERS {
     def module_name = "filter_seq_outliers"
     // tag "-"
-    // label "medium"
-    time '1.h'
-    memory '4.GB'
-    cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

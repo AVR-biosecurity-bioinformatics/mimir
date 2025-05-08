@@ -1,7 +1,6 @@
 process FILTER_UNCLASSIFIED {
     def module_name = "filter_unclassified"
-    tag "-"
-    label "very_small"
+    // tag "-"
     container "staphb/seqkit:2.8.2"
 
     input:

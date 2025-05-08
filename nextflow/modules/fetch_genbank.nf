@@ -1,8 +1,7 @@
 #!/usr/bin/env nextflow
 process FETCH_GENBANK {
     def module_name = "fetch_genbank"
-    tag "-"
-    label "fetch_genbank"
+    // tag "-"
     container "emehinovic72/edirect:latest"
     maxForks 10
 

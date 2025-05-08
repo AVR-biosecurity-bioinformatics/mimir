@@ -10,6 +10,7 @@ set -u
 seqkit rmdup \
     --by-name \
     --line-width 0 \
+    --threads $2 \
     --dup-seqs-file removed.fasta \
     < $3 \
     > seqs_deduplicated.fasta

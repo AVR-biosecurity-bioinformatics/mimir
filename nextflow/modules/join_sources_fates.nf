@@ -1,10 +1,6 @@
 process JOIN_SOURCES_FATES {
     def module_name = "join_sources_fates"
-    tag "-"
-    // label "medium"
-    time '30.m'
-    memory '16.GB'
-    cpus 1
+    // tag "-"
     container "cicirello/gnu-on-alpine:3.20.3"
 
     input:

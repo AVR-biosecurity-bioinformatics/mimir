@@ -26,6 +26,7 @@ for i in $FASTA_LIST; do
             absorbrc=f \
             overwrite=t \
             uniquenames=f \
+            threads=${2} \
             in=$i \
             out=${BASENAME}.dd.fasta \
             outd=outd.fasta

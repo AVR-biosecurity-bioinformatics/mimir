@@ -1,7 +1,6 @@
 process MERGE_BOLD {
     def module_name = "merge_bold"
-    tag "-"
-    label "very_small"
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

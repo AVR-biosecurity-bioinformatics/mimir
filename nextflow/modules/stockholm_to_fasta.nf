@@ -1,7 +1,6 @@
 process STOCKHOLM_TO_FASTA {
     def module_name = "stockholm_to_fasta"
-    tag "-"
-    label "very_small"
+    // tag "-"
     container "library/perl:5.10.1-buster"
 
     input:

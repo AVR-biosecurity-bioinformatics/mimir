@@ -1,7 +1,6 @@
 process FILTER_PHMM_TRIMMED {
     def module_name = "filter_phmm_trimmed"
-    tag "-"
-    label "small"
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

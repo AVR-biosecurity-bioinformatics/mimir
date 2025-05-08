@@ -1,10 +1,6 @@
 process HMMSEARCH_TRIMMED {
     def module_name = "hmmsearch_trimmed"
-    tag "-"
-    // label "very_high"
-    time '10.m'
-    memory '8.GB'
-    cpus 1
+    // tag "-"
     container "staphb/hmmer:3.4"
 
     input:

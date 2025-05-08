@@ -1,13 +1,8 @@
 process SPLIT_BY_RANK {
     def module_name = "split_by_rank"
-    tag "-"
-    // label "medium"
-    // time '1.h'
+    // tag "-"
     time { 10.m + ((fasta_file.size() / 100000) * 1.s ) }
-    // 10 minutes + 1 second for every 100KB file size
-    memory '2.GB'
-    // memory { 1.GB + ( 1.KB *  ) }
-    cpus 1
+    //// 10 minutes + 1 second for every 100KB of file size
     container "cicirello/gnu-on-alpine:3.20.3"
 
     input:
@@ -23,7 +18,6 @@ process SPLIT_BY_RANK {
 
     script:
     def module_script = "${module_name}.sh"
-    // println ( task.time )
     """
     #!/usr/bin/env bash
 

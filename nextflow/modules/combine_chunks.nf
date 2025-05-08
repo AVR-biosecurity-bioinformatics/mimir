@@ -1,7 +1,6 @@
 process COMBINE_CHUNKS {
     def module_name = "combine_chunks"
-    tag "-"
-    label "small"
+    // tag "-"
     container "staphb/seqkit:2.8.2"
 
     input:

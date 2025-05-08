@@ -1,13 +1,7 @@
 process MATCH_BOLD {
     def module_name = "match_bold"
-    // cache 'lenient'
-    tag "-"
-    // label "small"
-    time '30.m'
-    memory '4.GB'
-    cpus 1
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
-    // fair true
 
     input:
     path(seq_tibble)

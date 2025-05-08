@@ -1,7 +1,6 @@
 process FILTER_REDUNDANT {
     def module_name = "filter_redundant"
-    tag "-"
-    label "medium"
+    // tag "-"
     container "nanozoo/bbmap:38.86--9ebcbfa"
 
     input:

@@ -1,10 +1,6 @@
 process SEQUENCE_TRACKER {
     def module_name = "sequence_tracker"
-    tag "-"
-    // time '30.m'
-    // memory '16.GB'
-    // cpus 1
-    label "sequence_tracker"
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

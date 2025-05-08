@@ -1,10 +1,6 @@
 process RENAME_GENBANK {
     def module_name = "rename_genbank"
-    tag "-"
-    // label "small"
-    time '5.m'
-    memory '4.GB'
-    cpus 1
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

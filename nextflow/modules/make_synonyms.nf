@@ -1,10 +1,6 @@
 process MAKE_SYNONYMS {
     def module_name = "make_synonyms"
-    tag "-"
-    // label "small"
-    time '5.m'
-    memory '2.GB'
-    cpus 1
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

@@ -1,10 +1,6 @@
 process GET_CORE_SEQUENCES {
     def module_name = "get_core_sequences"
     // tag "-"
-    // label "medium"
-    time '30.m'
-    memory '8.GB'
-    cpus 1
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

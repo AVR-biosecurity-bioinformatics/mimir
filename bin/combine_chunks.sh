@@ -16,6 +16,7 @@ if [ "$4" == "true" ]; then
         --gap-letters "-" \
         --remove-gaps \
         --line-width 0 \
+        --threads $2 \
         < chunks_combined_pre.fasta \
         > chunks_combined.fasta
 else 

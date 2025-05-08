@@ -1,10 +1,7 @@
 process EXTRACT_BOLD {
     def module_name = "extract_bold"
-    // cache 'lenient'
-    tag "-"
-    label "small"
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
-    // fair true
 
     input:
     tuple path(db_tsv_file), path(db_meta_file), path(bold_names_file), path(bold_rank_file)

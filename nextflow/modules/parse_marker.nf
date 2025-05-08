@@ -1,7 +1,6 @@
 process PARSE_MARKER {
     def module_name = "parse_marker"
-    tag "-"
-    label "very_small"
+    // tag "-"
     container "ellerbrock/alpine-bash-curl-ssl:0.3.0"
 
     input:

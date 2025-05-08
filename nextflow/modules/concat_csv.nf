@@ -1,10 +1,6 @@
 process CONCAT_CSV {
     def module_name = "concat_csv"
-    tag "-"
-    // label "medium"
-    time '30.m'
-    memory '2.GB'
-    cpus 1
+    // tag "-"
     container "cicirello/gnu-on-alpine:3.20.3"
 
     input:

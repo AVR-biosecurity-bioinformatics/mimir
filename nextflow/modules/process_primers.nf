@@ -1,10 +1,6 @@
 process PROCESS_PRIMERS {
     def module_name = "process_primers"
-    tag "-"
-    // label "medium"
-    time '10.m'
-    memory '2.GB'
-    cpus 1
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

@@ -265,6 +265,8 @@ NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364dd
 # testing marine list (metazoa only)
 NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_list ./test/marine_families_metazoa.csv --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --key_species_list ./test/marine_species_list.txt --trim_to_primers --primer_fwd GGWACWGGWTGAACWGTWTAYCCYCC --primer_rev TANACYTCNGGRTGNCCRAARAAYCA --placeholder_as_unclassified
 
+# quick test
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7215 --target_rank genus  --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks 
 
 ```
 

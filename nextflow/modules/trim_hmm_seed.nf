@@ -1,7 +1,6 @@
 process TRIM_HMM_SEED {
     def module_name = "trim_hmm_seed"
-    tag "-"
-    label "small"
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

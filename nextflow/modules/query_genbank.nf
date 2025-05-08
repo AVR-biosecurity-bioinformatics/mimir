@@ -1,10 +1,7 @@
 #!/usr/bin/env nextflow
 process QUERY_GENBANK {
     def module_name = "query_genbank"
-    tag "-"
-    cpus 1
-    time 2.h
-    memory 4.GB
+    // tag "-"
     maxForks 10
     container "emehinovic72/edirect:latest"
 

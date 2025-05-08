@@ -1,10 +1,6 @@
 process ALIGN_CORE {
     def module_name = "align_core"
-    tag "-"
-    // label "very_high"
-    time '4.h'
-    memory '16.GB'
-    cpus 16
+    // tag "-"
     container "staphb/mafft:7.526"
 
 

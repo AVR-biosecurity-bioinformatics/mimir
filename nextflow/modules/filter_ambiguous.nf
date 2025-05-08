@@ -1,7 +1,6 @@
 process FILTER_AMBIGUOUS {
     def module_name = "filter_ambiguous"
-    tag "-"
-    label "very_small"
+    // tag "-"
     container "cicirello/gnu-on-alpine:3.20.3"
 
     input:

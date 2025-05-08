@@ -1,7 +1,6 @@
 process PARSE_TARGETS {
     def module_name = "parse_targets"
-    tag "-"
-    label "small"
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
     maxForks 5
 

@@ -1,9 +1,6 @@
 process ALIGN_PRIMERS_TO_SEED {
     def module_name = "align_primers_to_seed"
-    tag "-"
-    time '30.m'
-    memory '8.GB'
-    cpus 1
+    // tag "-"
     container "staphb/mafft:7.526"
 
     input:

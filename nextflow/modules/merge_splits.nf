@@ -1,10 +1,6 @@
 process MERGE_SPLITS {
     def module_name = "merge_splits"
-    tag "-"
-    label "small"
-    // time '1.h'
-    // memory '4.GB'
-    // cpus 1
+    // tag "-"
     container "cicirello/gnu-on-alpine:3.20.3"
 
     input:

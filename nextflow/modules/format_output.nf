@@ -1,7 +1,6 @@
 process FORMAT_OUTPUT {
     def module_name = "format_output"
-    tag "-"
-    label "medium"
+    // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:

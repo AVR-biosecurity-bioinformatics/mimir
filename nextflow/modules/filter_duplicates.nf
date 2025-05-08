@@ -1,7 +1,6 @@
 process FILTER_DUPLICATES {
     def module_name = "filter_duplicates"
-    tag "-"
-    label "very_small"
+    // tag "-"
     container "staphb/seqkit:2.8.2"
 
     input:
