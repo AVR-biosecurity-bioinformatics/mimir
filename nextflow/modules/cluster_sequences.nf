@@ -5,6 +5,7 @@ process CLUSTER_SEQUENCES {
 
     input:
     path(fasta_file)
+    val(cluster_threshold)
 
     output: 
     path("clusters.tsv"),                            emit: tsv
@@ -24,7 +25,7 @@ process CLUSTER_SEQUENCES {
         ${task.cpus} \
         ${task.memory.getKilo()} \
         ${fasta_file} \
-        ${params.cluster_threshold}
+        ${cluster_threshold}
         
     """
 

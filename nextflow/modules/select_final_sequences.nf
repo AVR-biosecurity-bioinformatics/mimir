@@ -7,6 +7,7 @@ process SELECT_FINAL_SEQUENCES {
     path(fasta_files)
     val(internal_names_file)
     val(max_group_size)
+    val(selection_method)
 
     output: 
     path("selected.fasta"),                emit: fasta
@@ -26,6 +27,7 @@ process SELECT_FINAL_SEQUENCES {
     fasta_files =                   "${fasta_files}"
     internal_names_file =           "${internal_names_file}"
     max_group_size =                "${max_group_size}"
+    selection_method =              "${selection_method}"
 
     ## global variables
     projectDir = "$projectDir"

@@ -47,7 +47,8 @@ nf_vars <- c(
     "db_meta_file",
     "bold_names_file",
     "bold_rank_file",
-    "marker"
+    "marker",
+    "bold_idmethod_filter"
     )
 lapply(nf_vars, nf_var_check)
 

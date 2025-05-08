@@ -275,7 +275,10 @@ workflow TAXRETURN {
         //// query GenBank to get list of nucleotide IDs (including mitochondrial genomes if requested)
         QUERY_GENBANK (
             ch_taxon_idrank,
-            PARSE_MARKER.out.genbank_query
+            PARSE_MARKER.out.genbank_query,
+            params.min_length,
+            params.max_length,
+            params.use_mito
         )
 
         //// split list of accessions for fetching in chunks
@@ -341,7 +344,8 @@ workflow TAXRETURN {
         //// extract sequences from BOLD database file
         EXTRACT_BOLD (
             ch_extract_bold_input,
-            PARSE_MARKER.out.bold_query
+            PARSE_MARKER.out.bold_query,
+            params.bold_idmethod_filter
         )
 
         //// match BOLD taxon names to NCBI taxon names
@@ -732,13 +736,17 @@ workflow TAXRETURN {
 
     //// cluster sequences into OTUs with mmseqs2
     CLUSTER_SEQUENCES (
-        ch_cluster_sequences_input
+        ch_cluster_sequences_input,
+        params.cluster_threshold
     )
 
     //// remove taxonomic outliers from sequence clusters
     FILTER_TAX_OUTLIERS (
         ch_cluster_sequences_input,
-        CLUSTER_SEQUENCES.out.tsv
+        CLUSTER_SEQUENCES.out.tsv,
+        params.cluster_rank,
+        params.cluster_threshold,
+        params.cluster_confidence
     )
 
     //// combine and save intermediate file 
@@ -868,7 +876,8 @@ workflow TAXRETURN {
     SELECT_FINAL_SEQUENCES (
         FILTER_SEQ_OUTLIERS.out.retained_fasta,
         ch_internal_names,
-        params.max_group_size
+        params.max_group_size,
+        params.selection_method
     )
 
     //// save SELECT_FINAL_SEQUENCES output

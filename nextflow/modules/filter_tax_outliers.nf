@@ -6,6 +6,9 @@ process FILTER_TAX_OUTLIERS {
     input:
     path(fasta_file)
     path(cluster_tsv)
+    val(cluster_rank)
+    val(cluster_threshold)
+    val(cluster_confidence)
 
     output: 
     path("seqs_decontaminated.fasta"),                                  emit: fasta
@@ -22,8 +25,11 @@ process FILTER_TAX_OUTLIERS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
+    fasta_file =                    "${fasta_file}"
     cluster_tsv =                   "${cluster_tsv}"
+    cluster_rank =                  "${cluster_rank}"
+    cluster_threshold =             "${cluster_threshold}"
+    cluster_confidence =            "${cluster_confidence}"
 
     ## global variables
     projectDir = "$projectDir"

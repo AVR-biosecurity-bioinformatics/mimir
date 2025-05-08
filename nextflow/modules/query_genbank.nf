@@ -8,6 +8,9 @@ process QUERY_GENBANK {
     input:
     tuple val(taxon_id), val(taxon_rank)
     val(marker)
+    val(min_length)
+    val(max_length)
+    val(use_mito)
 
     output:
     path("*_seqs.txt"),              emit: seq_acc
@@ -28,9 +31,9 @@ process QUERY_GENBANK {
         "${taxon_id}" \
         "${taxon_rank}" \
         "${marker}" \
-        "${params.min_length}" \
-        "${params.max_length}" \
-        "${params.use_mito}"
+        "${min_length}" \
+        "${max_length}" \
+        "${use_mito}"
     
     """
 

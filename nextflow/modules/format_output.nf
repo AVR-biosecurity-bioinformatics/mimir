@@ -10,7 +10,7 @@ process FORMAT_OUTPUT {
     val(compressed_output)
 
     output: 
-    path("final_database.fasta"),                           emit: fasta
+    path("final_database.fa*"),                           emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

@@ -45,7 +45,8 @@ nf_vars <- c(
     "params_dict",
     "fasta_files",
     "internal_names_file",
-    "max_group_size"
+    "max_group_size",
+    "selection_method"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -70,7 +71,8 @@ if (internal_names_file == "no_file" ){
 ## parse params
 max_group_size <- as.numeric(max_group_size)
 
-prune_method <- params.prune_method
+## TODO: check if this value is in list of allowed values
+selection_method <- as.character(selection_method)
 
 if (params.remove_unclassified %in% c("any_ranks", "all_ranks","terminal","none")) {
     remove_unclassified <- params.remove_unclassified
@@ -81,17 +83,6 @@ if (params.remove_unclassified %in% c("any_ranks", "all_ranks","terminal","none"
 ### run code
 
 ## prune groups of sequences with identical taxonomic IDs down to a certain number
-
-# ### old function
-# seqs_pruned <- 
-#     prune_groups(
-#         x = seqs, # DNAbin or DNAStringset object
-#         max_group_size = max_group_size, # max sequences to keep
-#         discardby = prune_method, # 'length': discard smallest sequences first; 'random': discard randomly
-#         dedup = TRUE, # remove sequences with identical taxonomic name and sequence first
-#         prefer = NULL, # vector of sequence names to prefer (eg. high-quality internal sequences)
-#         quiet = FALSE
-#     )
 
 ### new function
 prune_groups_alt <- function(x, max_group_size = 5, dedup = TRUE, discardby = "length", prefer=NULL, quiet = FALSE, remove_unclassified = "none") {
@@ -247,11 +238,11 @@ prune_groups_alt <- function(x, max_group_size = 5, dedup = TRUE, discardby = "l
 }
 
 # using new function
-seqs_pruned <- 
+seqs_selected <- 
     prune_groups_alt(
         x = seqs, # DNAbin or DNAStringset object
         max_group_size = max_group_size, # max sequences to keep
-        discardby = prune_method, # 'length': discard smallest sequences first; 'random': discard randomly
+        discardby = selection_method, # 'length': discard smallest sequences first; 'random': discard randomly
         dedup = TRUE, # remove sequences with identical taxonomic name and sequence first
         prefer = internal_names, # vector of sequence names to prefer (eg. high-quality internal sequences)
         quiet = FALSE,
@@ -260,15 +251,13 @@ seqs_pruned <-
 
 
 # sequences removed
-seqs_removed <- seqs[!names(seqs) %in% names(seqs_pruned)]
+seqs_removed <- seqs[!names(seqs) %in% names(seqs_selected)]
 
-# save filtered sequences as .rds file
-# saveRDS(seqs_pruned, "seqs_pruned.rds")
 
 # write fasta (empty if no sequences left)
-if ( !length(seqs_pruned) == 0 ){
+if ( !length(seqs_selected) == 0 ){
     write_fasta(
-        seqs_pruned, 
+        seqs_selected, 
         file = paste0("selected.fasta"), 
         compress = FALSE
     )

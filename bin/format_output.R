@@ -106,8 +106,16 @@ if ( !aligned_output ){
 ### TODO: put marker and taxon information in the final name of the database
 
 # write fasta 
-write_fasta(
-    seqs, 
-    file = "final_database.fasta", 
-    compress = compressed_output
+if (compressed_output) {
+    write_fasta(
+        seqs, 
+        file = "final_database.fasta.gz", 
+        compress = TRUE
     )
+} else {
+    write_fasta(
+        seqs, 
+        file = "final_database.fasta", 
+        compress = FALSE
+    )
+}

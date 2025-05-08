@@ -44,8 +44,11 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "fasta_file",
-    "cluster_tsv"
-    )
+    "cluster_tsv",
+    "cluster_rank",
+    "cluster_threshold",
+    "cluster_confidence"
+)
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
@@ -57,30 +60,13 @@ seqs <- ape::read.FASTA(fasta_file, type = "DNA")
 clusters <- read_delim(cluster_tsv, col_names = c("representative","sequence_name"), delim = "\t")
 
 ## params parsing 
-cluster_rank <- stringr::str_split_1(params.cluster_rank, ",")
-cluster_threshold <- as.numeric(params.cluster_threshold)
-cluster_confidence <- as.numeric(params.cluster_confidence)
-cluster_nstart <- as.numeric(params.cluster_nstart)
-quiet <- FALSE
+cluster_rank <- stringr::str_split_1(cluster_rank, ",")
+cluster_threshold <- as.numeric(cluster_threshold)
+cluster_confidence <- as.numeric(cluster_confidence)
 
 ### run code
 
-# ## find mixed clusters of sequences
-# mixed_clusters <- 
-#     get_mixed_clusters(
-#         x = seqs, # DNAbin list, names must include NCBI taxid
-#         db = db, # NCBI taxonomy
-#         rank = cluster_rank, # taxonomic rank to check clusters, can be a string or a vector of strings
-#         threshold = cluster_threshold, # OTU clustering threshold
-#         rngseed = 1, # sets set.seed before clustering to ensure reproducibility
-#         return = "consensus", # what to return: "consensus", "all", or "count"
-#         k = 5, # k-mer size for input matrix
-#         confidence = cluster_confidence, # proportion of sequences that need to have different taxonomy (default 0.8)
-#         nstart = cluster_nstart, # random sets chosen for kmeans; higher means more accurate clustering at expense of time 
-#         quiet = FALSE
-#     ) 
-
-### new-new implementation with MMSeqs2 clustering
+### new implementation with MMSeqs2 clustering
 # make a tibble of seq names that explicitly encodes order
 seq_names <- 
   tibble::tibble(
@@ -176,13 +162,13 @@ rm(splitlist)
 mixedtab <- mixedtab[!vapply(mixedtab, is.null, logical(1))]
 
 if ( lapply(mixedtab,nrow) %>% unlist %>% sum == 0 ) { # handle list output or data.frame formats
-      if (!quiet) {cat("No mixed clusters at", cluster_rank,   "rank \n")}
+    cat("No mixed clusters at", cluster_rank,   "rank \n")
     mixed_clusters <- NULL
 } else if ( lapply(mixedtab,nrow) %>% unlist %>% sum > 0 ){
     mixedtab <- dplyr::bind_rows(mixedtab, .id="cluster")
     mixedtab <- mixedtab[mixedtab$confidence >= cluster_confidence, ]
     mixedtab <- mixedtab[order(mixedtab$confidence, decreasing = TRUE), ]
-    if (!quiet) {cat("identified", length(unique(mixedtab$cluster)), "mixed clusters at", cluster_rank, "rank \n")}
+    cat("identified", length(unique(mixedtab$cluster)), "mixed clusters at", cluster_rank, "rank \n")
     mixed_clusters <- 
         mixedtab %>%
         dplyr::mutate(

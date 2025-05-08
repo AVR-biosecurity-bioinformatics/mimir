@@ -6,6 +6,7 @@ process EXTRACT_BOLD {
     input:
     tuple path(db_tsv_file), path(db_meta_file), path(bold_names_file), path(bold_rank_file)
     val(marker)
+    val(bold_idmethod_filter)
 
     output: 
     path("bold_db_targets.rds"),                  emit: tibble, optional: true
@@ -26,6 +27,7 @@ process EXTRACT_BOLD {
     bold_names_file =             "${bold_names_file}"
     bold_rank_file =              "${bold_rank_file}"
     marker =                      "${marker}"
+    bold_idmethod_filter =        "${bold_idmethod_filter}"
 
     ## global variables
     projectDir = "$projectDir"
