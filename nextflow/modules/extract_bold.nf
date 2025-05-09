@@ -4,7 +4,7 @@ process EXTRACT_BOLD {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple path(db_tsv_file), path(db_meta_file), path(bold_names_file), path(bold_rank_file)
+    tuple path(db_tsv_file), path(db_meta_file), path(bold_tibble_file)
     val(marker)
     val(bold_idmethod_filter)
 
@@ -24,8 +24,7 @@ process EXTRACT_BOLD {
     ## input channel variables
     db_tsv_file =                 "${db_tsv_file}"
     db_meta_file =                "${db_meta_file}"
-    bold_names_file =             "${bold_names_file}"
-    bold_rank_file =              "${bold_rank_file}"
+    bold_tibble_file =            "${bold_tibble_file}"
     marker =                      "${marker}"
     bold_idmethod_filter =        "${bold_idmethod_filter}"
 

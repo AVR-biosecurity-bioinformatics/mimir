@@ -14,8 +14,8 @@ process PARSE_TARGETS {
     tuple path("*_name.txt"), val(taxon_rank),                      emit: taxon_name
     tuple path("*_ncbi_id.txt"), val(taxon_rank),                   emit: taxon_id_rank
     path("*_ncbi_id.txt"),                                          emit: ncbi_id
-    tuple path("*_bold_names.txt"), path("*_bold_rank.txt"),        emit: bold
-    path("*_bold_ids.txt"),                                         emit: bold_ids
+    path("*_bold_names_ranks.csv"),                                 emit: bold
+    // path("*_bold_ids.txt"),                                         emit: bold_ids
     path("*_gencodes.csv"),                                         emit: gencodes
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'

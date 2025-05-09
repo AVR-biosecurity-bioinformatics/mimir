@@ -241,6 +241,9 @@ if (!taxon_rank %in% bold_validranks){
     bold_names <- rank_chunks_df_final$taxon
     # get BOLD taxon rank
     bold_rank <- downstream_valid_rank
+    # make tibble of bold names and ranks
+    bold_tibble <- tibble::tibble(bold_names, bold_rank)
+
 
 } else { ## if target rank is in BOLD ranks...
     # search NCBI synonyms list to get vector of possible alternative matches at the correct rank
@@ -276,6 +279,8 @@ if (!taxon_rank %in% bold_validranks){
     bold_names <- bold_taxa_filtered %>% dplyr::pull(taxon)
     # get BOLD taxon rank 
     bold_rank <- taxon_rank
+    # make tibble of bold names and ranks
+    bold_tibble <- tibble::tibble(bold_names, bold_rank)
 }
 
 ### get genetic codes for taxon (TODO: add support for lists of taxa, using taxize::lowest_common)
@@ -289,11 +294,9 @@ taxon_gencodes <-
 write(taxon_name, paste0(taxon,"_name.txt"), ncolumns = 1, sep = "\n")
 # NCBI ID
 write(ncbi_id, paste0(taxon,"_ncbi_id.txt"), ncolumns = 1, sep = "\n")
-# BOLD name(s)
-write(bold_names, paste0(taxon, "_bold_names.txt"), ncolumns = 1, sep = "\n")
 # BOLD ID(s)
 write(bold_ids, paste0(taxon,"_bold_ids.txt"), ncolumns = 1, sep = "\n")
-# BOLD taxon rank
-write(bold_rank, paste0(taxon, "_bold_rank.txt"), ncolumns = 1, sep = "\n")
+# BOLD name(s) and ranks as tibble
+readr::write_csv(bold_tibble, paste0(taxon, "_bold_names_ranks.csv"))
 # gencodes for rank
 readr::write_delim(taxon_gencodes, paste0(taxon, "_gencodes.csv"), delim = ",")

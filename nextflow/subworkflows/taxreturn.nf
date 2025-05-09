@@ -336,7 +336,7 @@ workflow TAXRETURN {
             )
             .set { ch_bold_db_chunks }
 
-        //// combine each chunk with the taxon name and rank from PARSE_TARGETS
+        //// combine each chunk with the taxon name and rank tibble from PARSE_TARGETS
         ch_bold_db_chunks
             .combine ( PARSE_TARGETS.out.bold ) 
             .set { ch_extract_bold_input }

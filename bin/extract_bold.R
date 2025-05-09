@@ -45,8 +45,7 @@ nf_vars <- c(
     "params_dict",
     "db_tsv_file",
     "db_meta_file",
-    "bold_names_file",
-    "bold_rank_file",
+    "bold_tibble_file",
     "marker",
     "bold_idmethod_filter"
     )
@@ -61,21 +60,36 @@ bold_db <-
         delim = "\t"
     )
 
-# read in bold names and rank as vectors
-bold_names <- readr::read_lines(bold_names_file)
-bold_rank <- readr::read_lines(bold_rank_file)
+# read in bold names and rank as tibble
+bold_tibble <- readr::read_csv(bold_tibble_file)
 
 # min and max sequence lengths
 min_length <- as.integer(params.min_length)
 max_length <- as.integer(params.max_length)
 
+if ( bold_idmethod_filter == "true" ){
+    bold_idmethod_filter <- TRUE
+} else {
+    bold_idmethod_filter <- FALSE
+}
+
 ### run code
+
+# get subset tibbles that match taxon in each row of the bold_tibble
+list_out <- purrr::imap(
+    .x = bold_tibble %>% deframe() %>% as.list(),
+    .f = \(x, idx, db = bold_db){
+        output <- 
+            db %>%
+            dplyr::filter(get({{x}}) == {{idx}})
+        return(output)
+    }
+)
 
 # subset BOLD db
 bold_db_targets <- 
-    bold_db %>%
-    # get only taxa of interest
-    dplyr::filter(get({{bold_rank}}) == {{bold_names}}) %>%
+    list_out %>%
+    dplyr::bind_rows() %>%
     # get only marker of interest
     dplyr::filter(marker_code == marker) %>%
     # remove rows where there is no sequence
@@ -83,7 +97,7 @@ bold_db_targets <-
     # remove sequences mined from GenBank
     dplyr::filter(!stringr::str_detect(sequence_run_site, "GenBank|NCBI")) %>% 
     # conditionally filter out explicitly BOLD-classified sequences
-    {   if( params.bold_idmethod_filter == "true")
+    {   if( bold_idmethod_filter )
             dplyr::filter(., !stringr::str_detect( # note the '.' is essential here
                 identification_method, 
                 "BIN|(B|b)arcode|DNA|BOLD|(T|t)ree|(S|s)equence"
