@@ -116,6 +116,8 @@ domtblout_parsed <-
     stringr::str_replace_all(., "\\s+", "\t") %>% 
     # collapse vector to a single element
     paste0(collapse = "\n") %>%
+    # add new line character to end of element
+    stringr::str_replace(., "$", "\n") %>%
     # read in element as if it were a tsv file
     readr::read_tsv(
         col_names = names(col_types$cols),
@@ -124,10 +126,14 @@ domtblout_parsed <-
         lazy = FALSE, 
         progress = FALSE
     ) %>% 
+    # combine additional end columns with "description" (if multiple instances of space characters in species name)
+    tidyr::unite(description, c(description, dplyr::starts_with("X")), sep = " ") %>%
+    dplyr::mutate(description = dplyr::if_else(description == "NA", NA_character_, description)) %>%
     # replace '\t' in description column with spaces to regenerate sequence names
     dplyr::mutate(
-        description = stringr::str_replace_all(description, "\\\t", " ")
-    )
+        description = stringr::str_replace_all(description, "\\\t", " "),
+        target_name = stringr::str_replace_all(target_name, "\\!\\?\\!\\?", " ") # replace each "!?!?" with a space character as well 
+    ) 
 
 # convert to single sequence hits
 hits <- 
@@ -135,7 +141,7 @@ hits <-
     # undo HMMER splitting sequence names into two parts at the first space character
     dplyr::mutate(
         target_name = dplyr::if_else(
-            description != "-",
+            !is.na(description),
             paste0(target_name, " ", description), 
             target_name
         )

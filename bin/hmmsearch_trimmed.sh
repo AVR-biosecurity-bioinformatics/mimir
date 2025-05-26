@@ -7,6 +7,8 @@ set -u
 # $3 = translations
 # $4 = hmm
 
+# replace each space in sequence headers with the string "!?!?"
+sed '/^>/ s/ /!?!?/g' $3 > renamed.fasta
 
 # find hits
 hmmsearch \
@@ -14,7 +16,7 @@ hmmsearch \
     --notextw \
     --cpu $2 \
     $4 \
-    $3 \
+    renamed.fasta \
     > hmmer.out
 
 ### TODO: add parameters for search
