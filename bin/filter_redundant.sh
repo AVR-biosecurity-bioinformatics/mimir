@@ -22,6 +22,7 @@ for i in $FASTA_LIST; do
     if [[ $( grep -c "^>" $i ) > 1 ]]; then   
         # absorb identical sequences and containments, merging names of duplicate sequences into the header of retained sequence (delim: >)
         dedupe.sh \
+            -Xmx6g \
             mergenames=t \
             absorbrc=f \
             overwrite=t \
