@@ -20,7 +20,7 @@ process MATCH_BOLD {
     def module_script = "${module_name}.R"
     """
     #!/usr/bin/env Rscript
-    
+     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     seq_tibble =                    "${seq_tibble}"

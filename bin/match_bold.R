@@ -298,7 +298,7 @@ bold_seqs_prefasta <-
             dplyr::mutate(
                 .,
                 species = dplyr::case_when(
-                    stringr::str_detect(species, " [:alnum:]+\\.( |$)") ~ "Unclassified",
+                    stringr::str_detect(species, "\\.") ~ "Unclassified", # if species name has ".", treated as unclassified
                     .default = species 
                 )
             )
