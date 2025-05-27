@@ -68,7 +68,7 @@ for (i in 1:length(fasta_vector)) {
 
 ## read counts .csv into tibble
 counts_tibble <- 
-    readr::read_csv(counts_file, col_names = c("name", "count")) %>%
+    readr::read_tsv(counts_file, col_names = c("name", "count")) %>%
     dplyr::mutate(
         name = stringr::str_remove(name, "^>")
     )

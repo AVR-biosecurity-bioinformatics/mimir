@@ -7,7 +7,7 @@ process FILTER_REDUNDANT {
     path(fasta_file)
 
     output: 
-    tuple path("*.retained.fasta"), path("counts.csv"),         emit: fasta
+    tuple path("*.retained.fasta"), path("counts.tsv"),         emit: fasta
     path("removed.fasta"),                                      emit: removed
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'

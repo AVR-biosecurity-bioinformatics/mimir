@@ -9,7 +9,7 @@ set -u
 FASTA_LIST=${3}
 
 # create empty combined output files
-touch counts.csv
+touch counts.tsv
 touch removed.fasta
 
 # loop through all input fasta files, saving retained sequences to lineage-named file
@@ -47,8 +47,8 @@ for i in $FASTA_LIST; do
     # get primary sequence header per line
     grep -oE "^>[^>]+" headers.txt > primary.txt
 
-    # paste headers and counts into a csv containing counts for all sequences in the process
-    paste primary.txt counts.txt -d , >> counts.csv
+    # paste headers and counts into a tsv containing counts for all sequences in the process
+    paste primary.txt counts.txt >> counts.tsv
 
     # remove merged names from .fasta and unwrap
     awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' ${BASENAME}.dd.fasta | \
