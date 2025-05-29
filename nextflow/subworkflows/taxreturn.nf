@@ -825,7 +825,7 @@ workflow TAXRETURN {
 
     //// save FILTER_REDUNDANT output
     if ( params.save_intermediate ) {
-        FILTER_REDUNDANT.out.fasta.map{fasta, csv -> fasta}
+        FILTER_REDUNDANT.out.fasta.map{fasta, tsv -> fasta}
             .flatten()
             .collectFile ( 
                 name: "filter_redundant.fasta",
@@ -834,7 +834,7 @@ workflow TAXRETURN {
     }
 
     //// count number of sequences passing group pruning
-    ch_count_filter_redundant = FILTER_REDUNDANT.out.fasta.map{fasta, csv -> fasta}.flatten().countFasta().combine(["filter_redundant"])
+    ch_count_filter_redundant = FILTER_REDUNDANT.out.fasta.map{fasta, tsv -> fasta}.flatten().countFasta().combine(["filter_redundant"])
 
     //// sequence names that failed filter
     FILTER_REDUNDANT.out.removed
@@ -988,7 +988,7 @@ workflow TAXRETURN {
         ch_count_select_final_sequences                 .view{ "${it[1]}: ${it[0]}" }
     }
 
-    //// collect sequence origins into a list of .csv files for concatenation
+    //// collect sequence origins into a list of .fasta files for conversion into .csv
     Channel.empty()
         .concat ( ch_source_genbank )
         .concat ( ch_source_bold )
@@ -998,7 +998,7 @@ workflow TAXRETURN {
         .collect ()
         .set { ch_sources }
 
-    //// concat sequence sources into one .csv
+    //// convert source .fasta files into a single .csv
     CONCAT_SOURCES (
         ch_sources,
         "sources"
