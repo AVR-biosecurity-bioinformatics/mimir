@@ -1,0 +1,493 @@
+/*
+Filter sequences
+*/
+
+
+//// modules to import
+include { ALIGN_BATCH as ALIGN_SPECIES                               } from '../modules/align_batch'
+include { CLUSTER_SEQUENCES                                          } from '../modules/cluster_sequences'
+include { COMBINE_CHUNKS                                             } from '../modules/combine_chunks'
+include { FILTER_AMBIGUOUS                                           } from '../modules/filter_ambiguous'
+include { FILTER_DUPLICATES                                          } from '../modules/filter_duplicates'
+include { FILTER_PHMM_FULL                                           } from '../modules/filter_phmm_full'
+include { FILTER_PHMM_TRIMMED                                        } from '../modules/filter_phmm_trimmed'
+include { FILTER_REDUNDANT                                           } from '../modules/filter_redundant'
+include { FILTER_SEQ_OUTLIERS                                        } from '../modules/filter_seq_outliers'
+include { FILTER_TAX_OUTLIERS                                        } from '../modules/filter_tax_outliers'
+include { FILTER_UNCLASSIFIED                                        } from '../modules/filter_unclassified'
+include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
+include { HMMSEARCH_TRIMMED                                          } from '../modules/hmmsearch_trimmed'
+include { MERGE_SPLITS as MERGE_SPLITS_SPECIES                       } from '../modules/merge_splits'
+include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
+include { SORT_BY_LINEAGE                                            } from '../modules/sort_by_lineage'
+include { SPLIT_BY_RANK as SPLIT_BY_SPECIES                          } from '../modules/split_by_rank'
+include { TRANSLATE_SEQUENCES                                        } from '../modules/translate_sequences'
+
+
+workflow FILTER_SEQUENCES {
+
+    take:
+
+    ch_input_seqs
+    ch_internal_names
+    ch_marker_coding
+    ch_marker_type
+    ch_gencodes
+    ch_full_phmm
+    ch_trimmed_phmm
+
+    main:
+      
+    /*
+    Sequence filtering
+    */
+
+    //// remove unclassified sequences
+    if ( params.remove_unclassified == "all_ranks" || params.remove_unclassified == "any_ranks" || params.remove_unclassified == "terminal" ) {
+        FILTER_UNCLASSIFIED (
+            ch_input_seqs,
+            params.remove_unclassified
+        )        
+
+        ch_count_filter_unclassified = FILTER_UNCLASSIFIED.out.fasta.countFasta().combine(["filter_unclassified"])
+
+        //// combine and save intermediate file 
+        if ( params.save_intermediate ) {
+            FILTER_UNCLASSIFIED.out.fasta
+                .collectFile ( 
+                    name: "filter_unclassified.fasta",
+                    storeDir: "./output/results",
+                    cache: 'lenient'
+                )
+        }
+
+        //// sequence names that failed filter
+        FILTER_UNCLASSIFIED.out.removed
+            .collectFile ( name: 'filter_unclassified.fasta', newLine: true, cache: false )
+            .set { ch_fates_filter_unclassified }
+
+        FILTER_UNCLASSIFIED.out.fasta
+            .filter { it.size() > 0 }
+            .set { ch_translate_sequences_input }
+
+    } else {
+
+        ch_count_filter_unclassified = Channel.of(["NA", "filter_unclassified"])
+
+        ch_fates_filter_unclassified = Channel.empty()
+
+        ch_input_seqs
+            .filter { it.size() > 0 }
+            .set { ch_translate_sequences_input }
+    
+    }
+
+    //// translate sequences in all six frames
+    TRANSLATE_SEQUENCES (
+        ch_translate_sequences_input,
+        ch_marker_coding,
+        ch_marker_type,
+        ch_gencodes
+    )
+
+    //// search translated sequences for hits against PHMM model
+    HMMSEARCH_FULL (
+        TRANSLATE_SEQUENCES.out.translations,
+        ch_full_phmm
+    )
+
+    //// filter sequences by HMMSEARCH output
+    FILTER_PHMM_FULL (
+        HMMSEARCH_FULL.out.hmmer_output,
+        params.hmm_max_evalue,
+        params.hmm_min_score,
+        params.hmm_max_hits,
+        params.hmm_min_acc,
+        params.hmm_max_gap
+    )
+
+    //// combine and save intermediate file 
+    if ( params.save_intermediate ) {
+        FILTER_PHMM_FULL.out.retained
+            .map { nucleotide, protein -> nucleotide } // get just nucleotide sequences
+            .collectFile ( 
+                name: "filter_phmm_full.fasta",
+                storeDir: "./output/results",
+                cache: 'lenient'
+            )
+    }
+
+    //// combine and save excluded sequences
+    if ( params.save_intermediate ) {
+        FILTER_PHMM_FULL.out.removed_fasta
+            .collectFile ( 
+                name: "filter_phmm_full.removed.fasta",
+                storeDir: "./output/results",
+                cache: 'lenient'
+            )
+    }
+
+    //// combine and save excluded sequence table
+    if ( params.save_intermediate ) {
+        FILTER_PHMM_FULL.out.removed_csv
+            .collectFile ( 
+                name: "filter_phmm_full.removed.csv",
+                storeDir: "./output/results",
+                cache: 'lenient',
+                keepHeader: true, 
+                skip: 1
+            )
+    }
+
+    //// count number of sequences passing PHMM filter
+    ch_count_filter_phmm_full = FILTER_PHMM_FULL.out.retained.map { nucleotide, protein -> nucleotide }.countFasta().combine(["filter_phmm_full"]) 
+
+    //// sequence names that failed filter
+    FILTER_PHMM_FULL.out.removed_fasta
+        .collectFile ( name: 'filter_phmm_full.fasta', newLine: true, cache: false )
+        .set { ch_fates_filter_phmm_full }
+
+
+    //// trim further to primer region if required
+    if ( params.trim_to_primers ){
+        //// do a second round of hmm searching using trimmed PHMM
+        HMMSEARCH_TRIMMED (
+            FILTER_PHMM_FULL.out.retained,
+            ch_trimmed_phmm
+        )
+
+        //// trim to trimmed HMM region
+        FILTER_PHMM_TRIMMED (
+            HMMSEARCH_TRIMMED.out.hmmer_output,
+            params.hmm_max_evalue,
+            params.hmm_min_score,
+            params.hmm_max_hits,
+            params.hmm_min_acc,
+            params.hmm_max_gap,
+            params.min_length_trimmed
+        )
+
+        //// combine and save intermediate file 
+        if ( params.save_intermediate ) {
+            FILTER_PHMM_TRIMMED.out.fasta
+                .collectFile ( 
+                    name: "filter_phmm_trimmed.fasta",
+                    storeDir: "./output/results",
+                    cache: 'lenient'
+                )
+        }
+
+        //// combine and save excluded sequences
+        if ( params.save_intermediate ) {
+            FILTER_PHMM_TRIMMED.out.removed_fasta
+                .collectFile ( 
+                    name: "filter_phmm_trimmed.removed.fasta",
+                    storeDir: "./output/results",
+                    cache: 'lenient'
+                )
+        }
+
+        //// combine and save excluded sequence table
+        if ( params.save_intermediate ) {
+            FILTER_PHMM_TRIMMED.out.removed_csv
+                .collectFile ( 
+                    name: "filter_phmm_trimmed.removed.csv",
+                    storeDir: "./output/results",
+                    cache: 'lenient',
+                    keepHeader: true, 
+                    skip: 1
+                )
+        }
+
+        //// count number of sequences passing trimming with PHMM (above min length)
+        ch_count_filter_phmm_trimmed = FILTER_PHMM_TRIMMED.out.fasta.countFasta().combine(["filter_phmm_trimmed"]) 
+
+        //// sequence names that failed filter
+        FILTER_PHMM_TRIMMED.out.removed_fasta
+            .collectFile ( name: 'filter_phmm_trimmed.fasta', newLine: true, cache: false )
+            .set { ch_fates_filter_phmm_trimmed }
+
+        //// create output channel
+        ch_hmm_output = FILTER_PHMM_TRIMMED.out.fasta 
+            .filter { it.size() > 0 }
+            .collect ()
+
+    } else {
+        //// null count channel
+        ch_count_filter_phmm_trimmed = Channel.of(["NA", "filter_phmm_trimmed"])
+
+        //// empty fate channek
+        ch_fates_filter_phmm_trimmed = Channel.empty()
+
+        //// create output channel
+        ch_hmm_output = FILTER_PHMM_FULL.out.retained
+            .map { nucleotide, protein -> nucleotide }
+            .filter { it.size() > 0 } // remove empty files
+            .collect ()
+    }
+
+
+    //// combine sequences into one .fasta file and dealign
+    COMBINE_CHUNKS ( 
+        ch_hmm_output,
+        "true"
+    )
+ 
+    //// remove exact duplicate sequences if they exist
+    FILTER_DUPLICATES (
+        COMBINE_CHUNKS.out.fasta
+    )
+
+    //// combine and save intermediate file 
+    if ( params.save_intermediate ) {
+        FILTER_DUPLICATES.out.fasta
+            .collectFile ( 
+                name: "remove_exact_duplicates.fasta",
+                storeDir: "./output/results"
+            )
+    }
+
+    //// count number of sequences passing exact deduplication
+    ch_count_filter_duplicates = FILTER_DUPLICATES.out.fasta.countFasta().combine(["filter_duplicates"])
+
+    //// sequence names that failed filter
+    FILTER_DUPLICATES.out.removed
+        .collectFile ( name: 'filter_duplicates.fasta', newLine: true, cache: false )
+        .set { ch_fates_filter_duplicates }
+
+    //// remove ambiguous 
+    if ( params.remove_ambiguous ){
+        FILTER_AMBIGUOUS (
+            FILTER_DUPLICATES.out.fasta
+        )
+
+        ch_count_filter_ambiguous = FILTER_AMBIGUOUS.out.fasta.countFasta().combine(["filter_ambiguous"])
+
+        //// combine and save intermediate file 
+        if ( params.save_intermediate ) {
+            FILTER_AMBIGUOUS.out.fasta
+                .collectFile ( 
+                    name: "filter_ambiguous.fasta",
+                    storeDir: "./output/results",
+                    cache: 'lenient'
+                )
+        }
+
+        //// sequence names that failed filter
+        FILTER_AMBIGUOUS.out.removed
+            .collectFile ( name: 'filter_ambiguous.fasta', newLine: true, cache: false )
+            .set { ch_fates_filter_ambiguous }
+
+        FILTER_AMBIGUOUS.out.fasta
+            .set { ch_cluster_sequences_input }
+
+    } else {
+
+        ch_count_filter_ambiguous = Channel.of(["NA", "filter_ambiguous"])
+
+        ch_fates_filter_ambiguous = Channel.empty()
+
+        FILTER_DUPLICATES.out.fasta
+            .set { ch_cluster_sequences_input }
+    }
+
+    //// cluster sequences into OTUs with mmseqs2
+    CLUSTER_SEQUENCES (
+        ch_cluster_sequences_input,
+        params.cluster_threshold
+    )
+
+    //// remove taxonomic outliers from sequence clusters
+    FILTER_TAX_OUTLIERS (
+        ch_cluster_sequences_input,
+        CLUSTER_SEQUENCES.out.tsv,
+        params.cluster_rank,
+        params.cluster_threshold,
+        params.cluster_confidence
+    )
+
+    //// combine and save intermediate file 
+    if ( params.save_intermediate ) {
+        FILTER_TAX_OUTLIERS.out.fasta
+            .collectFile ( 
+                name: "filter_tax_outliers.fasta",
+                storeDir: "./output/results"
+            )
+    }
+
+    //// count number of sequences passing taxonomic decontamination
+    ch_count_filter_tax_outliers = FILTER_TAX_OUTLIERS.out.fasta.countFasta().combine(["filter_tax_outliers"])
+
+    //// sequence names that failed filter
+    FILTER_TAX_OUTLIERS.out.removed
+        .collectFile ( name: 'filter_tax_outliers.fasta', newLine: true, cache: false )
+        .set { ch_fates_filter_tax_outliers }
+
+    //// sort .fasta by lineage string to reduce the number of files that need to be merged after splitting 
+    SORT_BY_LINEAGE (
+        FILTER_TAX_OUTLIERS.out.fasta
+    )
+
+    //// chunk input into SPLIT_BY_SPECIES to parallelise
+    SORT_BY_LINEAGE.out.fasta
+        .splitFasta ( by: params.split_rank_chunk, file: true )
+        .set { ch_split_species_input }
+
+    //// split .fasta by taxonomic lineage down to species level
+    SPLIT_BY_SPECIES (
+        ch_split_species_input,
+        "species"
+    )
+
+    //// group files with the same name
+    SPLIT_BY_SPECIES.out.fasta
+        .flatten()
+        .map { file ->
+            [ file.name , file ] }
+        .groupTuple( by: 0 )
+        // branch channel depending on the number of files in each tuple
+        .branch { file_name, file_list ->
+            no_merge: file_list.size() == 1
+                return file_list
+            merge: file_list.size() > 1
+                return file_list
+        } 
+        .set { ch_split_species_output }
+
+    //// group merging files into groups of 1000 species for merging
+    ch_split_species_output.merge
+        .buffer ( size: 1000, remainder: true )
+        .flatten ()
+        .collect ()
+        .set { ch_merge_splits_species_input }
+
+    //// merge files from the same species across the different chunks
+    MERGE_SPLITS_SPECIES (
+        ch_merge_splits_species_input
+    )
+
+    //// group species-level .fasta files into batches for aligning and pruning
+    ch_split_species_output.no_merge
+        .flatten ()
+        .mix ( MERGE_SPLITS_SPECIES.out.fasta.flatten() )
+        .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
+        .flatten ()
+        .buffer ( size: 500, remainder: true ) 
+        .set { ch_filter_redundant_input }
+
+    //// filter out redundant (ie. identical and contained) sequences within each species, counting the number of sequences absorbed
+    FILTER_REDUNDANT (
+        ch_filter_redundant_input
+    )
+
+    //// save FILTER_REDUNDANT output
+    if ( params.save_intermediate ) {
+        FILTER_REDUNDANT.out.fasta.map{fasta, csv -> fasta}
+            .flatten()
+            .collectFile ( 
+                name: "filter_redundant.fasta",
+                storeDir: "./output/results"
+            )
+    }
+
+    //// count number of sequences passing group pruning
+    ch_count_filter_redundant = FILTER_REDUNDANT.out.fasta.map{fasta, csv -> fasta}.flatten().countFasta().combine(["filter_redundant"])
+
+    //// sequence names that failed filter
+    FILTER_REDUNDANT.out.removed
+        .flatten()
+        .collectFile ( name: 'filter_redundant.fasta', newLine: true, cache: false )
+        .set { ch_fates_filter_redundant }
+
+    //// align species-level .fasta in batches
+    ALIGN_SPECIES (
+        FILTER_REDUNDANT.out.fasta
+    )
+
+    //// remove sequence outliers from species clusters
+    FILTER_SEQ_OUTLIERS (
+        ALIGN_SPECIES.out.aligned_fasta,
+        params.dist_threshold
+    )
+
+    //// combine and save intermediate file 
+    if ( params.save_intermediate ) {
+        FILTER_SEQ_OUTLIERS.out.retained_fasta
+            .flatten()
+            .collectFile ( 
+                name: "filter_seq_outliers.fasta",
+                storeDir: "./output/results"
+            )
+    }
+
+    //// count number of sequences passing taxonomic decontamination
+    ch_count_filter_seq_outliers = FILTER_SEQ_OUTLIERS.out.retained_fasta.flatten().countFasta().combine(["filter_seq_outliers"])
+
+    //// sequence names that failed filter
+    FILTER_SEQ_OUTLIERS.out.removed
+        .flatten()
+        .collectFile ( name: 'filter_seq_outliers.fasta', newLine: true, cache: false )
+        .set { ch_fates_filter_seq_outliers }
+
+    //// remove reundant sequences from each species, preferentially retaining internal sequences
+    SELECT_FINAL_SEQUENCES (
+        FILTER_SEQ_OUTLIERS.out.retained_fasta,
+        ch_internal_names,
+        params.max_group_size,
+        params.selection_method
+    )
+
+    //// save SELECT_FINAL_SEQUENCES output
+    if ( params.save_intermediate ) {
+        SELECT_FINAL_SEQUENCES.out.fasta
+            .flatten()
+            .collectFile ( 
+                name: "select_final_sequences.fasta",
+                storeDir: "./output/results"
+            )
+    }
+
+    //// count number of sequences passing group pruning
+    ch_count_select_final_sequences = SELECT_FINAL_SEQUENCES.out.fasta.flatten().countFasta().combine(["select_final_sequences"])
+
+    //// sequence names that failed filter
+    SELECT_FINAL_SEQUENCES.out.removed
+        .collectFile ( name: 'select_final_sequences.fasta', newLine: true, cache: false )
+        .set { ch_fates_select_final_sequences }
+
+    //// sequence names included in final datasase
+    SELECT_FINAL_SEQUENCES.out.fasta
+        .collectFile ( name: 'final_database.fasta', newLine: true, cache: false )
+        .set { ch_fates_final_database }
+
+    
+    /// collect sequence fates into a list of .csv files for concatenation
+    Channel.empty()
+        .concat ( ch_fates_filter_unclassified )
+        .concat ( ch_fates_filter_phmm_full )
+        .concat ( ch_fates_filter_phmm_trimmed )
+        .concat ( ch_fates_filter_duplicates )
+        .concat ( ch_fates_filter_ambiguous )
+        .concat ( ch_fates_filter_tax_outliers )
+        .concat ( ch_fates_filter_redundant )
+        .concat ( ch_fates_filter_seq_outliers )
+        .concat ( ch_fates_select_final_sequences )
+        .concat ( ch_fates_final_database )
+        .collect ()
+        .set { ch_fates }
+
+    emit:
+
+    ch_final_seqs = SELECT_FINAL_SEQUENCES.out.fasta
+    ch_fates
+    ch_count_filter_unclassified
+    ch_count_filter_phmm_full
+    ch_count_filter_phmm_trimmed
+    ch_count_filter_duplicates
+    ch_count_filter_ambiguous
+    ch_count_filter_tax_outliers
+    ch_count_filter_redundant
+    ch_count_filter_seq_outliers
+    ch_count_select_final_sequences
+
+}

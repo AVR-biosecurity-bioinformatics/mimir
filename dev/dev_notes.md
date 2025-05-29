@@ -268,6 +268,9 @@ NXF_VER=23.05.0-edge nextflow run . -profile basc_slurm,debug --entrez_key 364dd
 # quick test with siphonaptera
 nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Siphonaptera --target_rank order --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks 
 
+# quick test with all inputs 
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Siphonaptera --target_rank order --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --internal_seqs assets/internal_fake.fasta --train_idtaxa
+
 ```
 
 
