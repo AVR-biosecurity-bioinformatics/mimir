@@ -9,8 +9,8 @@ process VALIDATE_KEY_SPECIES {
     val(add_root)
 
     output: 
-    path("*.identical_seqs.csv"),              emit: identical_seqs
-    path("*.key_pid.csv"),                     emit: key_pid
+    path("*.identical_seqs.tsv"),              emit: identical_seqs
+    path("*.key_pid.tsv"),                     emit: key_pid
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

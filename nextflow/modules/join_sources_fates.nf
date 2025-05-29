@@ -4,11 +4,11 @@ process JOIN_SOURCES_FATES {
     container "cicirello/gnu-on-alpine:3.20.3"
 
     input:
-    path('sources.csv')
-    path('fates.csv')
+    path('sources.tsv')
+    path('fates.tsv')
 
     output: 
-    path("sources_fates.csv"),                            emit: csv
+    path("sources_fates.tsv"),                            emit: tsv
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -19,7 +19,7 @@ process JOIN_SOURCES_FATES {
     #!/usr/bin/env bash
 
     ### run module code
-    join sources.csv fates.csv -t , --header > sources_fates.csv
+    join sources.tsv fates.tsv -t \$'\t' --header > sources_fates.tsv
         
     """
 

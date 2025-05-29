@@ -4,12 +4,12 @@ process SEQUENCE_TRACKER {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(source_fates_file, name: 'sources_fates.csv')
+    path(source_fates_file, name: 'sources_fates.tsv')
 
     output: 
     path("fates_plot.pdf"),                     emit: fates_plot
-    path("sf_meta.csv"),                        emit: sf_meta
-    path("taxa_summary.csv"),                   emit: taxa_summary
+    path("sf_meta.tsv"),                        emit: sf_meta
+    path("taxa_summary.tsv"),                   emit: taxa_summary
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -22,7 +22,7 @@ process SEQUENCE_TRACKER {
       
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    sources_fates_file = "sources_fates.csv"
+    sources_fates_file = "sources_fates.tsv"
 
     ## global variables
     projectDir = "$projectDir"

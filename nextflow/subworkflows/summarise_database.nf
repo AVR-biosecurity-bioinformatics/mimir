@@ -5,8 +5,8 @@ Summarise database
 
 //// modules to import
 include { CHECK_KEY_SPECIES                                          } from '../modules/check_key_species'
-include { CONCAT_CSV as CONCAT_FATES                                 } from '../modules/concat_csv'
-include { CONCAT_CSV as CONCAT_SOURCES                               } from '../modules/concat_csv'
+include { FASTA_TO_TABLE as CONCAT_FATES                             } from '../modules/fasta_to_table'
+include { FASTA_TO_TABLE as CONCAT_SOURCES                           } from '../modules/fasta_to_table'
 include { JOIN_SOURCES_FATES                                         } from '../modules/join_sources_fates'
 include { SEQUENCE_TRACKER                                           } from '../modules/sequence_tracker'
 include { VALIDATE_KEY_SPECIES                                       } from '../modules/validate_key_species'
@@ -38,13 +38,13 @@ workflow SUMMARISE_DATABASE {
 
     //// join fates and sources together into a single .csv
     JOIN_SOURCES_FATES (
-        CONCAT_SOURCES.out.csv,
-        CONCAT_FATES.out.csv
+        CONCAT_SOURCES.out.tsv,
+        CONCAT_FATES.out.tsv
     )
 
     //// process the source and fate of every sequences through the pipeline
     SEQUENCE_TRACKER (
-        JOIN_SOURCES_FATES.out.csv
+        JOIN_SOURCES_FATES.out.tsv
     )
   
     if ( params.key_species_list ){

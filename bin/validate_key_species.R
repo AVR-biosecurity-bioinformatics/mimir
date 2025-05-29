@@ -182,11 +182,11 @@ identical_seqs <-
     )
 
 # write key tibble to file
-readr::write_csv(key_tibble, paste0(spp_name,".key_pid.csv"))
+readr::write_tsv(key_tibble, paste0(spp_name,".key_pid.tsv"))
 
 # write identical seqs tibble to file
 if ( nrow(identical_seqs) > 0){
-    readr::write_csv(identical_seqs, paste0(spp_name, ".identical_seqs.csv"))
+    readr::write_tsv(identical_seqs, paste0(spp_name, ".identical_seqs.tsv"))
 } else {
-    file.create(paste0(spp_name,".identical_seqs.csv"))
+    file.create(paste0(spp_name,".identical_seqs.tsv"))
 }

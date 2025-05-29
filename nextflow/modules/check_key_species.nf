@@ -4,13 +4,13 @@ process CHECK_KEY_SPECIES {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(sf_meta_file, name: 'sf_meta.csv')
+    path(sf_meta_file, name: 'sf_meta.tsv')
     path(key_species_list, name: 'key_species_list.txt')
 
     output: 
     path("*.seqnames.txt"),                emit: seq_names
-    path("key_sequences.csv"),             emit: key_sequences_csv
-    path("key_species_summary.csv"),       emit: summary
+    path("key_sequences.tsv"),             emit: key_sequences_tsv
+    path("key_species_summary.tsv"),       emit: summary
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,7 +23,7 @@ process CHECK_KEY_SPECIES {
       
     ### defining Nextflow environment variables as R variables
     ### input channel variables
-    sf_meta_file = "sf_meta.csv"
+    sf_meta_file = "sf_meta.tsv"
     key_species_list = "key_species_list.txt"
 
     ## global variables

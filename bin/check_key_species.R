@@ -51,7 +51,7 @@ nf_vars <- c(
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
-sf_meta <- readr::read_csv(sf_meta_file)
+sf_meta <- readr::read_tsv(sf_meta_file)
 
 key_species <- 
     readr::read_lines(key_species_list) %>% 
@@ -89,8 +89,8 @@ find_key_sequences <- function(species_id, seq_tibble, add_root) {
         # string
         # convert species name into 'valid' internal format 
         species_id_valid <- 
-        species_id %>% 
-        stringr::str_replace_all(., " +", " ") # replace two or more spaces
+            species_id %>% 
+            stringr::str_replace_all(., " +", " ") # replace two or more spaces
         
         # get all sequences matching species
         species_seq_tibble <- 
@@ -190,14 +190,14 @@ key_sequences <-
     extract_subelement(key_species_output, 2) %>% 
     dplyr::bind_rows()
 
-readr::write_csv(key_sequences, "key_sequences.csv")
+readr::write_tsv(key_sequences, "key_sequences.tsv")
 
 # summary of number of sequences per fate for each key species
 key_species_summary <- 
   extract_subelement(key_species_output, 3) %>% 
   dplyr::bind_rows()
 
-readr::write_csv(key_species_summary, "key_species_summary.csv")
+readr::write_tsv(key_species_summary, "key_species_summary.tsv")
 
 # saving final database sequences per key species 
 extract_subelement(key_species_output, 4) %>% 

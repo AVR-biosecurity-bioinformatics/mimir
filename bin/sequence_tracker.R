@@ -49,7 +49,7 @@ nf_vars <- c(
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
-sources_fates <- readr::read_csv("sources_fates.csv")
+sources_fates <- readr::read_tsv("sources_fates.tsv")
 
 # columns of sources
 cols_sources <- c(
@@ -114,24 +114,14 @@ rm(sources_fates)
 gc()
 
 # save metadata
-readr::write_csv(sf_meta, "sf_meta.csv")
+readr::write_tsv(sf_meta, "sf_meta.tsv")
 
 
 # get total number of sequences
 n_seqs_input <- nrow(sf_meta)
 n_seqs_final <- sf_meta %>% dplyr::filter(fate == "final_database") %>% nrow()
 
-# # summarise number of sequences from each source
-# sf_meta %>%
-#     dplyr::group_by(source) %>%
-#     dplyr::summarise(n = n()) %>%
-#     dplyr::ungroup() %>%
-#     tidyr::pivot_wider(names_from = source, values_from = n, values_fill = 0) %>%
-#     tibble::add_column(!!!cols_sources[!names(cols_sources) %in% names(.)]) %>%
-#     tidyr::pivot_longer(cols = names(cols_sources), names_to = "source", values_to = "sequences")
-
-# summarise number of sequences with each fate
-# using accumulate
+# summarise number of sequences with each fate, using purrr::accumulate
 fate_summary <- 
     sf_meta %>%
     dplyr::group_by(fate) %>%
@@ -229,4 +219,4 @@ taxa_summary_input <-
 taxa_summary <- 
     dplyr::bind_rows(taxa_summary_input, taxa_summary_most)
 
-readr::write_csv(taxa_summary, "taxa_summary.csv")
+readr::write_tsv(taxa_summary, "taxa_summary.tsv")
