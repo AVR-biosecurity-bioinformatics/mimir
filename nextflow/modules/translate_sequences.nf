@@ -10,7 +10,7 @@ process TRANSLATE_SEQUENCES {
     path(ncbi_gencodes)
 
     output: 
-    tuple path(fasta_file), path("translations.fasta"),                emit: translations
+    tuple path("nuc_deduplicated.fasta"), path("translations.fasta"),                emit: translations
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

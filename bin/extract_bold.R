@@ -60,8 +60,8 @@ bold_db <-
         delim = "\t"
     )
 
-# read in bold names and rank as tibble
-bold_tibble <- readr::read_csv(bold_tibble_file)
+# read in bold names and rank as tibble (and deduplicate)
+bold_tibble <- readr::read_csv(bold_tibble_file) %>% dplyr::distinct()
 
 # min and max sequence lengths
 min_length <- as.integer(params.min_length)
@@ -123,7 +123,9 @@ bold_db_targets <-
         genus,
         species,
         nuc
-    )
+    ) %>%
+    # one last deduplication just in case
+    dplyr::distinct()
 
 ## save subset database as .rds (if data still remains after filtering)
 if ( nrow(bold_db_targets) > 0 ){

@@ -75,9 +75,21 @@ allowed_ranks <- c("kingdom","phylum", "class", "order", "family", "genus", "spe
 
 ### run code
 
+# deduplicate sequences
+seqs_dss <- 
+    seqs %>% 
+    DNAbin2DNAstringset() %>%
+    as.character(use.names = TRUE) %>%
+    tibble::enframe() %>%
+    dplyr::group_by(name, value) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() %>%
+    tibble::deframe() %>%
+    Biostrings::DNAStringSet()
+
 # get the taxonomic lineage of each sequence as a tibble/df
 lineage <- 
-    names(seqs) %>%
+    names(seqs_dss) %>%
     tibble::as_tibble(column_name = "value") %>%
     tidyr::separate(col=value, into=c("id", "lineage_string"), sep=";", extra="merge") %>%
     tidyr::separate(col=lineage_string, into=allowed_ranks, sep=";", extra="merge") %>%
@@ -230,7 +242,7 @@ genetic_code_v <-
     )
 
 # check length of seqs is the same as genetic_code_v
-if ( length(seqs) != length(genetic_code_v) ){
+if ( length(seqs_dss) != length(genetic_code_v) ){
     stop("Number of sequences in input .fasta does not match number of returned genetic codes")
 }
 
@@ -246,37 +258,31 @@ rm(match_censor_p)
 rm(match_censor_k)
 gc()
 
-#convert sequences to DNAstringset
-seqs_dss <- DNAbin2DNAstringset(seqs, remove_gaps=TRUE)
-
-# create list where each element is the six-frame translations of each input sequence
-frames_list <- 
-    # make a list where each element is a translated DNAStringset object of all the sequences, for a particular frame
+# create frame for each sequence (one list per frame)
+frames <- 
     c(
         lapply(1:3, function(pos) XVector::subseq(seqs_dss, start=pos)),
         lapply(1:3, function(pos) XVector::subseq(Biostrings::reverseComplement(seqs_dss), start=pos))
-    ) %>% 
-    as.data.frame(
-        col.names = c(
-            "f1",
-            "f2",
-            "f3",
-            "f.1",
-            "f.2",
-            "f.3"
+    ) 
+ 
+names(frames) <- c("1","2","3",".1",".2",".3")
+
+# convert list of frames (6 elements) to list of sequence frames (n sequences elements)
+frames_list <- 
+    frames %>%
+    purrr::imap(
+        .x = ., 
+        function(x, idx){
+            tibble::tibble(
+                name = names(x),
+                sequence = as.character(x),
+                frame = idx
             )
-    ) %>% 
-    tibble::as_tibble(rownames = "name") %>%
-    tidyr::pivot_longer(
-        cols = f1:f.3, 
-        names_to = "frame", 
-        names_prefix = "f",
-        values_to = "sequence"
+        }
     ) %>%
-    dplyr::mutate(
-        frame = stringr::str_replace(frame, "\\.","-") # add negative sign
-    ) %>%
-    split(., .$name) %>% # split into one df per input sequence
+    dplyr::bind_rows() %>%
+    dplyr::distinct() %>% # remove possibly exactly duplicated sequences
+    split(., .$name) %>%
     # convert back to DNAStringset format, per input sequence
     lapply(
         ., 
@@ -353,3 +359,8 @@ translations_combined <- Biostrings::chartr("*", "X", translations_combined)
 translations_combined %>%
     ape::as.AAbin() %>%
     ape::write.FASTA(., file = "translations.fasta")
+
+# write deduplicated nucleotide sequences
+seqs_dss %>% 
+    as.character() %>% 
+    write_fasta(., "nuc_deduplicated.fasta")
