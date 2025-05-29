@@ -277,6 +277,9 @@ frames_list <-
                 name = names(x),
                 sequence = as.character(x),
                 frame = idx
+            ) %>%
+            dplyr::mutate(
+                frame = stringr::str_replace(frame, "\\.","-") # replace '.' with '-'
             )
         }
     ) %>%
