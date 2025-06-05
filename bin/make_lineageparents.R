@@ -61,7 +61,7 @@ ncbi_taxidnamerank <- readRDS(ncbi_taxidnamerank)
 ncbi_lineageparents <- 
     ncbi_rankedlineage %>%
     # remove higher ranks as not used
-    dplyr::select(-realm, -domain) %>%
+    dplyr::select(-domain_realm) %>%
     # remove rows where species is not NA (ie. subspecies)
     dplyr::filter(is.na(species)) %>%
     # join to ncbi_taxidnamerank to get rank

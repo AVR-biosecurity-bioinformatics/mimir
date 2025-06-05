@@ -59,8 +59,8 @@ options(timeout = max(300, getOption("timeout")))
 ncbi_rankedlineage <- 
     readr::read_tsv(
         paste0(db_path, "/rankedlineage.dmp"),
-        col_names = c("tax_id", "tax_name", "species", "genus", "family", "order", "class", "phylum", "kingdom", "realm", "domain"),
-        col_types = ("i-c-c-c-c-c-c-c-c-c-c-")
+        col_names = c("tax_id", "tax_name", "species", "genus", "family", "order", "class", "phylum", "kingdom", "domain_realm"),
+        col_types = ("i-c-c-c-c-c-c-c-c-c-")
     )
 
 # save rankedlineage db object

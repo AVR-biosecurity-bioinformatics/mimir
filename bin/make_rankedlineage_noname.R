@@ -61,7 +61,7 @@ ncbi_taxidnamerank <- readRDS(ncbi_taxidnamerank)
 ncbi_rankedlineage_noname <-
     ncbi_rankedlineage %>%
     # remove higher ranks as not used
-    dplyr::select(-realm, -domain) %>%
+    dplyr::select(-domain_realm) %>%
     dplyr::left_join(., ncbi_taxidnamerank, by = c("tax_id","tax_name")) %>%
     dplyr::mutate(
             species = if_else(rank == "species", tax_name, species),
