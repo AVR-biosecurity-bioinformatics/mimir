@@ -61,7 +61,7 @@ ncbi_nodes <- readRDS(ncbi_nodes)
 ncbi_gencodes <- 
     ncbi_rankedlineage %>%
     # remove higher ranks as not used
-    dplyr::select(-realm, -domain) %>%
+    dplyr::select(-tidyselect::any_of(realm, domain)) %>%
     # make lineage information consistent with those found in imported sequences
     dplyr::mutate(
         dplyr::across(species:kingdom, .fns = ~replace(., is.na(.), "Unclassified")), # replace NA with "Unclassified"
