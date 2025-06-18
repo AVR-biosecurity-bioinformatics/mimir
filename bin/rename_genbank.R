@@ -107,7 +107,7 @@ for (l in 1:n_seqs){
 # function to format GB record into named sequence
 sequence_from_gb_record <- function(x){
     # get versions (accession with version decimal)
-    seq_ver <- gsub("+VERSION +", "", grep("VERSION", x, value = TRUE))
+    seq_ver <- gsub("+VERSION +", "", grep("^( *)?VERSION", x, value = TRUE))
     # get taxids
     seq_taxid <- grep("db_xref=\\\"taxon:", x, value = TRUE) %>% stringr::str_remove_all("( +/db_xref=\"taxon:)|(\\\")")
     # get "ORIGIN" line (just before nucleotide sequence)
