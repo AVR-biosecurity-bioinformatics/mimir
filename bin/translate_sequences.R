@@ -93,152 +93,420 @@ lineage <-
     tibble::as_tibble(column_name = "value") %>%
     tidyr::separate(col=value, into=c("id", "lineage_string"), sep=";", extra="merge") %>%
     tidyr::separate(col=lineage_string, into=allowed_ranks, sep=";", extra="merge") %>%
-    tidyr::separate(col=id, into=c("seqid", "taxid"), sep="\\|", extra="merge") 
+    tidyr::separate(col=id, into=c("seqid", "taxid"), sep="\\|", extra="merge") %>%
+    dplyr::mutate(seq_order = dplyr::row_number())
 
-## match gencodes based on lowest NCBI rank, progressively censoring ranks until a match is found
-# match gencodes based on all ranks
-match_all <- 
+
+# ## match gencodes based on lowest NCBI rank, progressively censoring ranks until a match is found
+# # match gencodes based on all ranks
+# match_all <- 
+#     lineage %>%
+#     dplyr::mutate(row_order = row_number()) %>%  # make a new column that contains original row order
+#     dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
+#     dplyr::filter(!is.na(tax_id))
+
+# # censor species and match
+# match_censor_s <- 
+#     lineage %>%
+#     dplyr::mutate(
+#         row_order = row_number(),
+#         species = "Unclassified"
+#         ) %>%
+#     dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
+#     dplyr::filter(
+#         !is.na(tax_id), 
+#         !seqid %in% match_all$seqid
+#         )
+
+# # censor genus and match
+# match_censor_g <- 
+#     lineage %>%
+#     dplyr::mutate(
+#         row_order = row_number(),
+#         species = "Unclassified",
+#         genus = "Unclassified"
+#     ) %>%  # make a new column that contains original row order
+#     dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
+#     dplyr::filter(
+#         !is.na(tax_id), 
+#         !seqid %in% c(match_all$seqid,match_censor_s$seqid)
+#     )
+
+# # censor family and match
+# match_censor_f <- 
+#     lineage %>%
+#     dplyr::mutate(
+#         row_order = row_number(),
+#         species = "Unclassified",
+#         genus = "Unclassified",
+#         family = "Unclassified"
+#     ) %>%  # make a new column that contains original row order
+#     dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
+#     dplyr::filter(
+#         !is.na(tax_id), 
+#         !seqid %in% c(match_all$seqid,match_censor_s$seqid, match_censor_g$seqid)
+#     )
+
+# # censor order and match
+# match_censor_o <- 
+#     lineage %>%
+#     dplyr::mutate(
+#         row_order = row_number(),
+#         species = "Unclassified",
+#         genus = "Unclassified",
+#         family = "Unclassified",
+#         order = "Unclassified"
+#     ) %>%  # make a new column that contains original row order
+#     dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
+#     dplyr::filter(
+#         !is.na(tax_id), 
+#         !seqid %in% c(match_all$seqid,match_censor_s$seqid, match_censor_g$seqid, match_censor_f$seqid)
+#     )
+
+
+# # censor class and match
+# match_censor_c <- 
+#     lineage %>%
+#     dplyr::mutate(
+#         row_order = row_number(),
+#         species = "Unclassified",
+#         genus = "Unclassified",
+#         family = "Unclassified",
+#         order = "Unclassified",
+#         class = "Unclassified"
+#     ) %>%  # make a new column that contains original row order
+#     dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
+#     dplyr::filter(
+#         !is.na(tax_id), 
+#         !seqid %in% c(match_all$seqid,match_censor_s$seqid, match_censor_g$seqid, match_censor_f$seqid, match_censor_o$seqid)
+#     )
+
+# # censor phylum and match
+# match_censor_p <- 
+#     lineage %>%
+#     dplyr::mutate(
+#         row_order = row_number(),
+#         species = "Unclassified",
+#         genus = "Unclassified",
+#         family = "Unclassified",
+#         order = "Unclassified",
+#         class = "Unclassified",
+#         phylum = "Unclassified"
+#     ) %>%  # make a new column that contains original row order
+#     dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
+#     dplyr::filter(
+#         !is.na(tax_id), 
+#         !seqid %in% c(match_all$seqid,match_censor_s$seqid, match_censor_g$seqid, match_censor_f$seqid, match_censor_o$seqid, match_censor_c$seqid)
+#     )
+
+# # censor kingdom and match
+# match_censor_k <- 
+#     lineage %>%
+#     dplyr::mutate(
+#         row_order = row_number(),
+#         species = "Unclassified",
+#         genus = "Unclassified",
+#         family = "Unclassified",
+#         order = "Unclassified",
+#         class = "Unclassified",
+#         phylum = "Unclassified",
+#         kingdom = "Unclassified"
+#     ) %>%  # make a new column that contains original row order
+#     dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
+#     dplyr::filter(
+#         !is.na(tax_id), 
+#         !seqid %in% c(match_all$seqid,match_censor_s$seqid, match_censor_g$seqid, match_censor_f$seqid, match_censor_o$seqid, match_censor_c$seqid, match_censor_p$seqid)
+#     )
+
+# # combine matched rows together and arrange by original order
+# matched_gencode <- 
+#     dplyr::bind_rows(
+#         match_all,
+#         match_censor_s,
+#         match_censor_g,
+#         match_censor_f,
+#         match_censor_o,
+#         match_censor_c,
+#         match_censor_p,
+#         match_censor_k
+#     ) %>%
+#     dplyr::select(seqid, taxid, row_order, gencode, mtgencode, plgencode, hdgencode) %>%
+#     dplyr::arrange(row_order) # keep in same order as input sequences
+
+# # get vector of genetic codes for each sequence depending on marker type
+# genetic_code_v <- 
+#     switch(
+#         marker_type,
+#         nuclear = matched_gencode$gencode,
+#         mitochondrial = matched_gencode$mtgencode,
+#         plastid = matched_gencode$plgencode,
+#         hydrogen = matched_gencode$hdgencode
+#     )
+
+# split sequences into those that have an NCBI taxid and those that don't
+lineage.taxid_ncbi <- 
     lineage %>%
-    dplyr::mutate(row_order = row_number()) %>%  # make a new column that contains original row order
-    dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
-    dplyr::filter(!is.na(tax_id))
+    dplyr::filter(stringr::str_detect(taxid, "^NCBI:", negate = F))
 
-# censor species and match
-match_censor_s <- 
+lineage.taxid_other <- 
     lineage %>%
-    dplyr::mutate(
-        row_order = row_number(),
-        species = "Unclassified"
-        ) %>%
-    dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
-    dplyr::filter(
-        !is.na(tax_id), 
-        !seqid %in% match_all$seqid
-        )
+    dplyr::filter(stringr::str_detect(taxid, "^NCBI:", negate = T))
 
-# censor genus and match
-match_censor_g <- 
-    lineage %>%
-    dplyr::mutate(
-        row_order = row_number(),
-        species = "Unclassified",
-        genus = "Unclassified"
-    ) %>%  # make a new column that contains original row order
-    dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
-    dplyr::filter(
-        !is.na(tax_id), 
-        !seqid %in% c(match_all$seqid,match_censor_s$seqid)
-    )
-
-# censor family and match
-match_censor_f <- 
-    lineage %>%
-    dplyr::mutate(
-        row_order = row_number(),
-        species = "Unclassified",
-        genus = "Unclassified",
-        family = "Unclassified"
-    ) %>%  # make a new column that contains original row order
-    dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
-    dplyr::filter(
-        !is.na(tax_id), 
-        !seqid %in% c(match_all$seqid,match_censor_s$seqid, match_censor_g$seqid)
-    )
-
-# censor order and match
-match_censor_o <- 
-    lineage %>%
-    dplyr::mutate(
-        row_order = row_number(),
-        species = "Unclassified",
-        genus = "Unclassified",
-        family = "Unclassified",
-        order = "Unclassified"
-    ) %>%  # make a new column that contains original row order
-    dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
-    dplyr::filter(
-        !is.na(tax_id), 
-        !seqid %in% c(match_all$seqid,match_censor_s$seqid, match_censor_g$seqid, match_censor_f$seqid)
-    )
-
-
-# censor class and match
-match_censor_c <- 
-    lineage %>%
-    dplyr::mutate(
-        row_order = row_number(),
-        species = "Unclassified",
-        genus = "Unclassified",
-        family = "Unclassified",
-        order = "Unclassified",
-        class = "Unclassified"
-    ) %>%  # make a new column that contains original row order
-    dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
-    dplyr::filter(
-        !is.na(tax_id), 
-        !seqid %in% c(match_all$seqid,match_censor_s$seqid, match_censor_g$seqid, match_censor_f$seqid, match_censor_o$seqid)
-    )
-
-# censor phylum and match
-match_censor_p <- 
-    lineage %>%
-    dplyr::mutate(
-        row_order = row_number(),
-        species = "Unclassified",
-        genus = "Unclassified",
-        family = "Unclassified",
-        order = "Unclassified",
-        class = "Unclassified",
-        phylum = "Unclassified"
-    ) %>%  # make a new column that contains original row order
-    dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
-    dplyr::filter(
-        !is.na(tax_id), 
-        !seqid %in% c(match_all$seqid,match_censor_s$seqid, match_censor_g$seqid, match_censor_f$seqid, match_censor_o$seqid, match_censor_c$seqid)
-    )
-
-# censor kingdom and match
-match_censor_k <- 
-    lineage %>%
-    dplyr::mutate(
-        row_order = row_number(),
-        species = "Unclassified",
-        genus = "Unclassified",
-        family = "Unclassified",
-        order = "Unclassified",
-        class = "Unclassified",
-        phylum = "Unclassified",
-        kingdom = "Unclassified"
-    ) %>%  # make a new column that contains original row order
-    dplyr::left_join(., ncbi_gencodes, by = dplyr::join_by(kingdom, phylum, class, order, family, genus, species)) %>% 
-    dplyr::filter(
-        !is.na(tax_id), 
-        !seqid %in% c(match_all$seqid,match_censor_s$seqid, match_censor_g$seqid, match_censor_f$seqid, match_censor_o$seqid, match_censor_c$seqid, match_censor_p$seqid)
-    )
-
-# combine matched rows together and arrange by original order
-matched_gencode <- 
-    dplyr::bind_rows(
-        match_all,
-        match_censor_s,
-        match_censor_g,
-        match_censor_f,
-        match_censor_o,
-        match_censor_c,
-        match_censor_p,
-        match_censor_k
+## for those with NCBI taxid, match exactly using taxid
+gc.taxid_ncbi <- 
+    lineage.taxid_ncbi %>%
+    dplyr::mutate(tax_id = stringr::str_remove(taxid, "^NCBI:") %>% as.integer) %>%
+    dplyr::left_join(
+        ., 
+        ncbi_gencodes %>% 
+            dplyr::select(-c(kingdom, phylum, class, order, family, genus, species)), 
+        by = "tax_id"
     ) %>%
-    dplyr::select(seqid, taxid, row_order, gencode, mtgencode, plgencode, hdgencode) %>%
-    dplyr::arrange(row_order) # keep in same order as input sequences
+    dplyr::select(seqid, taxid, seq_order, gencode, mtgencode, plgencode, hdgencode)
+
+if ( any(gc.taxid_ncbi$gencode %>% is.na ) ){
+    stop("Some sequences with NCBI taxids didn't match to the ncbi_gencode data!")
+}
+
+## for those without NCBI taxid, match in a different way
+# rename sequence ranks to distinguish them from ncbi_gencode columns
+lineage.taxid_other.rn <- 
+    lineage.taxid_other %>%
+    dplyr::rename_with(
+        .fn = ~ stringr::str_replace(.x, "$", "_seq"),
+        .cols = c(kingdom, phylum, class, order, family, genus, species)
+    )
+
+# join sequences to gencodes by each of species, genus and family (individually), keeping the best match across all ranks
+species_bm <- 
+    ncbi_gencodes %>%
+    dplyr::filter(rank == "species") %>%
+    dplyr::left_join(., lineage.taxid_other.rn, by = dplyr::join_by("species" == "species_seq"), keep = TRUE) %>% 
+    dplyr::filter(!is.na(seqid)) %>%
+    # calculate number of rank matches
+    dplyr::mutate(
+        rank_matches = 
+        (kingdom == kingdom_seq) + 
+        (phylum == phylum_seq) +
+        (class == class_seq) +
+        (order == order_seq) +
+        (family == family_seq) +
+        (genus == genus_seq) +
+        (species == species_seq)
+    ) %>% 
+    # keep best match per sequence
+    dplyr::group_by(seqid) %>% 
+    dplyr::arrange(desc(rank_matches)) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup()
+
+gc()
+
+genus_bm <- 
+    ncbi_gencodes %>%
+    dplyr::filter(rank == "species") %>%
+    dplyr::left_join(., lineage.taxid_other.rn, by = dplyr::join_by("genus" == "genus_seq"), keep = TRUE) %>% 
+    dplyr::filter(!is.na(seqid)) %>%
+    # calculate number of rank matches
+    dplyr::mutate(
+        rank_matches = 
+        (kingdom == kingdom_seq) + 
+        (phylum == phylum_seq) +
+        (class == class_seq) +
+        (order == order_seq) +
+        (family == family_seq) +
+        (genus == genus_seq) +
+        (species == species_seq)
+    ) %>% 
+    # keep best match per sequence
+    dplyr::group_by(seqid) %>% 
+    dplyr::arrange(desc(rank_matches)) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() 
+
+gc()
+
+family_bm <- 
+    ncbi_gencodes %>%
+    dplyr::filter(rank == "species") %>%
+    dplyr::left_join(., lineage.taxid_other.rn, by = dplyr::join_by("family" == "family_seq"), keep = TRUE) %>% 
+    dplyr::filter(!is.na(seqid)) %>%
+    # calculate number of rank matches
+    dplyr::mutate(
+        rank_matches = 
+        (kingdom == kingdom_seq) + 
+        (phylum == phylum_seq) +
+        (class == class_seq) +
+        (order == order_seq) +
+        (family == family_seq) +
+        (genus == genus_seq) +
+        (species == species_seq)
+    ) %>% 
+    # keep best match per sequence
+    dplyr::group_by(seqid) %>% 
+    dplyr::arrange(desc(rank_matches)) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() 
+
+gc()
+
+# join sequences to non-redundant gencodes by each of order, class, phylum and kingdom, keeping the best match across higher ranks
+# (removing redundancy is done to stop combinatorial explosion destroying memory)
+order_bm <- 
+    ncbi_gencodes %>%
+    dplyr::group_by(kingdom, phylum, class, order, gencode, mtgencode, plgencode, hdgencode) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(., lineage.taxid_other.rn, by = dplyr::join_by("order" == "order_seq"), keep = TRUE) %>% 
+    dplyr::filter(!is.na(seqid)) %>%
+    # calculate number of rank matches
+    dplyr::mutate(
+        rank_matches = 
+        (kingdom == kingdom_seq) + 
+        (phylum == phylum_seq) +
+        (class == class_seq) +
+        (order == order_seq) +
+        (family == family_seq) +
+        (genus == genus_seq) +
+        (species == species_seq)
+    ) %>% 
+    dplyr::group_by(seqid) %>% 
+    dplyr::arrange(desc(rank_matches)) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() 
+
+gc()
+
+class_bm <- 
+    ncbi_gencodes %>%
+    dplyr::group_by(kingdom, phylum, class, gencode, mtgencode, plgencode, hdgencode) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(., lineage.taxid_other.rn, by = dplyr::join_by("class" == "class_seq"), keep = TRUE) %>% 
+    dplyr::filter(!is.na(seqid)) %>%
+    # calculate number of rank matches
+    dplyr::mutate(
+        rank_matches = 
+        (kingdom == kingdom_seq) + 
+        (phylum == phylum_seq) +
+        (class == class_seq) +
+        (order == order_seq) +
+        (family == family_seq) +
+        (genus == genus_seq) +
+        (species == species_seq)
+    ) %>% 
+    dplyr::group_by(seqid) %>% 
+    dplyr::arrange(desc(rank_matches)) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() 
+
+gc()
+
+phylum_bm <- 
+    ncbi_gencodes %>%
+    dplyr::group_by(kingdom, phylum, gencode, mtgencode, plgencode, hdgencode) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(., lineage.taxid_other.rn, by = dplyr::join_by("phylum" == "phylum_seq"), keep = TRUE) %>% 
+    dplyr::filter(!is.na(seqid)) %>%
+    # calculate number of rank matches
+    dplyr::mutate(
+        rank_matches = 
+        (kingdom == kingdom_seq) + 
+        (phylum == phylum_seq) +
+        (class == class_seq) +
+        (order == order_seq) +
+        (family == family_seq) +
+        (genus == genus_seq) +
+        (species == species_seq)
+    ) %>% 
+    dplyr::group_by(seqid) %>% 
+    dplyr::arrange(desc(rank_matches)) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() 
+
+gc()
+
+kingdom_bm <- 
+    ncbi_gencodes %>%
+    dplyr::group_by(kingdom, gencode, mtgencode, plgencode, hdgencode) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() %>%
+    dplyr::left_join(., lineage.taxid_other.rn, by = dplyr::join_by("kingdom" == "kingdom_seq"), keep = TRUE) %>% 
+    dplyr::filter(!is.na(seqid)) %>%
+    # calculate number of rank matches
+    dplyr::mutate(
+        rank_matches = 
+        (kingdom == kingdom_seq) + 
+        (phylum == phylum_seq) +
+        (class == class_seq) +
+        (order == order_seq) +
+        (family == family_seq) +
+        (genus == genus_seq) +
+        (species == species_seq)
+    ) %>% 
+    dplyr::group_by(seqid) %>% 
+    dplyr::arrange(desc(rank_matches)) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup() 
+
+gc()
+
+# combine all the *_bm tibbles
+lineage.taxid_other.bm <- 
+    dplyr::bind_rows(
+        species_bm,
+        genus_bm,
+        family_bm,
+        order_bm,
+        class_bm,
+        phylum_bm,
+        kingdom_bm
+    ) %>%
+    dplyr::group_by(seqid) %>%
+    dplyr::arrange(desc(rank_matches)) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup()
+
+# get sequence IDs with rank_matches of <2
+bad_matches <- 
+    lineage.taxid_other.bm %>%
+    dplyr::filter(rank_matches < 2)
+
+if ( nrow(bad_matches) > 0 ){
+    message(paste0("Some sequences have unknown genetic codes (max 10 printed here):"))
+    message(cat("",head(bad_matches$seqid,10), sep = "\n"))
+    stop("Stopping pipeline.")
+}
+
+# extract matches from non-NCBI matching
+gc.taxid_other <- 
+    lineage.taxid_other.bm %>%
+    dplyr::select(seqid, taxid, seq_order, gencode, mtgencode, plgencode, hdgencode)
+
+# check all seqids are present
+if ( !setequal(gc.taxid_other$seqid, lineage.taxid_other$seqid) ){
+    stop(paste0("Some seqids without NCBI taxids are missing from the genetic code matching tibble!"))
+}
+
+# combine into one tibble in original sequence order
+gc.combined <- 
+    dplyr::bind_rows(gc.taxid_ncbi, gc.taxid_other) %>%
+    dplyr::arrange(seq_order)
+
+# check all seqids are present
+if ( !setequal(gc.combined$seqid, lineage$seqid) ){
+    paste0("Some seqids are missing from the combined genetic code matching tibble!")
+}
 
 # get vector of genetic codes for each sequence depending on marker type
 genetic_code_v <- 
     switch(
         marker_type,
-        nuclear = matched_gencode$gencode,
-        mitochondrial = matched_gencode$mtgencode,
-        plastid = matched_gencode$plgencode,
-        hydrogen = matched_gencode$hdgencode
+        nuclear = gc.combined$gencode,
+        mitochondrial = gc.combined$mtgencode,
+        plastid = gc.combined$plgencode,
+        hydrogen = gc.combined$hdgencode
     )
 
 # check length of seqs is the same as genetic_code_v
@@ -248,14 +516,6 @@ if ( length(seqs_dss) != length(genetic_code_v) ){
 
 # clean up memory
 rm(lineage)
-rm(match_all)
-rm(match_censor_s)
-rm(match_censor_g)
-rm(match_censor_f)
-rm(match_censor_o)
-rm(match_censor_c)
-rm(match_censor_p)
-rm(match_censor_k)
 gc()
 
 # create frame for each sequence (one list per frame)
@@ -349,7 +609,7 @@ gc()
 # create a single object from the list of translated sequences
 translations_combined <- AAStringSet()
 for (i in 1:length(translated)){
-  translations_combined <- S4Vectors::append(translations_combined, translated[[i]], after = length(translations_combined))
+    translations_combined <- S4Vectors::append(translations_combined, translated[[i]], after = length(translations_combined))
 }
 
 rm(translated)
