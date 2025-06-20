@@ -253,7 +253,7 @@ lineage.taxid_other <-
     dplyr::filter(stringr::str_detect(taxid, "^NCBI:", negate = T))
 
 ## for those with NCBI taxid, match exactly using taxid
-gc.taxid_ncbi <- 
+gc.taxid_ncbi.pre <- 
     lineage.taxid_ncbi %>%
     dplyr::mutate(tax_id = stringr::str_remove(taxid, "^NCBI:") %>% as.integer) %>%
     dplyr::left_join(
@@ -261,17 +261,25 @@ gc.taxid_ncbi <-
         ncbi_gencodes %>% 
             dplyr::select(-c(kingdom, phylum, class, order, family, genus, species)), 
         by = "tax_id"
-    ) %>%
+    ) 
+
+# take those that didn't match and combine with non-NCBI
+lineage.taxid_other.comb <- 
+    gc.taxid_ncbi.pre %>%
+    dplyr::filter(is.na(gencode)) %>%
+    dplyr::select(seqid, taxid, kingdom, phylum, class, order, family, genus, species, seq_order) %>%
+    dplyr::bind_rows(., lineage.taxid_other)
+
+# format matched ncbi
+gc.taxid_ncbi <- 
+    gc.taxid_ncbi.pre %>%
+    dplyr::filter(!is.na(gencode)) %>%
     dplyr::select(seqid, taxid, seq_order, gencode, mtgencode, plgencode, hdgencode)
 
-if ( any(gc.taxid_ncbi$gencode %>% is.na ) ){
-    stop("Some sequences with NCBI taxids didn't match to the ncbi_gencode data!")
-}
-
-## for those without NCBI taxid, match in a different way
+## for those without NCBI taxid (or didn't match gencodes tibble), match in a different way
 # rename sequence ranks to distinguish them from ncbi_gencode columns
 lineage.taxid_other.rn <- 
-    lineage.taxid_other %>%
+    lineage.taxid_other.comb %>%
     dplyr::rename_with(
         .fn = ~ stringr::str_replace(.x, "$", "_seq"),
         .cols = c(kingdom, phylum, class, order, family, genus, species)
@@ -485,8 +493,8 @@ gc.taxid_other <-
     dplyr::select(seqid, taxid, seq_order, gencode, mtgencode, plgencode, hdgencode)
 
 # check all seqids are present
-if ( !setequal(gc.taxid_other$seqid, lineage.taxid_other$seqid) ){
-    stop(paste0("Some seqids without NCBI taxids are missing from the genetic code matching tibble!"))
+if ( !setequal(gc.taxid_other$seqid, lineage.taxid_other.comb$seqid) ){
+    stop(paste0("Some seqids that didn't have NCBI gencodes are missing from the genetic code matching tibble!"))
 }
 
 # combine into one tibble in original sequence order
@@ -509,10 +517,18 @@ genetic_code_v <-
         hydrogen = gc.combined$hdgencode
     )
 
+# check all values of vector are not NA
+if (any(is.na(genetic_code_v))){
+    stop(paste0("Some genetic codes are undefined!"))
+}
+
 # check length of seqs is the same as genetic_code_v
 if ( length(seqs_dss) != length(genetic_code_v) ){
-    stop("Number of sequences in input .fasta does not match number of returned genetic codes")
+    stop("Number of sequences in input .fasta does not match number of returned genetic codes!")
 }
+
+
+
 
 # clean up memory
 rm(lineage)
