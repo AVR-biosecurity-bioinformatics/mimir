@@ -69,7 +69,7 @@ tmp <- "./ncbi_taxdump"
 dir.create(tmp)
 message("Downloading NCBI taxonomy database")
 fn <- "ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz"
-utils::download.file(fn, destfile = paste0(tmp, "/tmp.tar.gz"))
+utils::download.file(fn, destfile = paste0(tmp, "/tmp.tar.gz"), method = "auto")
 message("Extracting data\n")
 test <- utils::untar(tarfile = paste0(tmp, "/tmp.tar.gz"), exdir = tmp)
 if (!identical(test, 0L)) {
