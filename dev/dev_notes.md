@@ -278,6 +278,9 @@ nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89
 # gastropoda test
 nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 6448 --target_rank class --bold_db_path ./input --marker COI --add_root --remove_unclassified any_ranks --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --max_group_size 1 --placeholder_as_unclassified
 
+# getting sequences for taxonomic contamination testing (Collembola)
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 30001 --target_rank class --bold_db_path ./input --marker COI --add_root --remove_unclassified none --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --max_group_size 1 --placeholder_as_unclassified
+
 ```
 
 
