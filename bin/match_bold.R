@@ -187,29 +187,35 @@ bold_id_tibble <-
         ),
         # get the rank above the id rank (parent rank)
         parent_rank = purrr::map(
-            .x = identification_rank, 
+            .x = identification_rank,
             .f = ~{
                 ind <- match(.x, allowed_ranks)
-                return(allowed_ranks[ind - 1])
+                return(allowed_ranks[max(ind - 1,1)])
             }
-        ) %>% unlist,
+        ) %>% unlist(),
         # get grandparent rank
         grandparent_rank = purrr::map(
-            .x = identification_rank, 
+            .x = identification_rank,
             .f = ~{
                 ind <- match(.x, allowed_ranks)
-                return(allowed_ranks[ind - 2])
+                return(allowed_ranks[max(ind - 2,1)])
             }
-        ) %>% unlist
-    ) %>%
+        ) %>% unlist(),
+    ) %>% 
+    # handle cases where identification_rank, parent_rank and/or grand_parent rank are the same
+    # this happens in situations where the identification_rank is phylum or kingdom
+    dplyr::mutate(
+        grandparent_rank = dplyr::if_else(grandparent_rank == parent_rank, NA, grandparent_rank),
+        parent_rank = dplyr::if_else(parent_rank == identification_rank, NA, parent_rank)
+    ) %>% 
     dplyr::rowwise() %>% # needed for following 'get()' mutates
     # get the taxon names from the columns named in the "*_rank" columns
     dplyr::mutate( 
         identification = get(identification_rank),
-        parent = get(parent_rank),
-        grandparent = get(grandparent_rank)
+        parent = ifelse(is.na(parent_rank), NA, get(parent_rank)),
+        grandparent = ifelse(is.na(grandparent_rank), NA, get(grandparent_rank))
     ) %>%  
-    dplyr::ungroup()
+    dplyr::ungroup() 
 
 # join to ncbi_lineageparents based on the three identification taxa and their ranks (replace BOLD with NCBI lineage)
 bold_ncbi_joined <- 

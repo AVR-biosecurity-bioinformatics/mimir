@@ -232,9 +232,9 @@ if (!taxon_rank %in% bold_validranks){
     rank_chunks_df <- 
         dplyr::bind_rows(rank_chunks_boldids) %>% 
         dplyr::filter(!is.na(taxid))
-    # remove rows that have their parent taxon in the list of taxa
+    # remove rows that have their parent taxon in the list of taxa (DEACTIVATED)
     rank_chunks_df_final <- 
-        rank_chunks_df[is.na(with(rank_chunks_df, match(parentname, taxon))),] 
+        rank_chunks_df #[is.na(with(rank_chunks_df, match(parentname, taxon))),] 
     # get BOLD taxon names
     bold_ids <- rank_chunks_df_final$taxid
     # get BOLD taxon ids
@@ -271,8 +271,8 @@ if (!taxon_rank %in% bold_validranks){
     if (nrow(bold_taxa) == 0 ) {
         stop(paste0("No BOLD taxon could be found that matches ", taxon_name))
     }
-    # remove rows that have their parent taxon in the list of taxa
-    bold_taxa_filtered <- bold_taxa[is.na(with(bold_taxa, match(parentname, taxon))),]
+    # remove rows that have their parent taxon in the list of taxa (DEACTIVATED)
+    bold_taxa_filtered <- bold_taxa #[is.na(with(bold_taxa, match(parentname, taxon))),]
     # get bold IDs
     bold_ids <- bold_taxa_filtered %>% dplyr::pull(taxid)
     # get BOLD taxon names
