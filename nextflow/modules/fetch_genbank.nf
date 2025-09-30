@@ -20,7 +20,7 @@ process FETCH_GENBANK {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
-
+    
     #### run module code
     bash ${module_name}.sh \
         ${projectDir} \

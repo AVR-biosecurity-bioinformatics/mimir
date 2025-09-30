@@ -17,11 +17,17 @@ fi
 ACC_LIST=${3}
 
 ## fetch sequences as GenBank flat file
-epost \
-	-input $ACC_LIST \
+# epost \
+# 	-input $ACC_LIST \
+# 	-db nuccore \
+# 	| \
+#     efetch \
+# 	-format gb \
+# 	> sequences.gb
+
+efetch \
+	-input "$ACC_LIST" \
 	-db nuccore \
-	| \
-    efetch \
 	-format gb \
 	> sequences.gb
 
