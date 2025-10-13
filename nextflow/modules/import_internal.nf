@@ -30,7 +30,7 @@ process IMPORT_INTERNAL {
     ### source functions and themes, load packages, and import Nextflow params
     ### from "bin/process_start.R"
     sys.source("${projectDir}/bin/process_start.R", envir = .GlobalEnv)
-
+    
     ### run module code
     sys.source(
         "${projectDir}/bin/$module_script", # run script
