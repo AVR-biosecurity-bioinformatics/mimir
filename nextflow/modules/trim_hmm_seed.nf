@@ -5,9 +5,11 @@ process TRIM_HMM_SEED {
 
     input:
     path(fasta_file)
+    path(primers_file)
 
     output: 
-    path("seed_trimmed.fasta"),                            emit: fasta
+    path("seed_trimmed.fasta"),                             emit: fasta
+    path("frame_info.csv"),                                 emit: frame_info
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -21,6 +23,7 @@ process TRIM_HMM_SEED {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     fasta_file =             "${fasta_file}"
+    primers_file =           "${primers_file}"
     
     ## global variables
     projectDir = "$projectDir"

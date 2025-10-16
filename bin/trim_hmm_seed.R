@@ -61,6 +61,18 @@ seed_primers.aass <-
     unlist %>%
     Biostrings::AAStringSet()
 
+# read in primers file as DNAbin
+primers_seq <- ape::read.FASTA(primers_file, type = "DNA")
+
+# convert to DNAStringSet
+primers_seq.dss <- 
+    primers_seq %>%
+    as.list() %>%
+    as.character() %>%
+    purrr::map(function(y){ paste0(y, collapse = "") }) %>%
+    unlist %>%
+    Biostrings::DNAStringSet()
+
 ### run code
 
 # four primer orientations, fwd_ag, rev_ag, fwd_rc, rev_rc
@@ -160,24 +172,40 @@ best_frames <-
 agree_same <- best_frames %>% dplyr::filter(primer %in% c("fwd_ag", "rev_rc")) %>% dplyr::pull(agreement) %>% mean
 agree_oppo <- best_frames %>% dplyr::filter(primer %in% c("fwd_rc", "rev_ag")) %>% dplyr::pull(agreement) %>% mean
 
-# choose best primer orientation and determine start and end positions in alignment
+# choose best primer orientation 
 if ( agree_same > agree_oppo ){
-    best_orient <- best_frames %>% dplyr::filter(primer %in% c("fwd_ag","rev_rc"))
-    pos_start <- best_orient %>% dplyr::filter(primer == "fwd_ag") %>% dplyr::pull(start)
-    pos_end <- best_orient %>% dplyr::filter(primer == "rev_rc") %>% dplyr::pull(end)
+    n_start <- "fwd_ag"
+    n_end <- "rev_rc"
 } else if ( agree_same < agree_oppo ){
-    best_orient <- best_frames %>% dplyr::filter(primer %in% c("fwd_rc","rev_ag"))
-    pos_start <- best_orient %>% dplyr::filter(primer == "rev_ag") %>% dplyr::pull(start)
-    pos_end <- best_orient %>% dplyr::filter(primer == "fwd_rc") %>% dplyr::pull(end)
+    n_start <- "rev_ag"
+    n_end <- "fwd_rc"
 } else {
     stop("Scores for each primer orientation are the same, unable to decide")
 }
+
+# and determine start and end positions in alignment, plus frame offset and primer lengths
+pos_start <- best_frames %>% dplyr::filter(primer == n_start) %>% dplyr::pull(start)
+pos_end <- best_frames %>% dplyr::filter(primer == n_end) %>% dplyr::pull(end)
+frame_start <- best_frames %>% dplyr::filter(primer == n_start) %>% dplyr::pull(frame) %>% as.numeric() 
+offset_start <- -(frame_start - 1)
+plen_start <- primers_seq.dss[names(primers_seq.dss) == n_start][[1]] %>% length()
+frame_end <- best_frames %>% dplyr::filter(primer == n_end) %>% dplyr::pull(frame) %>% as.numeric() 
+offset_end <- frame_end - 1
+plen_end <- primers_seq.dss[names(primers_seq.dss) == n_end][[1]] %>% length()
 
 # check start position is smaller than end position
 if ( pos_start > pos_end ){
     stop("Primer positions not possible, check code")
 }
 
+# output csv with frame offset and primer lengths
+tibble::tibble(
+    offset_start = offset_start,
+    offset_end = offset_end,
+    plen_start = plen_start,
+    plen_end = plen_end
+) %>%
+    readr::write_csv(., "frame_info.csv")
 
 # trim seed alignment to positions
 seed_primers.aass %>%

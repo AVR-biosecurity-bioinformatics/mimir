@@ -91,6 +91,12 @@ rev_ag.seq <- Biostrings::DNAString(rev_ag.string)
 fwd_rc.seq <- Biostrings::reverseComplement(fwd_ag.seq)
 rev_rc.seq <- Biostrings::reverseComplement(rev_ag.seq)
 
+# save original primer sequences
+primers.dss <- Biostrings::DNAStringSet(list(fwd_ag.seq, rev_ag.seq, fwd_rc.seq, rev_rc.seq))
+names(primers.dss) <- c("fwd_ag","rev_ag", "fwd_rc", "rev_rc")
+ape::as.DNAbin(primers.dss) %>% 
+    ape::write.FASTA(., "primers_original.fasta")
+
 ## disambiguated sequences, named with degenerate primer name and a number from 1 to length()
 # fwd_ag
 fwd_ag.da <- fwd_ag.seq %>% DNAStringSet(.) %>% DECIPHER::Disambiguate(.) %>% .[[1]]
@@ -114,7 +120,7 @@ primers_disamb <- c(fwd_ag.da, rev_ag.da, fwd_rc.da, rev_rc.da)
 # write to .fasta
 primers_disamb %>% 
     ape::as.DNAbin() %>% 
-    ape::write.FASTA(., "primers.fasta")
+    ape::write.FASTA(., "primers_disambiguated.fasta")
 
 ## translate primers (forward frames only)
 frames <- c(
