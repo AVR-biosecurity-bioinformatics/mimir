@@ -344,7 +344,8 @@ workflow MIMIR {
         PARSE_INPUTS.out.ch_marker_type,
         PARSE_INPUTS.out.ch_gencodes,
         PARSE_INPUTS.out.ch_full_phmm,
-        PARSE_INPUTS.out.ch_trimmed_phmm
+        PARSE_INPUTS.out.ch_trimmed_phmm,
+        PARSE_INPUTS.out.ch_frame_info
     )
 
 

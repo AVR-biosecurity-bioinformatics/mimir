@@ -261,7 +261,8 @@ if( nrow(hits_retained) > 0){
         lengths(seqs_combined) %>% 
         tibble::enframe(name = "target_name", value = "bases")
 
-    # calculate positions of hits on nucleotide sequence
+    ## calculate positions of hits on nucleotide sequence
+    # two types of nuc coords: frame-ignorant ('nuc_from' etc.) and frame-retaining ('fnuc_from' etc.)
     hit_locations <- 
         hits_retained %>%
         # reorder tibble to match order of combined DNAbin
@@ -272,28 +273,44 @@ if( nrow(hits_retained) > 0){
         dplyr::left_join(., seq_lengths, by = "target_name") %>%
         # convert envelope coordinates to nucleotide coordinates
         dplyr::mutate(
-            nuc_from =  (env_from * 3) - (3 - abs(frame)),  
-            nuc_to =    (env_to * 3) + (abs(frame) - 1),
-            nuc_len =   nuc_to - nuc_from + 1,
-            coverage =  nuc_len / bases,
-            pad_from =  base::pmax(1,nuc_from-2), # pad hit location by up to 2 bases 5'
-            pad_to =    base::pmin(bases,nuc_to+2), # pad hit location by up to 2 bases 3'
-            pad_len =   pad_to - pad_from + 1
-        ) 
+            # pad envelope by 1 aa if possible
+            penv_from = base::pmax(1, env_from - 1),
+            penv_to = base::pmin(target_len, env_to + 1),
+            # get nucleotide coordinates from padded envelope (without frame retention)
+            nuc_from =  (penv_from * 3) - (3 - abs(frame)),
+            nuc_to =    (penv_to * 3) + (abs(frame) - 1),
+            nuc_len =   (nuc_to - nuc_from) + 1,
+            # get frame-retaining nucleotide coordinates (only affects start position)
+            fnuc_from = base::pmax(1, nuc_from - (abs(frame) - 1)),
+            fnuc_to =   base::pmin(bases, nuc_to + 0),
+            fnuc_len =  (fnuc_to - fnuc_from) + 1
+        )
     
-    # subset nucleotide seqs based on location of hits for each sequence
-    seqs_subset <-
+    # subset nucleotide seqs based just on padded envelope (no frame retention)
+    seqs_subset_full <-
         seqs_combined %>%
         DNAbin2DNAstringset(.) %>%
-        XVector::subseq(., start = hit_locations$pad_from, end = hit_locations$pad_to) %>%
+        XVector::subseq(., start = hit_locations$nuc_from, end = hit_locations$nuc_to) %>%
         ape::as.DNAbin()
 
     # check calculated subset lengths are the same as the ones done
-    if (!all(unname(lengths(seqs_subset)) == hit_locations$pad_len)){
-        stop("Actual subset sequence lengths are not the same as calculated subset sequence lengths")
+    if (!all(unname(lengths(seqs_subset_full)) == hit_locations$nuc_len)){
+        stop("Subset sequence lengths (full) are not the same as calculated subset sequence lengths")
     }
 
-    ## subset translations based on location of envelope for each sequence (for further trimming with trimmed HMM)
+    # subset nucleotide seqs to padded envelope AND retain frame
+    seqs_subset_fr <-
+        seqs_combined %>%
+        DNAbin2DNAstringset(.) %>%
+        XVector::subseq(., start = hit_locations$fnuc_from, end = hit_locations$fnuc_to) %>%
+        ape::as.DNAbin()
+
+    # check calculated subset lengths are the same as the ones done
+    if (!all(unname(lengths(seqs_subset_fr)) == hit_locations$fnuc_len)){
+        stop("Subset sequence lengths (frame-retained) are not the same as calculated subset sequence lengths")
+    }
+
+    ## subset translations based on location of padded envelope for each sequence (for further trimming with trimmed HMM)
 
     # remove translations not present in the subset sequences
     translations_retained <- translations[names(translations) %in% hit_locations$old_name]
@@ -301,14 +318,9 @@ if( nrow(hits_retained) > 0){
     # get order of translations
     translations_retained_names <- names(translations_retained)
 
-    # get padded envelope locations
+    # get envelope locations
     env_locations <- 
         hit_locations %>% 
-        # pad envelope 1 residue either side
-        dplyr::mutate(
-            env_from_pad = base::pmax(1, env_from - 1),
-            env_to_pad = base::pmin(target_len, env_to + 1)
-        ) %>%
         # force order of tibble to be the same as the AAbin object
         dplyr::mutate( old_name = forcats::fct_relevel(old_name, translations_retained_names) ) %>% 
         dplyr::arrange(old_name)
@@ -323,7 +335,7 @@ if( nrow(hits_retained) > 0){
         unlist %>%
         Biostrings::AAStringSet() %>%
         # subset
-        XVector::subseq(., start = env_locations$env_from_pad, end = env_locations$env_to_pad) %>%
+        XVector::subseq(., start = env_locations$penv_from, end = env_locations$penv_to) %>%
         ape::as.AAbin()
 
     ##
@@ -367,20 +379,32 @@ if( nrow(hits_retained) > 0){
 
 
     # check all sequences are either retained or removed
-    if ( length(seqs_subset) + length(seqs_nohit) != length(seqs) ){
+    if ( length(seqs_subset_full) + length(seqs_nohit) != length(seqs) ){
         stop("ERROR: Sum of retained and removed sequences does not equal the number of input sequences")
     }
 
-    # write fasta of subsetted sequences
-    if ( !is.null(seqs_subset) && length(seqs_subset) > 0 ){
+    # write fasta of subsetted sequences (no frame-retention)
+    if ( !is.null(seqs_subset_full) && length(seqs_subset_full) > 0 ){
         write_fasta(
-            seqs_subset, 
+            seqs_subset_full, 
             file = paste0("retained_full.fasta"), 
             compress = FALSE
             )
     } else {
         file.create(paste0("retained_full.fasta"))
     }
+
+    # write fasta of subsetted sequences (with frame-retention)
+    if ( !is.null(seqs_subset_fr) && length(seqs_subset_fr) > 0 ){
+        write_fasta(
+            seqs_subset_fr, 
+            file = paste0("retained_fr.fasta"), 
+            compress = FALSE
+            )
+    } else {
+        file.create(paste0("retained_fr.fasta"))
+    }
+
 
     # write fasta of excluded (filtered-out) sequences
     if ( !is.null(seqs_nohit) && length(seqs_nohit) > 0 ){
@@ -448,6 +472,7 @@ if( nrow(hits_retained) > 0){
     )
 
     file.create(paste0("retained_full.fasta"))
+    file.create(paste0("retained_fr.fasta"))
     file.create(paste0("translations_retained.fasta"))
 
 

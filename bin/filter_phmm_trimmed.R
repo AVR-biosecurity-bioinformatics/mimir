@@ -44,6 +44,7 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "fasta_file",
+    "frame_info_file",
     "hmmer_output",
     "hmm_max_evalue", 
     "hmm_min_score", 
@@ -60,6 +61,9 @@ seqs <- ape::read.FASTA(fasta_file)
 
 # read in hmmer_output
 domtblout <- readr::read_lines(hmmer_output, lazy=FALSE, progress=FALSE) 
+
+# read in frame info file
+frame_info <- readr::read_csv(frame_info_file)
 
 # filtering parameters
 evalue_threshold <- hmm_max_evalue %>% as.numeric()
@@ -232,10 +236,10 @@ hit_locations <-
         nuc_from =  (env_from * 3) - (3 - abs(frame)),  
         nuc_to =    (env_to * 3) + (abs(frame) - 1),
         nuc_len =   nuc_to - nuc_from + 1,
-        coverage =  nuc_len / bases,
-        pad_from =  base::pmax(1,nuc_from-2), # pad hit location by up to 2 bases 5'
-        pad_to =    base::pmin(bases,nuc_to+2), # pad hit location by up to 2 bases 3'
-        pad_len =   pad_to - pad_from + 1
+        coverage =  nuc_len / bases
+        # pad_from =  base::pmax(1,nuc_from-2), # pad hit location by up to 2 bases 5'
+        # pad_to =    base::pmin(bases,nuc_to+2), # pad hit location by up to 2 bases 3'
+        # pad_len =   pad_to - pad_from + 1
     ) 
   
 
@@ -243,11 +247,11 @@ hit_locations <-
 seqs_subset <-
     seqs_combined %>%
     DNAbin2DNAstringset(.) %>%
-    XVector::subseq(., start = hit_locations$pad_from, end = hit_locations$pad_to) %>%
+    XVector::subseq(., start = hit_locations$nuc_from, end = hit_locations$nuc_to) %>%
     ape::as.DNAbin()
 
 # check calculated subset lengths are the same as the ones done
-if (!all(unname(lengths(seqs_subset)) == hit_locations$pad_len)){
+if (!all(unname(lengths(seqs_subset)) == hit_locations$nuc_len)){
     stop("Actual subset sequence lengths are not the same as calculated subset sequence lengths")
 }
 

@@ -12,7 +12,8 @@ process FILTER_PHMM_FULL {
     val(hmm_max_gap)
 
     output: 
-    tuple path("retained_full.fasta"), path("translations_retained.fasta"),  emit: retained  
+    tuple path("retained_full.fasta"), path("translations_retained.fasta"),  emit: retained_full  
+    tuple path("retained_fr.fasta"), path("translations_retained.fasta"),    emit: retained_fr  
     path("removed_full.fasta"),                                              emit: removed_fasta
     path("removed_full.csv"),                                                emit: removed_csv
 
@@ -25,7 +26,7 @@ process FILTER_PHMM_FULL {
     def module_script = "${module_name}.R"
     """
     #!/usr/bin/env Rscript
-        
+    
     ### defining Nextflow environment variables as R variables
     ### input channel variables
     fasta_file =            "${fasta_file}"
@@ -36,7 +37,7 @@ process FILTER_PHMM_FULL {
     hmm_max_hits =          "${hmm_max_hits}"
     hmm_min_acc =           "${hmm_min_acc}"
     hmm_max_gap =           "${hmm_max_gap}"
-
+       
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

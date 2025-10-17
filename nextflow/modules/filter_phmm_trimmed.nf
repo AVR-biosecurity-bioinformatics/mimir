@@ -5,6 +5,7 @@ process FILTER_PHMM_TRIMMED {
 
     input:
     tuple path(fasta_file), path(hmmer_output, name: 'hmmer_domtblout.txt')
+    path(frame_info_file)
     val(hmm_max_evalue)
     val(hmm_min_score)
     val(hmm_max_hits)
@@ -30,6 +31,7 @@ process FILTER_PHMM_TRIMMED {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     fasta_file =            "${fasta_file}"
+    frame_info_file =       "${frame_info_file}"
     hmmer_output =          "${hmmer_output}"
     hmm_max_evalue =        "${hmm_max_evalue}"
     hmm_min_score =         "${hmm_min_score}"
