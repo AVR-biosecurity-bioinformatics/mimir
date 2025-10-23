@@ -183,15 +183,19 @@ if ( agree_same > agree_oppo ){
     stop("Scores for each primer orientation are the same, unable to decide")
 }
 
-# and determine start and end positions in alignment, plus frame offset and primer lengths
+# and determine start and end positions in alignment, plus primer offsets and primer lengths
 pos_start <- best_frames %>% dplyr::filter(primer == n_start) %>% dplyr::pull(start)
 pos_end <- best_frames %>% dplyr::filter(primer == n_end) %>% dplyr::pull(end)
+
 frame_start <- best_frames %>% dplyr::filter(primer == n_start) %>% dplyr::pull(frame) %>% as.numeric() 
-offset_start <- -(frame_start - 1)
 plen_start <- primers_seq.dss[names(primers_seq.dss) == n_start][[1]] %>% length()
+# start offset is just the frame - 1
+offset_start <- -(frame_start - 1)
+
 frame_end <- best_frames %>% dplyr::filter(primer == n_end) %>% dplyr::pull(frame) %>% as.numeric() 
-offset_end <- frame_end - 1
 plen_end <- primers_seq.dss[names(primers_seq.dss) == n_end][[1]] %>% length()
+# end offset is the remainder of the primer after the frame offset and the translated portion of the primer
+offset_end <- (plen_end - (frame_end - 1)) %% 3
 
 # check start position is smaller than end position
 if ( pos_start > pos_end ){
@@ -205,11 +209,11 @@ tibble::tibble(
     plen_start = plen_start,
     plen_end = plen_end
 ) %>%
-    readr::write_csv(., "frame_info.csv")
+    readr::write_csv(., "primer_info.csv")
 
 # trim seed alignment to positions
 seed_primers.aass %>%
-    XVector::subseq(., start = pos_start - 1, end = pos_end + 1) %>%
+    XVector::subseq(., start = pos_start, end = pos_end) %>%
     # remove primer sequences
     .[!names(.) %>% stringr::str_starts(., "fwd_ag|rev_ag|fwd_rc|rev_rc")] %>%
     ape::as.AAbin() %>%

@@ -35,7 +35,7 @@ workflow FILTER_SEQUENCES {
     ch_gencodes
     ch_full_phmm
     ch_trimmed_phmm
-    ch_frame_info
+    ch_primer_info
 
     main:
       
@@ -109,7 +109,7 @@ workflow FILTER_SEQUENCES {
 
     //// combine and save intermediate file 
     if ( params.save_intermediate ) {
-        FILTER_PHMM_FULL.out.retained_full
+        FILTER_PHMM_FULL.out.retained
             .map { nucleotide, protein -> nucleotide } // get just nucleotide sequences
             .collectFile ( 
                 name: "filter_phmm_full.fasta",
@@ -141,7 +141,7 @@ workflow FILTER_SEQUENCES {
     }
 
     //// count number of sequences passing PHMM filter
-    ch_count_filter_phmm_full = FILTER_PHMM_FULL.out.retained_full.map { nucleotide, protein -> nucleotide }.countFasta().combine(["filter_phmm_full"]) 
+    ch_count_filter_phmm_full = FILTER_PHMM_FULL.out.retained.map { nucleotide, protein -> nucleotide }.countFasta().combine(["filter_phmm_full"]) 
 
     //// sequence names that failed filter
     FILTER_PHMM_FULL.out.removed_fasta
@@ -153,20 +153,21 @@ workflow FILTER_SEQUENCES {
     if ( params.trim_to_primers ){
         //// do a second round of hmm searching using trimmed PHMM
         HMMSEARCH_TRIMMED (
-            FILTER_PHMM_FULL.out.retained_fr,
+            FILTER_PHMM_FULL.out.retained,
             ch_trimmed_phmm
         )
 
         //// trim to trimmed HMM region
         FILTER_PHMM_TRIMMED (
             HMMSEARCH_TRIMMED.out.hmmer_output,
-            ch_frame_info.first(),
+            ch_primer_info.first(),
             params.hmm_max_evalue,
             params.hmm_min_score,
             params.hmm_max_hits,
             params.hmm_min_acc,
             params.hmm_max_gap,
-            params.min_length_trimmed
+            params.min_length_trimmed,
+            params.remove_primers
         )
 
         //// combine and save intermediate file 
@@ -222,7 +223,7 @@ workflow FILTER_SEQUENCES {
         ch_fates_filter_phmm_trimmed = Channel.empty()
 
         //// create output channel
-        ch_hmm_output = FILTER_PHMM_FULL.out.retained_full
+        ch_hmm_output = FILTER_PHMM_FULL.out.retained
             .map { nucleotide, protein -> nucleotide }
             .filter { it.size() > 0 } // remove empty files
             .collect ()

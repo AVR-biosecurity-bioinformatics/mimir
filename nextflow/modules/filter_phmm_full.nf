@@ -12,10 +12,9 @@ process FILTER_PHMM_FULL {
     val(hmm_max_gap)
 
     output: 
-    tuple path("retained_full.fasta"), path("translations_retained.fasta"),  emit: retained_full  
-    tuple path("retained_fr.fasta"), path("translations_retained.fasta"),    emit: retained_fr  
-    path("removed_full.fasta"),                                              emit: removed_fasta
-    path("removed_full.csv"),                                                emit: removed_csv
+    tuple path("retained.fasta"), path("translations_retained.fasta"),  emit: retained 
+    path("removed.fasta"),                                              emit: removed_fasta
+    path("removed.csv"),                                                emit: removed_csv
 
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'

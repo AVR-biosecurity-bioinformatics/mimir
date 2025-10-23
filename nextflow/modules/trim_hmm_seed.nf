@@ -9,7 +9,7 @@ process TRIM_HMM_SEED {
 
     output: 
     path("seed_trimmed.fasta"),                             emit: fasta
-    path("frame_info.csv"),                                 emit: frame_info
+    path("primer_info.csv"),                                emit: primer_info
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -28,7 +28,7 @@ process TRIM_HMM_SEED {
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
-
+    
     tryCatch({
     ### source functions and themes, load packages, and import Nextflow params
     ### from "bin/process_start.R"

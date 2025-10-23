@@ -150,7 +150,7 @@ workflow PARSE_INPUTS {
             PROCESS_PRIMERS.out.primers
         )
         
-        ch_frame_info = TRIM_HMM_SEED.out.frame_info
+        ch_primer_info = TRIM_HMM_SEED.out.primer_info
 
         //// build trimmed PHMM from trimmed seed alignment
         BUILD_TRIMMED_HMM (
@@ -161,7 +161,7 @@ workflow PARSE_INPUTS {
 
     } else {
         ch_trimmed_phmm = Channel.empty()
-        ch_frame_info = Channel.empty()
+        ch_primer_info = Channel.empty()
     }
 
     emit:
@@ -178,6 +178,6 @@ workflow PARSE_INPUTS {
     ch_gencodes                     = MAKE_GENCODES.out.gencodes
     ch_full_phmm                    = PARSE_MARKER.out.phmm
     ch_trimmed_phmm
-    ch_frame_info
+    ch_primer_info
 
 }

@@ -276,38 +276,22 @@ if( nrow(hits_retained) > 0){
             # pad envelope by 1 aa if possible
             penv_from = base::pmax(1, env_from - 1),
             penv_to = base::pmin(target_len, env_to + 1),
-            # get nucleotide coordinates from padded envelope (without frame retention)
+            # get nucleotide coordinates from padded envelope
             nuc_from =  (penv_from * 3) - (3 - abs(frame)),
             nuc_to =    (penv_to * 3) + (abs(frame) - 1),
-            nuc_len =   (nuc_to - nuc_from) + 1,
-            # get frame-retaining nucleotide coordinates (only affects start position)
-            fnuc_from = base::pmax(1, nuc_from - (abs(frame) - 1)),
-            fnuc_to =   base::pmin(bases, nuc_to + 0),
-            fnuc_len =  (fnuc_to - fnuc_from) + 1
+            nuc_len =   (nuc_to - nuc_from) + 1
         )
     
-    # subset nucleotide seqs based just on padded envelope (no frame retention)
-    seqs_subset_full <-
+    # subset nucleotide seqs based just on padded envelope
+    seqs_subset <-
         seqs_combined %>%
         DNAbin2DNAstringset(.) %>%
         XVector::subseq(., start = hit_locations$nuc_from, end = hit_locations$nuc_to) %>%
         ape::as.DNAbin()
 
     # check calculated subset lengths are the same as the ones done
-    if (!all(unname(lengths(seqs_subset_full)) == hit_locations$nuc_len)){
-        stop("Subset sequence lengths (full) are not the same as calculated subset sequence lengths")
-    }
-
-    # subset nucleotide seqs to padded envelope AND retain frame
-    seqs_subset_fr <-
-        seqs_combined %>%
-        DNAbin2DNAstringset(.) %>%
-        XVector::subseq(., start = hit_locations$fnuc_from, end = hit_locations$fnuc_to) %>%
-        ape::as.DNAbin()
-
-    # check calculated subset lengths are the same as the ones done
-    if (!all(unname(lengths(seqs_subset_fr)) == hit_locations$fnuc_len)){
-        stop("Subset sequence lengths (frame-retained) are not the same as calculated subset sequence lengths")
+    if (!all(unname(lengths(seqs_subset)) == hit_locations$nuc_len)){
+        stop("Subset sequence lengths are not the same as calculated subset sequence lengths")
     }
 
     ## subset translations based on location of padded envelope for each sequence (for further trimming with trimmed HMM)
@@ -373,48 +357,36 @@ if( nrow(hits_retained) > 0){
         ) %>%
         dplyr::select(-old_name) # remove old_name as redundant with target_name
 
-    readr::write_csv(seqs_removed_tibble, file = "removed_full.csv")
+    readr::write_csv(seqs_removed_tibble, file = "removed.csv")
 
     ### outputs
 
 
     # check all sequences are either retained or removed
-    if ( length(seqs_subset_full) + length(seqs_nohit) != length(seqs) ){
+    if ( length(seqs_subset) + length(seqs_nohit) != length(seqs) ){
         stop("ERROR: Sum of retained and removed sequences does not equal the number of input sequences")
     }
 
     # write fasta of subsetted sequences (no frame-retention)
-    if ( !is.null(seqs_subset_full) && length(seqs_subset_full) > 0 ){
+    if ( !is.null(seqs_subset) && length(seqs_subset) > 0 ){
         write_fasta(
-            seqs_subset_full, 
-            file = paste0("retained_full.fasta"), 
+            seqs_subset, 
+            file = paste0("retained.fasta"), 
             compress = FALSE
             )
     } else {
-        file.create(paste0("retained_full.fasta"))
+        file.create(paste0("retained.fasta"))
     }
-
-    # write fasta of subsetted sequences (with frame-retention)
-    if ( !is.null(seqs_subset_fr) && length(seqs_subset_fr) > 0 ){
-        write_fasta(
-            seqs_subset_fr, 
-            file = paste0("retained_fr.fasta"), 
-            compress = FALSE
-            )
-    } else {
-        file.create(paste0("retained_fr.fasta"))
-    }
-
 
     # write fasta of excluded (filtered-out) sequences
     if ( !is.null(seqs_nohit) && length(seqs_nohit) > 0 ){
         write_fasta(
             seqs_nohit, 
-            file = paste0("removed_full.fasta"), 
+            file = paste0("removed.fasta"), 
             compress = FALSE
             )
     } else {
-        file.create(paste0("removed_full.fasta"))
+        file.create(paste0("removed.fasta"))
     }
 
     # write trimmed translations
@@ -463,16 +435,15 @@ if( nrow(hits_retained) > 0){
         ) %>%
         dplyr::select(-old_name) # remove old_name as redundant with target_name
 
-    readr::write_csv(seqs_removed_tibble, file = "removed_full.csv")
+    readr::write_csv(seqs_removed_tibble, file = "removed.csv")
 
     write_fasta(
         seqs_nohit, 
-        file = paste0("removed_full.fasta"), 
+        file = paste0("removed.fasta"), 
         compress = FALSE
     )
 
-    file.create(paste0("retained_full.fasta"))
-    file.create(paste0("retained_fr.fasta"))
+    file.create(paste0("retained.fasta"))
     file.create(paste0("translations_retained.fasta"))
 
 

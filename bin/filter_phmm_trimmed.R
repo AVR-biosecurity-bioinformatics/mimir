@@ -44,14 +44,15 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "fasta_file",
-    "frame_info_file",
+    "primer_info_file",
     "hmmer_output",
     "hmm_max_evalue", 
     "hmm_min_score", 
     "hmm_max_hits",   
     "hmm_min_acc",   
     "hmm_max_gap",
-    "min_length_trimmed"
+    "min_length_trimmed",
+    "remove_primers"
 )
 lapply(nf_vars, nf_var_check)
 
@@ -63,7 +64,7 @@ seqs <- ape::read.FASTA(fasta_file)
 domtblout <- readr::read_lines(hmmer_output, lazy=FALSE, progress=FALSE) 
 
 # read in frame info file
-frame_info <- readr::read_csv(frame_info_file)
+primer_info <- readr::read_csv(primer_info_file)
 
 # filtering parameters
 evalue_threshold <- hmm_max_evalue %>% as.numeric()
@@ -72,6 +73,7 @@ domain_threshold <- hmm_max_hits %>% as.integer() # max allowed domains (1 is sa
 acc_threshold <- hmm_min_acc %>% as.numeric()
 terminalgap_threshold <- hmm_max_gap %>% as.integer() # terminal gap is the distance between the beginning or end of the envelope/HMM and the min/max of the target or HMM
 min_length_trimmed <- min_length_trimmed %>% as.integer()
+if(remove_primers == "true"){ remove_primers <- TRUE } else if(remove_primers == "false") { remove_primers <- FALSE } else {stop(paste0("'--remove_primers' must be 'true' or 'false'"))}
 ## NOTE: terminal gaps above the threshold on the same side (start or end) for both the envelope and HMM is expected in the case of frameshifts
 ## More extensive frameshift detection could be done with alignments to other sequences and removing those with gaps not in multiples of three
 
@@ -233,14 +235,65 @@ hit_locations <-
     dplyr::left_join(., seq_lengths, by = "target_name") %>%
     # convert envelope coordinates to nucleotide coordinates
     dplyr::mutate(
-        nuc_from =  (env_from * 3) - (3 - abs(frame)),  
-        nuc_to =    (env_to * 3) + (abs(frame) - 1),
-        nuc_len =   nuc_to - nuc_from + 1,
-        coverage =  nuc_len / bases
-        # pad_from =  base::pmax(1,nuc_from-2), # pad hit location by up to 2 bases 5'
-        # pad_to =    base::pmin(bases,nuc_to+2), # pad hit location by up to 2 bases 3'
-        # pad_len =   pad_to - pad_from + 1
-    ) 
+        ## force alignment to the ends of the PHMM, if possible
+        # subtract start gap from alignment start position, not going lower than start of translated sequence
+        force_from = base::pmax(ali_from - hmm_start_gap, 1),
+        # add end gap to alignment end position, not going higher than end of translated sequence
+        force_to = base::pmin(ali_to + hmm_end_gap, target_len),
+        # recalculate the start gap by seeing how much the start of the alignment moved and subtracting from original start gap
+        hmm_start_gap_new = hmm_start_gap - (ali_from - force_from),
+        # recalculate the end gap by seeing how much the end of the alignment moved and subtracting from original end gap
+        hmm_end_gap_new = hmm_end_gap - (force_to - ali_to)
+    ) %>%
+    # calculate nucleotide positions of the forced alignment, taking primers into consideration
+    { if(remove_primers == TRUE){
+        dplyr::mutate(
+            .data = .,
+            nuc_from = 
+                # don't go lower than 1
+                base::pmax(
+                    1,
+                    # nucleotide position of the start of the forced aa alignment
+                    (force_from * 3) - 2 +
+                        # add (to position) remainder of primer length after subtracting hmm start gap plus start offset 
+                        base::pmax(0, primer_info$plen_start + primer_info$offset_start - (hmm_start_gap_new * 3))
+                ),
+            nuc_to =
+                # don't go higher than nucleotide length 
+                base::pmin(
+                    bases,
+                    # nucleotide position of the start of the forced aa alignment
+                    (force_to * 3)  -
+                        # subtract (from position) remainder of primer length after subtracting hmm end gap plus end offset
+                        base::pmax(0, primer_info$plen_end - primer_info$offset_end - (hmm_end_gap_new * 3))
+                ),
+            nuc_len = (nuc_to - nuc_from) + 1
+        )
+    } else {
+        dplyr::mutate(
+            .data = .,
+            nuc_from = 
+                # don't go lower than 1
+                base::pmax(
+                    1,
+                    # nucleotide position of the start of the forced aa alignment
+                    ((force_from * 3) - 2) + 
+                        # only add start offset if larger than hmm start gap in bp
+                        # note: start offset is negative
+                        base::pmax(0, primer_info$offset_start - (hmm_start_gap_new * 3))
+                ),
+            nuc_to =
+                # don't go higher than nucleotide length 
+                base::pmin(
+                    bases,
+                    # nucleotide position of the end of the forced aa alignment
+                    (force_to * 3) +
+                        # only add end offset if larger than hmm end gap in bp
+                        base::pmax(0, primer_info$offset_end - (hmm_end_gap_new * 3))   
+                ),
+            nuc_len = (nuc_to - nuc_from) + 1
+        )
+    } } 
   
 
 # subset nucleotide seqs based on location of hits for each sequence
