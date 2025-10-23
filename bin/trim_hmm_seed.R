@@ -43,11 +43,16 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "fasta_file"
+    "fasta_file",
+    "pad_fwd",
+    "pad_rev"
 )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
+
+pad_fwd <- as.numeric(pad_fwd)
+pad_rev <- as.numeric(pad_rev)
 
 # read in fasta file as DNAbin
 seed_primers <- ape::read.FASTA(fasta_file, type = "AA")
@@ -176,9 +181,13 @@ agree_oppo <- best_frames %>% dplyr::filter(primer %in% c("fwd_rc", "rev_ag")) %
 if ( agree_same > agree_oppo ){
     n_start <- "fwd_ag"
     n_end <- "rev_rc"
+    pad_start <- pad_fwd
+    pad_end <- pad_rev
 } else if ( agree_same < agree_oppo ){
     n_start <- "rev_ag"
     n_end <- "fwd_rc"
+    pad_start <- pad_rev
+    pad_end <- pad_fwd
 } else {
     stop("Scores for each primer orientation are the same, unable to decide")
 }
@@ -207,7 +216,9 @@ tibble::tibble(
     offset_start = offset_start,
     offset_end = offset_end,
     plen_start = plen_start,
-    plen_end = plen_end
+    plen_end = plen_end,
+    pad_start = pad_start,
+    pad_end = pad_end
 ) %>%
     readr::write_csv(., "primer_info.csv")
 

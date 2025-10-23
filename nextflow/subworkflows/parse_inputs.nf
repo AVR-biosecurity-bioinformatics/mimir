@@ -147,7 +147,9 @@ workflow PARSE_INPUTS {
         //// trim seed alignment to primer region
         TRIM_HMM_SEED (
             ALIGN_PRIMERS_TO_SEED.out.fasta,
-            PROCESS_PRIMERS.out.primers
+            PROCESS_PRIMERS.out.primers,
+            params.pad_fwd,
+            params.pad_rev
         )
         
         ch_primer_info = TRIM_HMM_SEED.out.primer_info

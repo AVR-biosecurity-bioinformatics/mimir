@@ -41,7 +41,7 @@ process FILTER_PHMM_TRIMMED {
     hmm_max_gap =           "${hmm_max_gap}"
     min_length_trimmed =    "${min_length_trimmed}"
     remove_primers =        "${remove_primers}"
-
+    
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

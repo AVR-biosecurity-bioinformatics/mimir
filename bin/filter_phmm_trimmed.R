@@ -278,9 +278,9 @@ hit_locations <-
                     1,
                     # nucleotide position of the start of the forced aa alignment
                     ((force_from * 3) - 2) + 
-                        # only add start offset if larger than hmm start gap in bp
+                        # only add start offset and padding if larger than hmm start gap in bp
                         # note: start offset is negative
-                        base::pmax(0, primer_info$offset_start - (hmm_start_gap_new * 3))
+                        base::pmin(0, primer_info$offset_start + (hmm_start_gap_new * 3) - primer_info$pad_start)
                 ),
             nuc_to =
                 # don't go higher than nucleotide length 
@@ -288,8 +288,8 @@ hit_locations <-
                     bases,
                     # nucleotide position of the end of the forced aa alignment
                     (force_to * 3) +
-                        # only add end offset if larger than hmm end gap in bp
-                        base::pmax(0, primer_info$offset_end - (hmm_end_gap_new * 3))   
+                        # only add end offset and padding if larger than hmm end gap in bp
+                        base::pmax(0, primer_info$offset_end - (hmm_end_gap_new * 3) + primer_info$pad_end)
                 ),
             nuc_len = (nuc_to - nuc_from) + 1
         )

@@ -6,6 +6,8 @@ process TRIM_HMM_SEED {
     input:
     path(fasta_file)
     path(primers_file)
+    val(pad_fwd)
+    val(pad_rev)
 
     output: 
     path("seed_trimmed.fasta"),                             emit: fasta
@@ -24,6 +26,8 @@ process TRIM_HMM_SEED {
     ## input channel variables
     fasta_file =             "${fasta_file}"
     primers_file =           "${primers_file}"
+    pad_fwd =                "${pad_fwd}"
+    pad_rev =                "${pad_rev}"
     
     ## global variables
     projectDir = "$projectDir"
