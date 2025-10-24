@@ -7,8 +7,8 @@ set -u
 # $3 = taxon_id
 # $4 = taxon_rank
 # $5 = marker
-# $6 = params.min_length
-# $7 = params.max_length
+# $6 = params.min_length_input
+# $7 = params.max_length_input
 # $8 = params.use_mito
 
 ## process variables

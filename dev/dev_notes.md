@@ -288,11 +288,12 @@ nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89
 # get neuroptera sequences
 
 
-
+# testing importing filters
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Siphonaptera --target_rank order --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/tardi_parsed.fasta --bold_db_path ./input --marker COI --add_root  --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --min_length_input 2000 --max_length_input 2001
 
 
 # parse tardigrade sequences using freshwater primers
-nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 30001 --target_rank class --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/tardi_parsed.fasta --use_bold false --use_genbank false --use_mito false --marker COI --add_root --remove_unclassified none --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Siphonaptera --target_rank order --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/tardi_parsed.fasta --use_bold false --use_genbank false --use_mito false --marker COI --add_root --remove_unclassified none --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 
 
 # parse DS-EUGENMAP Lepidoptera sequences using freshwater primers
 nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 30001 --target_rank class --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/lep_bold_seqs.fasta --use_bold false --use_genbank false --use_mito false --marker COI --add_root --remove_unclassified none --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 

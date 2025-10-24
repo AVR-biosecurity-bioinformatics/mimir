@@ -8,8 +8,8 @@ process QUERY_GENBANK {
     input:
     tuple val(taxon_id), val(taxon_rank)
     val(marker)
-    val(min_length)
-    val(max_length)
+    val(min_length_input)
+    val(max_length_input)
     val(use_mito)
 
     output:
@@ -31,8 +31,8 @@ process QUERY_GENBANK {
         "${taxon_id}" \
         "${taxon_rank}" \
         "${marker}" \
-        "${min_length}" \
-        "${max_length}" \
+        "${min_length_input}" \
+        "${max_length_input}" \
         "${use_mito}"
     
     """

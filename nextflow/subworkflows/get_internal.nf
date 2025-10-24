@@ -22,11 +22,14 @@ workflow GET_INTERNAL {
 
     //// import internal sequences from file and check format
     IMPORT_INTERNAL (
-        ch_internal_seqs
+        ch_internal_seqs,
+        params.min_length_input,
+        params.max_length_input
     )
     
     //// populate and chunk internal channel
     IMPORT_INTERNAL.out.fasta
+        .filter { it.size() > 0 } // remove empty files if they exist
         .splitText( by: params.input_chunk_size, file: true )
         .set { ch_internal_fasta }
 

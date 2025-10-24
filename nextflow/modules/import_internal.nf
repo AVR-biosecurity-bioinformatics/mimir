@@ -5,6 +5,8 @@ process IMPORT_INTERNAL {
 
     input:
     val(fasta_file)
+    val(min_length_input)
+    val(max_length_input)
 
     output: 
     path("*.fasta"),                      emit: fasta
@@ -21,6 +23,8 @@ process IMPORT_INTERNAL {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     fasta_file =                     "${fasta_file}"
+    min_length_input =               "${min_length_input}"
+    max_length_input =               "${max_length_input}"
 
     ## global variables
     projectDir = "$projectDir"

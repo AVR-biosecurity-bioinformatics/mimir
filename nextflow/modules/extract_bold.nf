@@ -7,6 +7,8 @@ process EXTRACT_BOLD {
     tuple path(db_tsv_file), path(db_meta_file), path(bold_tibble_file)
     val(marker)
     val(bold_idmethod_filter)
+    val(min_length_input)
+    val(max_length_input)
 
     output: 
     path("bold_db_targets.rds"),                  emit: tibble, optional: true
@@ -27,6 +29,8 @@ process EXTRACT_BOLD {
     bold_tibble_file =            "${bold_tibble_file}"
     marker =                      "${marker}"
     bold_idmethod_filter =        "${bold_idmethod_filter}"
+    min_length_input =            "${min_length_input}"
+    max_length_input =            "${max_length_input}"
 
     ## global variables
     projectDir = "$projectDir"

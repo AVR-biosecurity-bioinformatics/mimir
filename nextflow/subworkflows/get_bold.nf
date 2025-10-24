@@ -53,7 +53,9 @@ workflow GET_BOLD {
     EXTRACT_BOLD (
         ch_extract_bold_input,
         ch_bold_query,
-        params.bold_idmethod_filter
+        params.bold_idmethod_filter,
+        params.min_length_input,
+        params.max_length_input
     )
 
     //// match BOLD taxon names to NCBI taxon names

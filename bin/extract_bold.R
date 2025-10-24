@@ -47,7 +47,9 @@ nf_vars <- c(
     "db_meta_file",
     "bold_tibble_file",
     "marker",
-    "bold_idmethod_filter"
+    "bold_idmethod_filter",
+    "min_length_input",
+    "max_length_input"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -64,8 +66,8 @@ bold_db <-
 bold_tibble <- readr::read_csv(bold_tibble_file) %>% dplyr::distinct()
 
 # min and max sequence lengths
-min_length <- as.integer(params.min_length)
-max_length <- as.integer(params.max_length)
+min_length <- as.integer(min_length_input)
+max_length <- as.integer(params.max_length_input)
 
 if ( bold_idmethod_filter == "true" ){
     bold_idmethod_filter <- TRUE
