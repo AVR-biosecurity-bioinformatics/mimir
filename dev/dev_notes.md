@@ -289,7 +289,7 @@ nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89
 
 
 # testing importing filters
-nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Siphonaptera --target_rank order --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/tardi_parsed.fasta --bold_db_path ./input --marker COI --add_root  --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 --min_length_input 2000 --max_length_input 2001
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Siphonaptera --target_rank order --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/tardi_parsed.fasta --bold_db_path ./input --marker COI --add_root  --trim_to_amplicon --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --amplicon_min_length 200 --min_length_input 200 --max_length_input 1000
 
 
 # parse tardigrade sequences using freshwater primers

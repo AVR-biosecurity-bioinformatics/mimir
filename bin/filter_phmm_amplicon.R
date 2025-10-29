@@ -46,12 +46,9 @@ nf_vars <- c(
     "fasta_file",
     "primer_info_file",
     "hmmer_output",
-    "hmm_max_evalue", 
-    "hmm_min_score", 
-    "hmm_max_hits",   
-    "hmm_min_acc",   
-    "hmm_max_gap",
-    "min_length_trimmed",
+    "trim_to_amplicon",
+    "amplicon_min_length",
+    "amplicon_min_cov",
     "remove_primers"
 )
 lapply(nf_vars, nf_var_check)
@@ -67,24 +64,10 @@ domtblout <- readr::read_lines(hmmer_output, lazy=FALSE, progress=FALSE)
 primer_info <- readr::read_csv(primer_info_file)
 
 # filtering parameters
-evalue_threshold <- hmm_max_evalue %>% as.numeric()
-score_threshold <- hmm_min_score %>% as.numeric()
-domain_threshold <- hmm_max_hits %>% as.integer() # max allowed domains (1 is safe)
-acc_threshold <- hmm_min_acc %>% as.numeric()
-terminalgap_threshold <- hmm_max_gap %>% as.integer() # terminal gap is the distance between the beginning or end of the envelope/HMM and the min/max of the target or HMM
-min_length_trimmed <- min_length_trimmed %>% as.integer()
+amplicon_min_length <- amplicon_min_length %>% as.integer()
+amplicon_min_cov <- amplicon_min_cov %>% as.numeric()
+if(trim_to_amplicon == "true"){ trim_to_amplicon <- TRUE } else if(trim_to_amplicon == "false") { trim_to_amplicon <- FALSE } else {stop(paste0("'--trim_to_amplicon' must be 'true' or 'false'"))}
 if(remove_primers == "true"){ remove_primers <- TRUE } else if(remove_primers == "false") { remove_primers <- FALSE } else {stop(paste0("'--remove_primers' must be 'true' or 'false'"))}
-## NOTE: terminal gaps above the threshold on the same side (start or end) for both the envelope and HMM is expected in the case of frameshifts
-## More extensive frameshift detection could be done with alignments to other sequences and removing those with gaps not in multiples of three
-
-# alter filtering parameters for trimmed
-evalue_mantissa <- evalue_threshold %>% as.character() %>% stringr::str_extract(., "^\\d+") %>% as.double
-evalue_power <- evalue_threshold %>% as.character() %>% stringr::str_extract(., "\\d+$") %>% as.integer 
-evalue_threshold_trimmed <- paste0(evalue_mantissa,"e-",(evalue_power/2)) %>% as.numeric()
-if (evalue_threshold_trimmed >1){stop("New evalue is greater than 1")}
-
-score_threshold_trimmed <- floor(score_threshold / 5)
-terminalgap_threshold_trimmed <- ceiling(terminalgap_threshold / 2)
 
 ### run code
 
@@ -148,6 +131,22 @@ domtblout_parsed <-
         target_name = stringr::str_replace_all(target_name, "\\!\\?\\!\\?", " ") # replace each "!?!?" with a space character as well 
     ) 
 
+## calculate the expected size of the specified amplicon based on PHMM size, start/end offsets, primer padding and primer removal
+# NOTE: This might be smaller than the actual amplicon from most sequences, due to indels relative to the PHMM
+hmm_length <- domtblout_parsed$query_len %>% unique() %>% {.*3}
+if (remove_primers == TRUE){
+    amplicon_length <- 
+        hmm_length - primer_info$offset_start + primer_info$offset_end - primer_info$plen_start - primer_info$plen_end
+} else {
+    amplicon_length <- 
+        hmm_length - primer_info$offset_start + primer_info$offset_end + primer_info$pad_start + primer_info$pad_end
+}
+
+# get sequence lengths in bases
+seq_lengths <- 
+    lengths(seqs) %>% 
+    tibble::enframe(name = "target_name", value = "bases")
+
 # convert to single sequence hits
 hits <- 
     domtblout_parsed %>%
@@ -191,45 +190,6 @@ hits <-
         env_end_gap = target_len - env_to,
         hmm_start_gap = hmm_from - 1,
         hmm_end_gap = query_len - hmm_to
-    ) 
-
-# check hits are all in sequence file
-if(!all(hits$target_name %in% names(seqs))){
-    stop("One or more sequence names in HMMER output table do not match names in input .fasta file")
-}
-
-
-# filter hits based on various thresholds
-hits_retained <- 
-    hits %>%
-    # remove sequences that don't meet all criteria
-    dplyr::filter(
-        evalue_i <= evalue_threshold_trimmed & 
-        score >= score_threshold_trimmed & 
-        # domain_total == domain_threshold & 
-        acc >= acc_threshold &
-        !( hmm_start_gap > terminalgap_threshold_trimmed & env_start_gap > terminalgap_threshold_trimmed ) & # both need to be fulfilled 
-        !( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed ) 
-    )
-
-# fwd seqs
-if (any(names(seqs) %in% hits_retained$target_name)){
-    seqs_combined <- seqs[names(seqs) %in% hits_retained$target_name]
-} else {
-    seqs_combined <- list() %>% as.DNAbin()
-}
-
-# get sequence lengths in bases
-seq_lengths <- 
-    lengths(seqs_combined) %>% 
-    tibble::enframe(name = "target_name", value = "bases")
-
-# calculate positions of hits on nucleotide sequence
-hit_locations <- 
-    hits_retained %>%
-    # reorder tibble to match order of combined DNAbin
-    dplyr::arrange(
-        factor(target_name, levels = names(seqs_combined))
     ) %>%
     # join sequence nucleotide lengths
     dplyr::left_join(., seq_lengths, by = "target_name") %>%
@@ -293,10 +253,43 @@ hit_locations <-
                 ),
             nuc_len = (nuc_to - nuc_from) + 1
         )
-    } } 
-  
+    } } %>%
+    dplyr::mutate(
+      # coverage of record amplicon vs idealised amplicon
+      amp_cov = nuc_len / amplicon_length,
+      # coverage of record amplicon hit vs PHMM 
+      phmm_cov = (hmm_to - hmm_from + 1) / query_len
+    )
 
-# subset nucleotide seqs based on location of hits for each sequence
+# check hits are all in sequence file
+if(!all(hits$target_name %in% names(seqs))){
+    stop("One or more sequence names in HMMER output table do not match names in input .fasta file")
+}
+
+# filter hits based on various thresholds
+hits_retained <- 
+    hits %>%
+    # remove sequences that don't meet all criteria
+    dplyr::filter(
+       nuc_len >= amplicon_min_length &
+       phmm_cov >= amplicon_min_cov
+    ) 
+
+# subset to retained sequences
+if (any(names(seqs) %in% hits_retained$target_name)){
+    seqs_combined <- seqs[names(seqs) %in% hits_retained$target_name]
+} else {
+    seqs_combined <- list() %>% as.DNAbin()
+}
+
+hit_locations <- 
+        hits_retained %>%
+        # reorder tibble to match order of combined DNAbin
+        dplyr::arrange(
+            factor(target_name, levels = names(seqs_combined))
+        ) 
+
+# trim nucleotide seqs based on location of hits for each sequence
 seqs_subset <-
     seqs_combined %>%
     DNAbin2DNAstringset(.) %>%
@@ -308,53 +301,31 @@ if (!all(unname(lengths(seqs_subset)) == hit_locations$nuc_len)){
     stop("Actual subset sequence lengths are not the same as calculated subset sequence lengths")
 }
 
-# remove sequences shorter than min_length_trimmed
-seqs_long <- seqs_subset[seqs_subset %>% lengths() %>% unname() >= min_length_trimmed]
-
-# seqs without a significant hit (either no hit or an excluded hit)
-seqs_nohit <- seqs[!names(seqs) %in% hits_retained$target_name]
+# seqs without a significant hit 
+seqs_nohit <- seqs[!names(seqs) %in% hits$target_name]
 
 # save data for hits that were removed after filtering
 seqs_removed_tibble <- 
     hits %>%
-    # remove sequences that don't meet all criteria
+    # keep only sequences with failed hits
     dplyr::filter(
-        evalue_i > evalue_threshold_trimmed |
-        score < score_threshold_trimmed | 
-        # domain_total > domain_threshold |
-        acc < acc_threshold |
-        ( hmm_start_gap > terminalgap_threshold_trimmed & env_start_gap > terminalgap_threshold_trimmed ) | # both need to be fulfilled 
-        ( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed ) 
+       nuc_len < amplicon_min_length |
+       phmm_cov < amplicon_min_cov
     ) %>%
     # which filters were failed
     dplyr::mutate(
-        fail_max_evalue =       evalue_i > evalue_threshold_trimmed,
-        fail_min_score =        score < score_threshold_trimmed,
-        # fail_max_hits =         domain_total > domain_threshold ,
-        fail_min_acc =          acc < acc_threshold ,
-        fail_max_gap_start =    ( hmm_start_gap > terminalgap_threshold_trimmed & env_start_gap > terminalgap_threshold_trimmed ),
-        fail_max_gap_end =      ( hmm_end_gap > terminalgap_threshold_trimmed & env_end_gap > terminalgap_threshold_trimmed )
+        fail_min_length = nuc_len < amplicon_min_length,
+        fail_min_cov = phmm_cov < amplicon_min_cov
     ) %>%
-    dplyr::mutate(removal_type = "excluded_hit", .after = hmm_end_gap) %>%
+    dplyr::mutate(removal_type = "excluded_hit", .after = phmm_cov) %>%
     # add names of sequences without a hit
     tibble::add_row(
         target_name = names(seqs_nohit)[!names(seqs_nohit) %in% .$target_name], 
         removal_type = "no_hit",
     ) %>%
-    # add sequences removed for being too short
-    tibble::add_row(
-        target_name = names(seqs_subset[seqs_subset %>% lengths() %>% unname() < min_length_trimmed]),
-        removal_type = "length",
-        fail_max_evalue =       FALSE,
-        fail_min_score =        FALSE,
-        # fail_max_hits =         FALSE,
-        fail_min_acc =          FALSE,
-        fail_max_gap_start =    FALSE,
-        fail_max_gap_end =      FALSE,
-    ) %>%
     dplyr::select(-old_name) # remove old_name as redundant with target_name
 
-readr::write_csv(seqs_removed_tibble, file = "removed_trimmed.csv")
+readr::write_csv(seqs_removed_tibble, file = "removed_amplicon.csv")
 
 ### outputs
 
@@ -362,28 +333,28 @@ readr::write_csv(seqs_removed_tibble, file = "removed_trimmed.csv")
 seqs_removed <- seqs[names(seqs) %in% seqs_removed_tibble$target_name]
 
 # check all sequences are either retained or removed
-if ( length(seqs_long) + nrow(seqs_removed_tibble) != length(seqs) ){
+if ( length(seqs_subset) + nrow(seqs_removed_tibble) != length(seqs) ){
     stop("ERROR: Sum of retained and removed sequences does not equal the number of input sequences")
 }
 
 # write fasta of subsetted sequences
-if ( !is.null(seqs_long) && length(seqs_long) > 0 ){
+if ( !is.null(seqs_subset) && length(seqs_subset) > 0 ){
     write_fasta(
-        seqs_long, 
-        file = paste0("retained_trimmed.fasta"), 
+        seqs_subset, 
+        file = paste0("retained_amplicon.fasta"), 
         compress = FALSE
         )
 } else {
-    file.create(paste0("retained_trimmed.fasta"))
+    file.create(paste0("retained_amplicon.fasta"))
 }
 
 # write fasta of excluded (filtered-out) sequences
 if ( !is.null(seqs_removed) && length(seqs_removed) > 0 ){
     write_fasta(
         seqs_removed, 
-        file = paste0("removed_trimmed.fasta"), 
+        file = paste0("removed_amplicon.fasta"), 
         compress = FALSE
         )
 } else {
-    file.create(paste0("removed_trimmed.fasta"))
+    file.create(paste0("removed_amplicon.fasta"))
 }

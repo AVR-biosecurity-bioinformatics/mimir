@@ -1,11 +1,11 @@
-process HMMSEARCH_TRIMMED {
-    def module_name = "hmmsearch_trimmed"
+process HMMSEARCH_AMPLICON {
+    def module_name = "hmmsearch_amplicon"
     // tag "-"
     container "staphb/hmmer:3.4"
 
     input:
     tuple path('retained_full.fasta'), path('translations.fasta')
-    path('trimmed.hmm')
+    path('amplicon.hmm')
 
     output: 
     tuple path('retained_full.fasta'), path("hmmer_domtblout.txt"),        emit: hmmer_output
@@ -24,7 +24,7 @@ process HMMSEARCH_TRIMMED {
         ${projectDir} \
         ${task.cpus} \
         translations.fasta \
-        trimmed.hmm
+        amplicon.hmm
     
     """
 }

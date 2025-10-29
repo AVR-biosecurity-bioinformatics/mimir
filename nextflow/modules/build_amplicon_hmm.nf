@@ -1,5 +1,5 @@
-process BUILD_TRIMMED_HMM {
-    def module_name = "build_trimmed_hmm"
+process BUILD_AMPLICON_HMM {
+    def module_name = "build_amplicon_hmm"
     // tag "-"
     container "staphb/hmmer:3.4"
 
@@ -7,7 +7,7 @@ process BUILD_TRIMMED_HMM {
     path('seed.fasta')
 
     output: 
-    path("trimmed.hmm"), emit: hmm 
+    path("amplicon.hmm"), emit: hmm 
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -18,7 +18,7 @@ process BUILD_TRIMMED_HMM {
     #!/usr/bin/env bash
 
     ### run module code
-    hmmbuild trimmed.hmm seed.fasta
+    hmmbuild amplicon.hmm seed.fasta
     
     """
 }

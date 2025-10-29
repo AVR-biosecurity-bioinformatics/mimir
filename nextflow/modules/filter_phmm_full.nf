@@ -5,11 +5,13 @@ process FILTER_PHMM_FULL {
 
     input:
     tuple path(fasta_file), path(translations), path(hmmer_output, name: 'hmmer_domtblout.txt')
-    val(hmm_max_evalue)
-    val(hmm_min_score)
-    val(hmm_max_hits)
-    val(hmm_min_acc)
-    val(hmm_max_gap)
+    val(phmm_max_evalue)
+    val(phmm_min_score)
+    val(phmm_max_hits)
+    val(phmm_min_acc)
+    val(phmm_max_gap)
+    val(phmm_min_length)
+    val(phmm_min_cov)
 
     output: 
     tuple path("retained.fasta"), path("translations_retained.fasta"),  emit: retained 
@@ -31,11 +33,13 @@ process FILTER_PHMM_FULL {
     fasta_file =            "${fasta_file}"
     translations =          "${translations}" 
     hmmer_output =          "${hmmer_output}"
-    hmm_max_evalue =        "${hmm_max_evalue}"
-    hmm_min_score =         "${hmm_min_score}"
-    hmm_max_hits =          "${hmm_max_hits}"
-    hmm_min_acc =           "${hmm_min_acc}"
-    hmm_max_gap =           "${hmm_max_gap}"
+    phmm_max_evalue =       "${phmm_max_evalue}"
+    phmm_min_score =        "${phmm_min_score}"
+    phmm_max_hits =         "${phmm_max_hits}"
+    phmm_min_acc =          "${phmm_min_acc}"
+    phmm_max_gap =          "${phmm_max_gap}"
+    phmm_min_length =       "${phmm_min_length}"
+    phmm_min_cov =          "${phmm_min_cov}"
        
     ## global variables
     projectDir = "$projectDir"
