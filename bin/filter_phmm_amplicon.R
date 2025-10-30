@@ -255,10 +255,10 @@ hits <-
         )
     } } %>%
     dplyr::mutate(
-      # coverage of record amplicon vs idealised amplicon
-      amp_cov = nuc_len / amplicon_length,
-      # coverage of record amplicon hit vs PHMM 
-      phmm_cov = (hmm_to - hmm_from + 1) / query_len
+        # coverage of record amplicon vs idealised amplicon
+        amp_cov = nuc_len / amplicon_length,
+        # coverage of record amplicon hit vs PHMM 
+        phmm_cov = (hmm_to - hmm_from + 1) / query_len
     )
 
 # check hits are all in sequence file
@@ -267,13 +267,24 @@ if(!all(hits$target_name %in% names(seqs))){
 }
 
 # filter hits based on various thresholds
-hits_retained <- 
-    hits %>%
-    # remove sequences that don't meet all criteria
-    dplyr::filter(
-       nuc_len >= amplicon_min_length &
-       phmm_cov >= amplicon_min_cov
-    ) 
+if ( trim_to_amplicon ){
+    # filter by length if trimming
+    hits_retained <- 
+        hits %>%
+        # remove sequences that don't meet all criteria
+        dplyr::filter(
+            nuc_len >= amplicon_min_length &
+            phmm_cov >= amplicon_min_cov
+        ) 
+} else {
+    # only filter by coverage if not trimming
+    hits_retained <- 
+        hits %>%
+        # remove sequences that don't meet all criteria
+        dplyr::filter(
+            phmm_cov >= amplicon_min_cov
+        ) 
+}
 
 # subset to retained sequences
 if (any(names(seqs) %in% hits_retained$target_name)){
@@ -283,47 +294,73 @@ if (any(names(seqs) %in% hits_retained$target_name)){
 }
 
 hit_locations <- 
-        hits_retained %>%
-        # reorder tibble to match order of combined DNAbin
-        dplyr::arrange(
-            factor(target_name, levels = names(seqs_combined))
-        ) 
+    hits_retained %>%
+    # reorder tibble to match order of combined DNAbin
+    dplyr::arrange(
+        factor(target_name, levels = names(seqs_combined))
+    )
 
-# trim nucleotide seqs based on location of hits for each sequence
-seqs_subset <-
-    seqs_combined %>%
-    DNAbin2DNAstringset(.) %>%
-    XVector::subseq(., start = hit_locations$nuc_from, end = hit_locations$nuc_to) %>%
-    ape::as.DNAbin()
-
-# check calculated subset lengths are the same as the ones done
-if (!all(unname(lengths(seqs_subset)) == hit_locations$nuc_len)){
-    stop("Actual subset sequence lengths are not the same as calculated subset sequence lengths")
+# trim if trim_to_amplicon == TRUE
+if ( trim_to_amplicon ){
+    # trim nucleotide seqs based on location of hits for each sequence
+    seqs_subset <-
+        seqs_combined %>%
+        DNAbin2DNAstringset(.) %>%
+        XVector::subseq(., start = hit_locations$nuc_from, end = hit_locations$nuc_to) %>%
+        ape::as.DNAbin()
+    
+    # check calculated subset lengths are the same as the ones done
+    if (!all(unname(lengths(seqs_subset)) == hit_locations$nuc_len)){
+        stop("Actual subset sequence lengths are not the same as calculated subset sequence lengths")
+    }
+} else {
+    seqs_subset <- seqs_combined
 }
 
 # seqs without a significant hit 
 seqs_nohit <- seqs[!names(seqs) %in% hits$target_name]
 
 # save data for hits that were removed after filtering
-seqs_removed_tibble <- 
-    hits %>%
-    # keep only sequences with failed hits
-    dplyr::filter(
-       nuc_len < amplicon_min_length |
-       phmm_cov < amplicon_min_cov
-    ) %>%
-    # which filters were failed
-    dplyr::mutate(
-        fail_min_length = nuc_len < amplicon_min_length,
-        fail_min_cov = phmm_cov < amplicon_min_cov
-    ) %>%
-    dplyr::mutate(removal_type = "excluded_hit", .after = phmm_cov) %>%
-    # add names of sequences without a hit
-    tibble::add_row(
-        target_name = names(seqs_nohit)[!names(seqs_nohit) %in% .$target_name], 
-        removal_type = "no_hit",
-    ) %>%
-    dplyr::select(-old_name) # remove old_name as redundant with target_name
+if ( trim_to_amplicon ){
+    seqs_removed_tibble <- 
+        hits %>%
+        # keep only sequences with failed hits
+        dplyr::filter(
+            nuc_len < amplicon_min_length |
+            phmm_cov < amplicon_min_cov
+        ) %>%
+        # which filters were failed
+        dplyr::mutate(
+            fail_min_length = nuc_len < amplicon_min_length,
+            fail_min_cov = phmm_cov < amplicon_min_cov
+        ) %>%
+        dplyr::mutate(removal_type = "excluded_hit", .after = phmm_cov) %>%
+        # add names of sequences without a hit
+        tibble::add_row(
+            target_name = names(seqs_nohit)[!names(seqs_nohit) %in% .$target_name], 
+            removal_type = "no_hit",
+        ) %>%
+        dplyr::select(-old_name) # remove old_name as redundant with target_name
+} else {
+    seqs_removed_tibble <- 
+        hits %>%
+        # keep only sequences with failed hits
+        dplyr::filter(
+            phmm_cov < amplicon_min_cov
+        ) %>%
+        # which filters were failed
+        dplyr::mutate(
+            fail_min_length = FALSE,
+            fail_min_cov = phmm_cov < amplicon_min_cov
+        ) %>%
+        dplyr::mutate(removal_type = "excluded_hit", .after = phmm_cov) %>%
+        # add names of sequences without a hit
+        tibble::add_row(
+            target_name = names(seqs_nohit)[!names(seqs_nohit) %in% .$target_name], 
+            removal_type = "no_hit",
+        ) %>%
+        dplyr::select(-old_name) # remove old_name as redundant with target_name
+}
 
 readr::write_csv(seqs_removed_tibble, file = "removed_amplicon.csv")
 
