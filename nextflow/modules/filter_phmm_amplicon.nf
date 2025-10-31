@@ -1,21 +1,20 @@
-process FILTER_PHMM_TRIMMED {
-    def module_name = "filter_phmm_trimmed"
+process FILTER_PHMM_AMPLICON {
+    def module_name = "filter_phmm_amplicon"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
     tuple path(fasta_file), path(hmmer_output, name: 'hmmer_domtblout.txt')
-    val(hmm_max_evalue)
-    val(hmm_min_score)
-    val(hmm_max_hits)
-    val(hmm_min_acc)
-    val(hmm_max_gap)
-    val(min_length_trimmed)
+    path(primer_info_file)
+    val(trim_to_amplicon)
+    val(amplicon_min_length)
+    val(amplicon_min_cov)
+    val(remove_primers)
 
     output: 
-    path("retained_trimmed.fasta"),                       emit: fasta  
-    path("removed_trimmed.fasta"),                        emit: removed_fasta
-    path("removed_trimmed.csv"),                          emit: removed_csv
+    path("retained_amplicon.fasta"),                       emit: fasta  
+    path("removed_amplicon.fasta"),                        emit: removed_fasta
+    path("removed_amplicon.csv"),                          emit: removed_csv
 
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
@@ -30,14 +29,13 @@ process FILTER_PHMM_TRIMMED {
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     fasta_file =            "${fasta_file}"
+    primer_info_file =      "${primer_info_file}"
     hmmer_output =          "${hmmer_output}"
-    hmm_max_evalue =        "${hmm_max_evalue}"
-    hmm_min_score =         "${hmm_min_score}"
-    hmm_max_hits =          "${hmm_max_hits}"
-    hmm_min_acc =           "${hmm_min_acc}"
-    hmm_max_gap =           "${hmm_max_gap}"
-    min_length_trimmed =    "${min_length_trimmed}"
-
+    trim_to_amplicon =      "${trim_to_amplicon}"
+    amplicon_min_length =   "${amplicon_min_length}"
+    amplicon_min_cov =      "${amplicon_min_cov}"
+    remove_primers =        "${remove_primers}"
+ 
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

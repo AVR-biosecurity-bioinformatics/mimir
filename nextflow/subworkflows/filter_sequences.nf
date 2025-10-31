@@ -10,13 +10,13 @@ include { COMBINE_CHUNKS                                             } from '../
 include { FILTER_AMBIGUOUS                                           } from '../modules/filter_ambiguous'
 include { FILTER_DUPLICATES                                          } from '../modules/filter_duplicates'
 include { FILTER_PHMM_FULL                                           } from '../modules/filter_phmm_full'
-include { FILTER_PHMM_TRIMMED                                        } from '../modules/filter_phmm_trimmed'
+include { FILTER_PHMM_AMPLICON                                       } from '../modules/filter_phmm_amplicon'
 include { FILTER_REDUNDANT                                           } from '../modules/filter_redundant'
 include { FILTER_SEQ_OUTLIERS                                        } from '../modules/filter_seq_outliers'
 include { FILTER_TAX_OUTLIERS                                        } from '../modules/filter_tax_outliers'
 include { FILTER_UNCLASSIFIED                                        } from '../modules/filter_unclassified'
 include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
-include { HMMSEARCH_TRIMMED                                          } from '../modules/hmmsearch_trimmed'
+include { HMMSEARCH_AMPLICON                                         } from '../modules/hmmsearch_amplicon'
 include { MERGE_SPLITS as MERGE_SPLITS_SPECIES                       } from '../modules/merge_splits'
 include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
 include { SORT_BY_LINEAGE                                            } from '../modules/sort_by_lineage'
@@ -34,7 +34,8 @@ workflow FILTER_SEQUENCES {
     ch_marker_type
     ch_gencodes
     ch_full_phmm
-    ch_trimmed_phmm
+    ch_amplicon_phmm
+    ch_primer_info
 
     main:
       
@@ -99,11 +100,13 @@ workflow FILTER_SEQUENCES {
     //// filter sequences by HMMSEARCH output
     FILTER_PHMM_FULL (
         HMMSEARCH_FULL.out.hmmer_output,
-        params.hmm_max_evalue,
-        params.hmm_min_score,
-        params.hmm_max_hits,
-        params.hmm_min_acc,
-        params.hmm_max_gap
+        params.phmm_max_evalue,
+        params.phmm_min_score,
+        params.phmm_max_hits,
+        params.phmm_min_acc,
+        params.phmm_max_gap,
+        params.phmm_min_length,
+        params.phmm_min_cov
     )
 
     //// combine and save intermediate file 
@@ -148,30 +151,29 @@ workflow FILTER_SEQUENCES {
         .set { ch_fates_filter_phmm_full }
 
 
-    //// trim further to primer region if required
-    if ( params.trim_to_primers ){
+    //// trim and/or filter based on amplicon PHMM
+    if ( ch_amplicon_phmm ){
         //// do a second round of hmm searching using trimmed PHMM
-        HMMSEARCH_TRIMMED (
+        HMMSEARCH_AMPLICON (
             FILTER_PHMM_FULL.out.retained,
-            ch_trimmed_phmm
+            ch_amplicon_phmm
         )
 
-        //// trim to trimmed HMM region
-        FILTER_PHMM_TRIMMED (
-            HMMSEARCH_TRIMMED.out.hmmer_output,
-            params.hmm_max_evalue,
-            params.hmm_min_score,
-            params.hmm_max_hits,
-            params.hmm_min_acc,
-            params.hmm_max_gap,
-            params.min_length_trimmed
+        //// apply HMMER hits to nucleotide sequences
+        FILTER_PHMM_AMPLICON (
+            HMMSEARCH_AMPLICON.out.hmmer_output,
+            ch_primer_info.first(),
+            params.trim_to_amplicon,
+            params.amplicon_min_length,
+            params.amplicon_min_cov,
+            params.remove_primers
         )
 
         //// combine and save intermediate file 
         if ( params.save_intermediate ) {
-            FILTER_PHMM_TRIMMED.out.fasta
+            FILTER_PHMM_AMPLICON.out.fasta
                 .collectFile ( 
-                    name: "filter_phmm_trimmed.fasta",
+                    name: "filter_phmm_amplicon.fasta",
                     storeDir: "./output/results",
                     cache: 'lenient'
                 )
@@ -179,9 +181,9 @@ workflow FILTER_SEQUENCES {
 
         //// combine and save excluded sequences
         if ( params.save_intermediate ) {
-            FILTER_PHMM_TRIMMED.out.removed_fasta
+            FILTER_PHMM_AMPLICON.out.removed_fasta
                 .collectFile ( 
-                    name: "filter_phmm_trimmed.removed.fasta",
+                    name: "filter_phmm_amplicon.removed.fasta",
                     storeDir: "./output/results",
                     cache: 'lenient'
                 )
@@ -189,9 +191,9 @@ workflow FILTER_SEQUENCES {
 
         //// combine and save excluded sequence table
         if ( params.save_intermediate ) {
-            FILTER_PHMM_TRIMMED.out.removed_csv
+            FILTER_PHMM_AMPLICON.out.removed_csv
                 .collectFile ( 
-                    name: "filter_phmm_trimmed.removed.csv",
+                    name: "filter_phmm_amplicon.removed.csv",
                     storeDir: "./output/results",
                     cache: 'lenient',
                     keepHeader: true, 
@@ -200,24 +202,24 @@ workflow FILTER_SEQUENCES {
         }
 
         //// count number of sequences passing trimming with PHMM (above min length)
-        ch_count_filter_phmm_trimmed = FILTER_PHMM_TRIMMED.out.fasta.countFasta().combine(["filter_phmm_trimmed"]) 
+        ch_count_filter_phmm_amplicon = FILTER_PHMM_AMPLICON.out.fasta.countFasta().combine(["filter_phmm_amplicon"]) 
 
         //// sequence names that failed filter
-        FILTER_PHMM_TRIMMED.out.removed_fasta
-            .collectFile ( name: 'filter_phmm_trimmed.fasta', newLine: true, cache: false )
-            .set { ch_fates_filter_phmm_trimmed }
+        FILTER_PHMM_AMPLICON.out.removed_fasta
+            .collectFile ( name: 'filter_phmm_amplicon.fasta', newLine: true, cache: false )
+            .set { ch_fates_filter_phmm_amplicon }
 
         //// create output channel
-        ch_hmm_output = FILTER_PHMM_TRIMMED.out.fasta 
+        ch_hmm_output = FILTER_PHMM_AMPLICON.out.fasta 
             .filter { it.size() > 0 }
             .collect ()
 
     } else {
         //// null count channel
-        ch_count_filter_phmm_trimmed = Channel.of(["NA", "filter_phmm_trimmed"])
+        ch_count_filter_phmm_amplicon = Channel.of(["NA", "filter_phmm_amplicon"])
 
         //// empty fate channek
-        ch_fates_filter_phmm_trimmed = Channel.empty()
+        ch_fates_filter_phmm_amplicon = Channel.empty()
 
         //// create output channel
         ch_hmm_output = FILTER_PHMM_FULL.out.retained
@@ -465,7 +467,7 @@ workflow FILTER_SEQUENCES {
     Channel.empty()
         .concat ( ch_fates_filter_unclassified )
         .concat ( ch_fates_filter_phmm_full )
-        .concat ( ch_fates_filter_phmm_trimmed )
+        .concat ( ch_fates_filter_phmm_amplicon )
         .concat ( ch_fates_filter_duplicates )
         .concat ( ch_fates_filter_ambiguous )
         .concat ( ch_fates_filter_tax_outliers )
@@ -482,7 +484,7 @@ workflow FILTER_SEQUENCES {
     ch_fates
     ch_count_filter_unclassified
     ch_count_filter_phmm_full
-    ch_count_filter_phmm_trimmed
+    ch_count_filter_phmm_amplicon
     ch_count_filter_duplicates
     ch_count_filter_ambiguous
     ch_count_filter_tax_outliers

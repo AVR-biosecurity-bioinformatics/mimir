@@ -5,7 +5,7 @@ Parse pipeline inputs and fetch taxonomic and marker-related information
 
 //// modules to import
 include { ALIGN_PRIMERS_TO_SEED                                      } from '../modules/align_primers_to_seed'
-include { BUILD_TRIMMED_HMM                                          } from '../modules/build_trimmed_hmm'
+include { BUILD_AMPLICON_HMM                                         } from '../modules/build_amplicon_hmm'
 include { GET_NCBI_TAXONOMY                                          } from '../modules/get_ncbi_taxonomy'
 include { MAKE_GENCODES                                              } from '../modules/make_gencodes'
 include { MAKE_LINEAGEPARENTS                                        } from '../modules/make_lineageparents'
@@ -123,7 +123,7 @@ workflow PARSE_INPUTS {
         .set { ch_target_gencodes }
 
     //// processes relevant to trimming sequences
-    if ( params.trim_to_primers ) {
+    if ( params.primer_fwd && params.primer_rev ) {
         
         //// get disambiguated and translated primer sequences
         PROCESS_PRIMERS (
@@ -146,18 +146,24 @@ workflow PARSE_INPUTS {
 
         //// trim seed alignment to primer region
         TRIM_HMM_SEED (
-            ALIGN_PRIMERS_TO_SEED.out.fasta
+            ALIGN_PRIMERS_TO_SEED.out.fasta,
+            PROCESS_PRIMERS.out.primers,
+            params.pad_fwd,
+            params.pad_rev
         )
+        
+        ch_primer_info = TRIM_HMM_SEED.out.primer_info
 
         //// build trimmed PHMM from trimmed seed alignment
-        BUILD_TRIMMED_HMM (
+        BUILD_AMPLICON_HMM (
             TRIM_HMM_SEED.out.fasta
         )
 
-        ch_trimmed_phmm = BUILD_TRIMMED_HMM.out.hmm.first()
+        ch_amplicon_phmm = BUILD_AMPLICON_HMM.out.hmm.first()
 
     } else {
-        ch_trimmed_phmm = Channel.empty()
+        ch_amplicon_phmm = Channel.empty()
+        ch_primer_info = Channel.empty()
     }
 
     emit:
@@ -173,6 +179,7 @@ workflow PARSE_INPUTS {
     ch_synonyms                     = MAKE_SYNONYMS.out.synonyms
     ch_gencodes                     = MAKE_GENCODES.out.gencodes
     ch_full_phmm                    = PARSE_MARKER.out.phmm
-    ch_trimmed_phmm
+    ch_amplicon_phmm
+    ch_primer_info
 
 }

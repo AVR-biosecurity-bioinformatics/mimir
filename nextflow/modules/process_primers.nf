@@ -10,7 +10,8 @@ process PROCESS_PRIMERS {
     val(marker_type)
 
     output: 
-    path("primers.fasta"),                                  emit: nuc_fasta
+    path("primers_disambiguated.fasta"),                    emit: nuc_fasta
+    path("primers_original.fasta"),                         emit: primers
     path("translated.fasta"),                               emit: translated
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
@@ -28,7 +29,7 @@ process PROCESS_PRIMERS {
     primer_rev =                    "${primer_rev}"
     gencodes_file =                 "${gencodes_file}"
     marker_type =                   "${marker_type}"
-
+    
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

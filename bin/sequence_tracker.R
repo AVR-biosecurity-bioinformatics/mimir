@@ -73,7 +73,7 @@ order_sources <- c(
 cols_fates <- c(
     filter_unclassified = 0,
     filter_phmm_full = 0,
-    filter_phmm_trimmed = 0, 
+    filter_phmm_amplicon = 0, 
     filter_duplicates = 0, 
     filter_ambiguous = 0, 
     filter_tax_outliers = 0, 
@@ -87,7 +87,7 @@ cols_fates <- c(
 order_fates <- c(
     "filter_unclassified",
     "filter_phmm_full",
-    "filter_phmm_trimmed",
+    "filter_phmm_amplicon",
     "filter_duplicates",
     "filter_ambiguous",
     "filter_tax_outliers",

@@ -46,11 +46,13 @@ nf_vars <- c(
     "fasta_file",
     "translations",
     "hmmer_output",
-    "hmm_max_evalue", 
-    "hmm_min_score", 
-    "hmm_max_hits",   
-    "hmm_min_acc",   
-    "hmm_max_gap"    
+    "phmm_max_evalue", 
+    "phmm_min_score", 
+    "phmm_max_hits",   
+    "phmm_min_acc",   
+    "phmm_max_gap",    
+    "phmm_min_length",    
+    "phmm_min_cov"    
 )
 lapply(nf_vars, nf_var_check)
 
@@ -65,16 +67,18 @@ translations <- ape::read.FASTA(translations, type = "AA")
 domtblout <- readr::read_lines(hmmer_output, lazy=FALSE, progress=FALSE) 
 
 # filtering parameters
-evalue_threshold <- hmm_max_evalue %>% as.numeric()
-score_threshold <- hmm_min_score %>% as.numeric()
-domain_threshold <- hmm_max_hits %>% as.integer() # max allowed domains (1 is safe)
-acc_threshold <- hmm_min_acc %>% as.numeric()
-terminalgap_threshold <- hmm_max_gap %>% as.integer() # terminal gap is the distance between the beginning or end of the envelope/HMM and the min/max of the target or HMM
+evalue_threshold <- phmm_max_evalue %>% as.numeric()
+score_threshold <- phmm_min_score %>% as.numeric()
+domain_threshold <- phmm_max_hits %>% as.integer() # max allowed domains (1 is safe)
+acc_threshold <- phmm_min_acc %>% as.numeric()
+terminalgap_threshold <- phmm_max_gap %>% as.integer() # terminal gap is the distance between the beginning or end of the envelope/HMM and the min/max of the target or HMM
 ## NOTE: terminal gaps above the threshold on the same side (start or end) for both the envelope and HMM is expected in the case of frameshifts
 ## More extensive frameshift detection could be done with alignments to other sequences and removing those with gaps not in multiples of three
+phmm_min_length <- phmm_min_length %>% as.integer()
+phmm_min_cov <- phmm_min_cov %>% as.numeric()
 
 ### run code
-
+#stop()
 ## import and parse HMMER output
 # create column specifications
 col_types <- 
@@ -177,7 +181,9 @@ hits <-
         env_start_gap = env_from - 1,
         env_end_gap = target_len - env_to,
         hmm_start_gap = hmm_from - 1,
-        hmm_end_gap = query_len - hmm_to
+        hmm_end_gap = query_len - hmm_to,
+        # calculate coverage of PHMM
+        hmm_coverage = (hmm_to - hmm_from + 1)/query_len
     ) %>%
     # work out if any stop codons lie within the hit envelope
     tidyr::separate_longer_delim(
@@ -206,9 +212,27 @@ if(!all(hits$target_name %in% names(seqs))){
     stop("One or more sequence names in HMMER output table do not match names in input .fasta file")
 }
 
-# filter hits based on various thresholds
+# get sequence lengths in bases
+seq_lengths <- 
+    lengths(seqs) %>% 
+    tibble::enframe(name = "target_name", value = "bases")
+
+# convert and filter hits based on various thresholds
 hits_retained <- 
     hits %>%
+    # join sequence nucleotide lengths
+    dplyr::left_join(., seq_lengths, by = "target_name") %>%
+    ## calculate positions of hits on nucleotide sequence
+    # convert envelope coordinates to nucleotide coordinates
+    dplyr::mutate(
+        # pad envelope by 1 aa if possible
+        penv_from = base::pmax(1, env_from - 1),
+        penv_to = base::pmin(target_len, env_to + 1),
+        # get nucleotide coordinates from padded envelope
+        nuc_from =  (penv_from * 3) - (3 - abs(frame)),
+        nuc_to =    (penv_to * 3) + (abs(frame) - 1),
+        nuc_len =   (nuc_to - nuc_from) + 1
+    ) %>%
     # remove sequences that don't meet all criteria
     dplyr::filter(
         evalue_i <= evalue_threshold & 
@@ -217,7 +241,9 @@ hits_retained <-
         acc >= acc_threshold &
         stop_codon_hit == FALSE &
         !( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ) & # both need to be fulfilled 
-        !( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ) 
+        !( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ) &
+        hmm_coverage >= phmm_min_cov &
+        nuc_len >= phmm_min_length
     )
 
 if( nrow(hits_retained) > 0){
@@ -236,7 +262,7 @@ if( nrow(hits_retained) > 0){
     if (any(names(seqs) %in% hits_fwd$target_name)){
         seqs_fwd <- seqs[names(seqs) %in% hits_fwd$target_name]
     } else {
-        seqs_fwd <- list() %>% as.DNAbin()
+        seqs_fwd <- list() %>% ape::as.DNAbin()
     }
 
     # rev seqs
@@ -256,44 +282,26 @@ if( nrow(hits_retained) > 0){
     seqs_combined <- 
         concat_DNAbin(seqs_fwd, seqs_revcomp)
 
-    # get sequence lengths in bases
-    seq_lengths <- 
-        lengths(seqs_combined) %>% 
-        tibble::enframe(name = "target_name", value = "bases")
-
-    # calculate positions of hits on nucleotide sequence
     hit_locations <- 
         hits_retained %>%
         # reorder tibble to match order of combined DNAbin
         dplyr::arrange(
             factor(target_name, levels = names(seqs_combined))
-        ) %>%
-        # join sequence nucleotide lengths
-        dplyr::left_join(., seq_lengths, by = "target_name") %>%
-        # convert envelope coordinates to nucleotide coordinates
-        dplyr::mutate(
-            nuc_from =  (env_from * 3) - (3 - abs(frame)),  
-            nuc_to =    (env_to * 3) + (abs(frame) - 1),
-            nuc_len =   nuc_to - nuc_from + 1,
-            coverage =  nuc_len / bases,
-            pad_from =  base::pmax(1,nuc_from-2), # pad hit location by up to 2 bases 5'
-            pad_to =    base::pmin(bases,nuc_to+2), # pad hit location by up to 2 bases 3'
-            pad_len =   pad_to - pad_from + 1
         ) 
-    
-    # subset nucleotide seqs based on location of hits for each sequence
+        
+    # subset nucleotide seqs based just on padded envelope
     seqs_subset <-
         seqs_combined %>%
         DNAbin2DNAstringset(.) %>%
-        XVector::subseq(., start = hit_locations$pad_from, end = hit_locations$pad_to) %>%
+        XVector::subseq(., start = hit_locations$nuc_from, end = hit_locations$nuc_to) %>%
         ape::as.DNAbin()
 
     # check calculated subset lengths are the same as the ones done
-    if (!all(unname(lengths(seqs_subset)) == hit_locations$pad_len)){
-        stop("Actual subset sequence lengths are not the same as calculated subset sequence lengths")
+    if (!all(unname(lengths(seqs_subset)) == hit_locations$nuc_len)){
+        stop("Subset sequence lengths are not the same as calculated subset sequence lengths")
     }
 
-    ## subset translations based on location of envelope for each sequence (for further trimming with trimmed HMM)
+    ## subset translations based on location of padded envelope for each sequence (for further trimming with trimmed HMM)
 
     # remove translations not present in the subset sequences
     translations_retained <- translations[names(translations) %in% hit_locations$old_name]
@@ -301,14 +309,9 @@ if( nrow(hits_retained) > 0){
     # get order of translations
     translations_retained_names <- names(translations_retained)
 
-    # get padded envelope locations
+    # get envelope locations
     env_locations <- 
         hit_locations %>% 
-        # pad envelope 1 residue either side
-        dplyr::mutate(
-            env_from_pad = base::pmax(1, env_from - 1),
-            env_to_pad = base::pmin(target_len, env_to + 1)
-        ) %>%
         # force order of tibble to be the same as the AAbin object
         dplyr::mutate( old_name = forcats::fct_relevel(old_name, translations_retained_names) ) %>% 
         dplyr::arrange(old_name)
@@ -323,7 +326,7 @@ if( nrow(hits_retained) > 0){
         unlist %>%
         Biostrings::AAStringSet() %>%
         # subset
-        XVector::subseq(., start = env_locations$env_from_pad, end = env_locations$env_to_pad) %>%
+        XVector::subseq(., start = env_locations$penv_from, end = env_locations$penv_to) %>%
         ape::as.AAbin()
 
     ##
@@ -333,7 +336,18 @@ if( nrow(hits_retained) > 0){
     # save data for hits that were removed after filtering
     seqs_removed_tibble <- 
         hits %>%
-        # remove sequences that don't meet all criteria
+        # join sequence nucleotide lengths
+        dplyr::left_join(., seq_lengths, by = "target_name") %>%
+        dplyr::mutate(
+            # pad envelope by 1 aa if possible
+            penv_from = base::pmax(1, env_from - 1),
+            penv_to = base::pmin(target_len, env_to + 1),
+            # get nucleotide coordinates from padded envelope
+            nuc_from =  (penv_from * 3) - (3 - abs(frame)),
+            nuc_to =    (penv_to * 3) + (abs(frame) - 1),
+            nuc_len =   (nuc_to - nuc_from) + 1
+        ) %>%
+        # only keep sequences that don't meet all criteria
         dplyr::filter(
             evalue_i > evalue_threshold |
             score < score_threshold | 
@@ -341,7 +355,9 @@ if( nrow(hits_retained) > 0){
             acc < acc_threshold |
             stop_codon_hit == TRUE |
             ( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ) | # both need to be fulfilled 
-            ( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ) 
+            ( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ) |
+            hmm_coverage < phmm_min_cov |
+            nuc_len < phmm_min_length
         ) %>%
         # which filters were failed
         dplyr::mutate(
@@ -351,7 +367,9 @@ if( nrow(hits_retained) > 0){
             fail_min_acc =          acc < acc_threshold ,
             fail_max_gap_start =    ( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ),
             fail_max_gap_end =      ( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ),
-            fail_stop_codon =       stop_codon_hit == TRUE
+            fail_stop_codon =       stop_codon_hit == TRUE,
+            fail_min_length =       nuc_len < phmm_min_length,
+            fail_min_cov =          hmm_coverage < phmm_min_cov
         ) %>%
         dplyr::mutate(removal_type = "excluded_hit", .after = stop_codon_hit) %>%
         # add names of sequences without a hit
@@ -361,7 +379,7 @@ if( nrow(hits_retained) > 0){
         ) %>%
         dplyr::select(-old_name) # remove old_name as redundant with target_name
 
-    readr::write_csv(seqs_removed_tibble, file = "removed_full.csv")
+    readr::write_csv(seqs_removed_tibble, file = "removed.csv")
 
     ### outputs
 
@@ -371,26 +389,26 @@ if( nrow(hits_retained) > 0){
         stop("ERROR: Sum of retained and removed sequences does not equal the number of input sequences")
     }
 
-    # write fasta of subsetted sequences
+    # write fasta of subsetted sequences (no frame-retention)
     if ( !is.null(seqs_subset) && length(seqs_subset) > 0 ){
         write_fasta(
             seqs_subset, 
-            file = paste0("retained_full.fasta"), 
+            file = paste0("retained.fasta"), 
             compress = FALSE
             )
     } else {
-        file.create(paste0("retained_full.fasta"))
+        file.create(paste0("retained.fasta"))
     }
 
     # write fasta of excluded (filtered-out) sequences
     if ( !is.null(seqs_nohit) && length(seqs_nohit) > 0 ){
         write_fasta(
             seqs_nohit, 
-            file = paste0("removed_full.fasta"), 
+            file = paste0("removed.fasta"), 
             compress = FALSE
             )
     } else {
-        file.create(paste0("removed_full.fasta"))
+        file.create(paste0("removed.fasta"))
     }
 
     # write trimmed translations
@@ -411,7 +429,18 @@ if( nrow(hits_retained) > 0){
     # save data for hits that were removed after filtering
     seqs_removed_tibble <- 
         hits %>%
-        # remove sequences that don't meet all criteria
+        # join sequence nucleotide lengths
+        dplyr::left_join(., seq_lengths, by = "target_name") %>%
+        dplyr::mutate(
+            # pad envelope by 1 aa if possible
+            penv_from = base::pmax(1, env_from - 1),
+            penv_to = base::pmin(target_len, env_to + 1),
+            # get nucleotide coordinates from padded envelope
+            nuc_from =  (penv_from * 3) - (3 - abs(frame)),
+            nuc_to =    (penv_to * 3) + (abs(frame) - 1),
+            nuc_len =   (nuc_to - nuc_from) + 1
+        ) %>%
+        # only keep sequences that don't meet all criteria
         dplyr::filter(
             evalue_i > evalue_threshold |
             score < score_threshold | 
@@ -419,7 +448,9 @@ if( nrow(hits_retained) > 0){
             acc < acc_threshold |
             stop_codon_hit == TRUE |
             ( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ) | # both need to be fulfilled 
-            ( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ) 
+            ( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ) |
+            hmm_coverage < phmm_min_cov |
+            nuc_len < phmm_min_length
         ) %>%
         # which filters were failed
         dplyr::mutate(
@@ -429,7 +460,9 @@ if( nrow(hits_retained) > 0){
             fail_min_acc =          acc < acc_threshold ,
             fail_max_gap_start =    ( hmm_start_gap > terminalgap_threshold & env_start_gap > terminalgap_threshold ),
             fail_max_gap_end =      ( hmm_end_gap > terminalgap_threshold & env_end_gap > terminalgap_threshold ),
-            fail_stop_codon =       stop_codon_hit == TRUE
+            fail_stop_codon =       stop_codon_hit == TRUE,
+            fail_min_length =       nuc_len < phmm_min_length,
+            fail_min_cov =          hmm_coverage < phmm_min_cov
         ) %>%
         dplyr::mutate(removal_type = "excluded_hit", .after = stop_codon_hit) %>%
         # add names of sequences without a hit
@@ -439,15 +472,15 @@ if( nrow(hits_retained) > 0){
         ) %>%
         dplyr::select(-old_name) # remove old_name as redundant with target_name
 
-    readr::write_csv(seqs_removed_tibble, file = "removed_full.csv")
+    readr::write_csv(seqs_removed_tibble, file = "removed.csv")
 
     write_fasta(
         seqs_nohit, 
-        file = paste0("removed_full.fasta"), 
+        file = paste0("removed.fasta"), 
         compress = FALSE
     )
 
-    file.create(paste0("retained_full.fasta"))
+    file.create(paste0("retained.fasta"))
     file.create(paste0("translations_retained.fasta"))
 
 

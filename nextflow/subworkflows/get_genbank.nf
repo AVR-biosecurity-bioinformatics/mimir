@@ -29,8 +29,8 @@ workflow GET_GENBANK {
     QUERY_GENBANK (
         ch_taxon_idrank,
         ch_genbank_query,
-        params.min_length,
-        params.max_length,
+        params.min_length_input,
+        params.max_length_input,
         params.use_mito
     )
 

@@ -344,7 +344,8 @@ workflow MIMIR {
         PARSE_INPUTS.out.ch_marker_type,
         PARSE_INPUTS.out.ch_gencodes,
         PARSE_INPUTS.out.ch_full_phmm,
-        PARSE_INPUTS.out.ch_trimmed_phmm
+        PARSE_INPUTS.out.ch_amplicon_phmm,
+        PARSE_INPUTS.out.ch_primer_info
     )
 
 
@@ -394,7 +395,7 @@ workflow MIMIR {
         ch_count_input                                          .view{ "${it[1]}: ${it[0]}" }
         FILTER_SEQUENCES.out.ch_count_filter_unclassified       .view{ "${it[1]}: ${it[0]}" }
         FILTER_SEQUENCES.out.ch_count_filter_phmm_full          .view{ "${it[1]}: ${it[0]}" }
-        FILTER_SEQUENCES.out.ch_count_filter_phmm_trimmed       .view{ "${it[1]}: ${it[0]}" }
+        FILTER_SEQUENCES.out.ch_count_filter_phmm_amplicon      .view{ "${it[1]}: ${it[0]}" }
         FILTER_SEQUENCES.out.ch_count_filter_duplicates         .view{ "${it[1]}: ${it[0]}" }
         FILTER_SEQUENCES.out.ch_count_filter_ambiguous          .view{ "${it[1]}: ${it[0]}" }
         FILTER_SEQUENCES.out.ch_count_filter_tax_outliers       .view{ "${it[1]}: ${it[0]}" }
