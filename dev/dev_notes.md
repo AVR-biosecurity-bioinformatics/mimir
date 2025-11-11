@@ -288,6 +288,29 @@ nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89
 # get neuroptera sequences
 
 
+# test
+NXF_VER=23.05.0-edge nextflow run . \
+    -profile basc_slurm,debug \
+    --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 \
+    --target_taxon 7215 \
+    --target_rank genus \
+    --use_bold false \
+    --genbank_fetch_size 5000 \
+    --marker COI \
+    --add_root \
+    --remove_unclassified any_ranks \
+	--remove_ambiguous \
+    --placeholder_as_unclassified \
+    --trim_to_amplicon \
+    --remove_primers \
+    --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC \
+    --primer_rev GTRATWGCHCCDGCTARWACWGG \
+    --min_length_input 150 \
+    --max_length_input 3000 \
+    --amplicon_min_length 195 \
+    --amplicon_min_cov 0.95
+
+
 # testing importing filters
 nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Siphonaptera --target_rank order --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/tardi_parsed.fasta --bold_db_path ./input --marker COI --add_root  --trim_to_amplicon --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --amplicon_min_length 200 --min_length_input 200 --max_length_input 1000
 
