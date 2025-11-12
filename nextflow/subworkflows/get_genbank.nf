@@ -49,7 +49,8 @@ workflow GET_GENBANK {
     RENAME_GENBANK (
         FETCH_GENBANK.out.fetched_seqs,
         ch_rankedlineage_noname,
-        params.placeholder_as_unclassified
+        params.placeholder_as_unclassified,
+        params.digits_as_unclassified
     )
 
     

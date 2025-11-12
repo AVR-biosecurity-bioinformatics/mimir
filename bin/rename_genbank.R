@@ -46,7 +46,8 @@ nf_vars <- c(
     "gb_file",
     "accessions_file",
     "ncbi_rankedlineage_noname",
-    "placeholder_as_unclassified"
+    "placeholder_as_unclassified",
+    "digits_as_unclassified"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -67,7 +68,16 @@ if ( placeholder_as_unclassified == "true" ){
 } else if ( placeholder_as_unclassified == "false" ){
     placeholder_as_unclassified <- FALSE
 } else {
-    stop("'placeholder_as_unclassified' is not 'true' or 'false'")
+    stop("'placeholder_as_unclassified' must be 'true' or 'false'")
+}
+
+# parse params.digits_as_unclassified
+if ( digits_as_unclassified == "true" ){
+    digits_as_unclassified <- TRUE
+} else if ( digits_as_unclassified == "false" ){
+    digits_as_unclassified <- FALSE
+} else {
+    stop("'digits_as_unclassified' must be 'true' or 'false'")
 }
 
 ### run code
@@ -199,13 +209,29 @@ seq_names_header <-
             )
         } else { . }
     } %>%
+    # conditionally replace digit-containing taxon names with "Unclassified"
+    {
+        if (digits_as_unclassified) {
+            dplyr::mutate(
+                .,
+                dplyr::across(
+                    kingdom:species,
+                    ~dplyr::case_when(
+                        stringr::str_detect(., "\\d") ~ "Unclassified", # if any taxonomic rank has at least one digit, treated as unclassified
+                        .default = . 
+                    )
+                )
+                
+            )
+        } else { . }
+    } %>%
     dplyr::mutate(
-        dplyr::across(species:kingdom, .fns = ~replace(., is.na(.), "Unclassified")), # replace NA in ranks columns with "Unclassifed"
-        # dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "[ \\/:\\(\\)&,'#<>]", "_")), # replace problematic characters in lineage string with underscores
-        # dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., "_+", "_")), # replace two or more underscores in a row with a single underscore in lineage string
-        # dplyr::across(tidyselect::everything(), .fns = ~stringr::str_replace_all(., " ", "_")), # replace all spaces with underscores
-        dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., " +", " ")), # replace runs of spaces with a single space (to allow HMMER output parsing later)
-        taxid = stringr::str_replace(taxid, "^", "NCBI:") # reformat taxid to have NCBI-specific prefix
+        # replace NA in ranks columns with "Unclassifed"
+        dplyr::across(species:kingdom, .fns = ~replace(., is.na(.), "Unclassified")), 
+        # replace runs of spaces with a single space (to allow HMMER output parsing later)
+        dplyr::across(species:kingdom, .fns = ~stringr::str_replace_all(., " +", " ")), 
+        # reformat taxid to have NCBI-specific prefix
+        taxid = stringr::str_replace(taxid, "^", "NCBI:") 
     ) %>%
     dplyr::relocate( # reorder columns
         seqid,

@@ -294,7 +294,7 @@ NXF_VER=23.05.0-edge nextflow run . \
     --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 \
     --target_taxon 7215 \
     --target_rank genus \
-    --use_bold false \
+    --bold_db_path ./input \
     --genbank_fetch_size 5000 \
     --marker COI \
     --add_root \

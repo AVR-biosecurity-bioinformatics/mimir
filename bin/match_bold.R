@@ -46,7 +46,8 @@ nf_vars <- c(
     "seq_tibble",
     "ncbi_lineageparents",
     "ncbi_synonyms",
-    "placeholder_as_unclassified"
+    "placeholder_as_unclassified",
+    "digits_as_unclassified"
     )
 lapply(nf_vars, nf_var_check)
 
@@ -80,7 +81,16 @@ if ( placeholder_as_unclassified == "true" ){
 } else if ( placeholder_as_unclassified == "false" ){
     placeholder_as_unclassified <- FALSE
 } else {
-    stop("'placeholder_as_unclassified' is not 'true' or 'false'")
+    stop("'placeholder_as_unclassified' must be 'true' or 'false'")
+}
+
+# parse params.digits_as_unclassified
+if ( digits_as_unclassified == "true" ){
+    digits_as_unclassified <- TRUE
+} else if ( digits_as_unclassified == "false" ){
+    digits_as_unclassified <- FALSE
+} else {
+    stop("'digits_as_unclassified' must be 'true' or 'false'")
 }
 
 ### run code
@@ -307,6 +317,22 @@ bold_seqs_prefasta <-
                     stringr::str_detect(species, "\\.") ~ "Unclassified", # if species name has ".", treated as unclassified
                     .default = species 
                 )
+            )
+        } else { . }
+    } %>%
+    # conditionally replace digit-containing taxon names with "Unclassified"
+    {
+        if (digits_as_unclassified) {
+            dplyr::mutate(
+                .,
+                dplyr::across(
+                    kingdom:species,
+                    ~dplyr::case_when(
+                        stringr::str_detect(., "\\d") ~ "Unclassified", # if any taxonomic rank has at least one digit, treated as unclassified
+                        .default = . 
+                    )
+                )
+                
             )
         } else { . }
     } %>%

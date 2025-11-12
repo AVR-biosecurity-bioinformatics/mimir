@@ -7,6 +7,7 @@ process RENAME_GENBANK {
     tuple path(gb_file), path(accessions_file)
     path(ncbi_rankedlineage_noname)
     val(placeholder_as_unclassified)
+    val(digits_as_unclassified)
 
     output: 
     path("renamed.fasta"),                    emit: fasta
@@ -27,6 +28,7 @@ process RENAME_GENBANK {
     accessions_file =                   "${accessions_file}"
     ncbi_rankedlineage_noname =         "${ncbi_rankedlineage_noname}"
     placeholder_as_unclassified =       "${placeholder_as_unclassified}"
+    digits_as_unclassified =            "${digits_as_unclassified}"
 
     ### global variables
     projectDir = "$projectDir"

@@ -63,7 +63,8 @@ workflow GET_BOLD {
         EXTRACT_BOLD.out.tibble, 
         ch_lineageparents,
         ch_synonyms,
-        params.placeholder_as_unclassified
+        params.placeholder_as_unclassified,
+        params.digits_as_unclassified
     )
 
     //// refactor output channels so caching is valid 
