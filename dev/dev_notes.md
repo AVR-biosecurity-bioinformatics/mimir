@@ -296,6 +296,7 @@ NXF_VER=23.05.0-edge nextflow run . \
     --target_rank genus \
     --bold_db_path ./input \
     --genbank_fetch_size 5000 \
+    --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/tardi_parsed.fasta \
     --marker COI \
     --add_root \
     --remove_unclassified any_ranks \

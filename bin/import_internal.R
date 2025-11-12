@@ -80,6 +80,12 @@ seq_names_new <- stringr::str_replace(seq_names, "\\|(?!INTERNAL:|NCBI:)", "\\|I
 # update names
 names(seqs) <- seq_names_new
 
+# check all seqids are unique
+seqids <- names(seqs) %>% stringr::str_extract(., "^.*?(?=\\|)")
+if (any(duplicated(seqids))){
+    stop("One or more sequence IDs (before '|' character) in the `--internal_seqs` .fasta file are duplicated")
+}
+
 # remove sequences shorter than min_length_input and longer than max_length_input
 pass_length <- dplyr::between(lengths(seqs), min_length_input, max_length_input)
 
