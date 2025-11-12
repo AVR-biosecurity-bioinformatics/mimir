@@ -8,6 +8,7 @@ process MATCH_BOLD {
     path(ncbi_lineageparents)
     path(ncbi_synonyms)
     val(placeholder_as_unclassified)
+    val(digits_as_unclassified)
 
     output: 
     tuple path("bold_seqs.*.fasta"), path("matching_taxids.*.csv"), path("synchanges.*.csv"),    emit: matching_data
@@ -27,6 +28,7 @@ process MATCH_BOLD {
     ncbi_lineageparents =           "${ncbi_lineageparents}"
     ncbi_synonyms =                 "${ncbi_synonyms}"
     placeholder_as_unclassified =   "${placeholder_as_unclassified}"
+    digits_as_unclassified =        "${digits_as_unclassified}"
 
     ## global variables
     projectDir = "$projectDir"

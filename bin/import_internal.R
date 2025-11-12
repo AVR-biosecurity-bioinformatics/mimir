@@ -54,8 +54,12 @@ lapply(nf_vars, nf_var_check)
 min_length_input <- as.integer(min_length_input)
 max_length_input <- as.integer(max_length_input)
 
-# read in fasta file as DNAbin
-seqs <- ape::read.FASTA(fasta_file)
+# read in fasta file and remove gaps (aka. dealign)
+seqs <- 
+    ape::read.FASTA(fasta_file) %>%
+    DNAbin2DNAstringset(.) %>%
+    DECIPHER::RemoveGaps(.) %>%
+    ape::as.DNAbin(.)
 
 
 ### run code
@@ -75,6 +79,12 @@ seq_names_new <- stringr::str_replace(seq_names, "\\|(?!INTERNAL:|NCBI:)", "\\|I
 
 # update names
 names(seqs) <- seq_names_new
+
+# check all seqids are unique
+seqids <- names(seqs) %>% stringr::str_extract(., "^.*?(?=\\|)")
+if (any(duplicated(seqids))){
+    stop("One or more sequence IDs (before '|' character) in the `--internal_seqs` .fasta file are duplicated")
+}
 
 # remove sequences shorter than min_length_input and longer than max_length_input
 pass_length <- dplyr::between(lengths(seqs), min_length_input, max_length_input)
