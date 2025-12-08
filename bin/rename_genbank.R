@@ -251,5 +251,13 @@ seq_names_header <-
 # rename sequences with new header
 names(seqs) <- seq_names_header$header
 
+# remove sequences that are fully unclassified (ie. at every rank)
+seqs_pass <- seqs[!names(seqs) %>% stringr::str_detect(., ";Unclassified;Unclassified;Unclassified;Unclassified;Unclassified;Unclassified;Unclassified$")]
+
 # write .fasta to file
-write.FASTA(seqs, file = "renamed.fasta")
+if (length(seqs_pass) > 0){
+    write.FASTA(seqs_pass, file = "renamed.fasta")
+} else {
+    warning("All GenBank sequences were removed after removing fully unclassified sequences!")
+    file.create("renamed.fasta")
+}
