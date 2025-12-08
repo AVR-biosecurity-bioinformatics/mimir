@@ -53,7 +53,7 @@ lapply(nf_vars, nf_var_check)
 ### process variables 
 
 # read in seqs from file
-seqs <- ape::read.FASTA(fasta_file)
+seqs <- Biostrings::readDNAStringSet(fasta_file)
 
 # import ncbi_gencodes
 ncbi_gencodes <- readRDS(ncbi_gencodes)
@@ -88,7 +88,6 @@ ncbi_gencodes <-
 # deduplicate sequences
 seqs_dss <- 
     seqs %>% 
-    DNAbin2DNAstringset() %>%
     as.character(use.names = TRUE) %>%
     tibble::enframe() %>%
     dplyr::group_by(name, value) %>%
