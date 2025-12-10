@@ -17,10 +17,10 @@ include { FILTER_TAX_OUTLIERS                                        } from '../
 include { FILTER_UNCLASSIFIED                                        } from '../modules/filter_unclassified'
 include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
 include { HMMSEARCH_AMPLICON                                         } from '../modules/hmmsearch_amplicon'
-include { MERGE_SPLITS as MERGE_SPLITS_SPECIES                       } from '../modules/merge_splits'
+include { MERGE_SPLITS as MERGE_SPLITS_GENUS                         } from '../modules/merge_splits'
 include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
 include { SORT_BY_LINEAGE                                            } from '../modules/sort_by_lineage'
-include { SPLIT_BY_RANK as SPLIT_BY_SPECIES                          } from '../modules/split_by_rank'
+include { SPLIT_BY_RANK as SPLIT_BY_GENUS                            } from '../modules/split_by_rank'
 include { TRANSLATE_SEQUENCES                                        } from '../modules/translate_sequences'
 
 
@@ -246,7 +246,7 @@ workflow FILTER_SEQUENCES {
             .set { ch_fates_filter_ambiguous }
 
         FILTER_AMBIGUOUS.out.fasta
-            .set { ch_cluster_sequences_input }
+            .set { ch_sort_input }
 
     } else {
 
@@ -255,59 +255,31 @@ workflow FILTER_SEQUENCES {
         ch_fates_filter_ambiguous = Channel.empty()
 
         FILTER_DUPLICATES.out.fasta
-            .set { ch_cluster_sequences_input }
+            .set { ch_sort_input }
     }
 
-    //// cluster sequences into OTUs with mmseqs2
-    CLUSTER_SEQUENCES (
-        ch_cluster_sequences_input,
-        params.cluster_threshold
-    )
-
-    //// remove taxonomic outliers from sequence clusters
-    FILTER_TAX_OUTLIERS (
-        ch_cluster_sequences_input,
-        CLUSTER_SEQUENCES.out.tsv,
-        params.cluster_rank,
-        params.cluster_threshold,
-        params.cluster_confidence
-    )
-
-    //// combine and save intermediate file 
-    if ( params.save_intermediate ) {
-        FILTER_TAX_OUTLIERS.out.fasta
-            .collectFile ( 
-                name: "filter_tax_outliers.fasta",
-                storeDir: "./output/results"
-            )
-    }
-
-    //// count number of sequences passing taxonomic decontamination
-    ch_count_filter_tax_outliers = FILTER_TAX_OUTLIERS.out.fasta.countFasta().combine(["filter_tax_outliers"])
-
-    //// sequence names that failed filter
-    FILTER_TAX_OUTLIERS.out.removed
-        .collectFile ( name: 'filter_tax_outliers.fasta', newLine: true, cache: false )
-        .set { ch_fates_filter_tax_outliers }
+    
+    
+    //////////////////////////////////////////////// main changes start here
 
     //// sort .fasta by lineage string to reduce the number of files that need to be merged after splitting 
     SORT_BY_LINEAGE (
-        FILTER_TAX_OUTLIERS.out.fasta
+        ch_sort_input
     )
 
-    //// chunk input into SPLIT_BY_SPECIES to parallelise
+    //// chunk input into SPLIT_BY_GENUS to parallelise
     SORT_BY_LINEAGE.out.fasta
         .splitFasta ( by: params.split_rank_chunk, file: true )
-        .set { ch_split_species_input }
+        .set { ch_split_genus_input }
 
-    //// split .fasta by taxonomic lineage down to species level
-    SPLIT_BY_SPECIES (
-        ch_split_species_input,
-        "species"
+    //// split .fasta by taxonomic lineage down to genus level
+    SPLIT_BY_GENUS (
+        ch_split_genus_input,
+        "genus"
     )
 
     //// group files with the same name
-    SPLIT_BY_SPECIES.out.fasta
+    SPLIT_BY_GENUS.out.fasta
         .flatten()
         .map { file ->
             [ file.name , file ] }
@@ -319,24 +291,24 @@ workflow FILTER_SEQUENCES {
             merge: file_list.size() > 1
                 return file_list
         } 
-        .set { ch_split_species_output }
+        .set { ch_split_genus_output }
 
-    //// group merging files into groups of 1000 species for merging
-    ch_split_species_output.merge
+    //// group merging files into groups of 1000 genera for merging
+    ch_split_genus_output.merge
         .buffer ( size: 1000, remainder: true )
         .flatten ()
         .collect ()
-        .set { ch_merge_splits_species_input }
+        .set { ch_merge_splits_genus_input }
 
     //// merge files from the same species across the different chunks
-    MERGE_SPLITS_SPECIES (
-        ch_merge_splits_species_input
+    MERGE_SPLITS_GENUS (
+        ch_merge_splits_genus_input
     )
 
-    //// group species-level .fasta files into batches for aligning and pruning
-    ch_split_species_output.no_merge
+    //// group genus-level .fasta files into batches for redundancy filtering
+    ch_split_genus_output.no_merge
         .flatten ()
-        .mix ( MERGE_SPLITS_SPECIES.out.fasta.flatten() )
+        .mix ( MERGE_SPLITS_GENUS.out.fasta.flatten() )
         .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
         .flatten ()
         .buffer ( size: 500, remainder: true ) 
@@ -366,135 +338,174 @@ workflow FILTER_SEQUENCES {
         .collectFile ( name: 'filter_redundant.fasta', newLine: true, cache: false )
         .set { ch_fates_filter_redundant }
 
-    //// align species-level .fasta in batches
-    ALIGN_SPECIES (
-        FILTER_REDUNDANT.out.fasta
-    )
 
-    //// remove sequence outliers from species clusters
-    FILTER_SEQ_OUTLIERS (
-        ALIGN_SPECIES.out.aligned_fasta,
-        params.dist_threshold
-    )
 
-    //// combine and save intermediate file 
-    if ( params.save_intermediate ) {
-        FILTER_SEQ_OUTLIERS.out.retained_fasta
-            .flatten()
-            .collectFile ( 
-                name: "filter_seq_outliers.fasta",
-                storeDir: "./output/results"
-            )
-    }
 
-    //// count number of sequences passing taxonomic decontamination
-    ch_count_filter_seq_outliers = FILTER_SEQ_OUTLIERS.out.retained_fasta.flatten().countFasta().combine(["filter_seq_outliers"])
 
-    //// sequence names that failed filter
-    FILTER_SEQ_OUTLIERS.out.removed
-        .flatten()
-        .collectFile ( name: 'filter_seq_outliers.fasta', newLine: true, cache: false )
-        .set { ch_fates_filter_seq_outliers }
+    // //// cluster sequences into OTUs with mmseqs2
+    // CLUSTER_SEQUENCES (
+    //     ch_cluster_sequences_input,
+    //     params.cluster_threshold
+    // )
 
-    //// remove unclassified sequences
-    if ( params.remove_unclassified == "all_ranks" || params.remove_unclassified == "any_ranks" || params.remove_unclassified == "terminal" ) {
-        FILTER_UNCLASSIFIED (
-            FILTER_SEQ_OUTLIERS.out.retained_fasta,
-            params.remove_unclassified
-        )        
+    // //// remove taxonomic outliers from sequence clusters
+    // FILTER_TAX_OUTLIERS (
+    //     ch_cluster_sequences_input,
+    //     CLUSTER_SEQUENCES.out.tsv,
+    //     params.cluster_rank,
+    //     params.cluster_threshold,
+    //     params.cluster_confidence
+    // )
 
-        ch_count_filter_unclassified = FILTER_UNCLASSIFIED.out.fasta.countFasta().combine(["filter_unclassified"])
+    // //// combine and save intermediate file 
+    // if ( params.save_intermediate ) {
+    //     FILTER_TAX_OUTLIERS.out.fasta
+    //         .collectFile ( 
+    //             name: "filter_tax_outliers.fasta",
+    //             storeDir: "./output/results"
+    //         )
+    // }
 
-        //// combine and save intermediate file 
-        if ( params.save_intermediate ) {
-            FILTER_UNCLASSIFIED.out.fasta
-                .collectFile ( 
-                    name: "filter_unclassified.fasta",
-                    storeDir: "./output/results",
-                    cache: 'lenient'
-                )
-        }
+    // //// count number of sequences passing taxonomic decontamination
+    // ch_count_filter_tax_outliers = FILTER_TAX_OUTLIERS.out.fasta.countFasta().combine(["filter_tax_outliers"])
 
-        //// sequence names that failed filter
-        FILTER_UNCLASSIFIED.out.removed
-            .collectFile ( name: 'filter_unclassified.fasta', newLine: true, cache: false )
-            .set { ch_fates_filter_unclassified }
-
-        FILTER_UNCLASSIFIED.out.fasta
-            .filter { it.size() > 0 }
-            .set { ch_select_final_input }
-
-    } else {
-
-        ch_count_filter_unclassified = Channel.of(["NA", "filter_unclassified"])
-
-        ch_fates_filter_unclassified = Channel.empty()
-
-        FILTER_SEQ_OUTLIERS.out.retained_fasta
-            .filter { it.size() > 0 }
-            .set { ch_select_final_input }
-    
-    }
-
-    //// remove reundant sequences from each species, preferentially retaining internal sequences
-    SELECT_FINAL_SEQUENCES (
-        ch_select_final_input,
-        ch_internal_names,
-        params.max_group_size,
-        params.selection_method
-    )
-
-    //// save SELECT_FINAL_SEQUENCES output
-    if ( params.save_intermediate ) {
-        SELECT_FINAL_SEQUENCES.out.fasta
-            .flatten()
-            .collectFile ( 
-                name: "select_final_sequences.fasta",
-                storeDir: "./output/results"
-            )
-    }
-
-    //// count number of sequences passing group pruning
-    ch_count_select_final_sequences = SELECT_FINAL_SEQUENCES.out.fasta.flatten().countFasta().combine(["select_final_sequences"])
-
-    //// sequence names that failed filter
-    SELECT_FINAL_SEQUENCES.out.removed
-        .collectFile ( name: 'select_final_sequences.fasta', newLine: true, cache: false )
-        .set { ch_fates_select_final_sequences }
-
-    //// sequence names included in final datasase
-    SELECT_FINAL_SEQUENCES.out.fasta
-        .collectFile ( name: 'final_database.fasta', newLine: true, cache: false )
-        .set { ch_fates_final_database }
+    // //// sequence names that failed filter
+    // FILTER_TAX_OUTLIERS.out.removed
+    //     .collectFile ( name: 'filter_tax_outliers.fasta', newLine: true, cache: false )
+    //     .set { ch_fates_filter_tax_outliers }
 
     
-    /// collect sequence fates into a list of .csv files for concatenation
-    Channel.empty()
-        .concat ( ch_fates_filter_unclassified )
-        .concat ( ch_fates_filter_phmm_full )
-        .concat ( ch_fates_filter_phmm_amplicon )
-        .concat ( ch_fates_filter_duplicates )
-        .concat ( ch_fates_filter_ambiguous )
-        .concat ( ch_fates_filter_tax_outliers )
-        .concat ( ch_fates_filter_redundant )
-        .concat ( ch_fates_filter_seq_outliers )
-        .concat ( ch_fates_select_final_sequences )
-        .concat ( ch_fates_final_database )
-        .collect ()
-        .set { ch_fates }
+
+    // //// align species-level .fasta in batches
+    // ALIGN_SPECIES (
+    //     FILTER_REDUNDANT.out.fasta
+    // )
+
+    // //// remove sequence outliers from species clusters
+    // FILTER_SEQ_OUTLIERS (
+    //     ALIGN_SPECIES.out.aligned_fasta,
+    //     params.dist_threshold
+    // )
+
+    // //// combine and save intermediate file 
+    // if ( params.save_intermediate ) {
+    //     FILTER_SEQ_OUTLIERS.out.retained_fasta
+    //         .flatten()
+    //         .collectFile ( 
+    //             name: "filter_seq_outliers.fasta",
+    //             storeDir: "./output/results"
+    //         )
+    // }
+
+    // //// count number of sequences passing taxonomic decontamination
+    // ch_count_filter_seq_outliers = FILTER_SEQ_OUTLIERS.out.retained_fasta.flatten().countFasta().combine(["filter_seq_outliers"])
+
+    // //// sequence names that failed filter
+    // FILTER_SEQ_OUTLIERS.out.removed
+    //     .flatten()
+    //     .collectFile ( name: 'filter_seq_outliers.fasta', newLine: true, cache: false )
+    //     .set { ch_fates_filter_seq_outliers }
+
+    // //// remove unclassified sequences
+    // if ( params.remove_unclassified == "all_ranks" || params.remove_unclassified == "any_ranks" || params.remove_unclassified == "terminal" ) {
+    //     FILTER_UNCLASSIFIED (
+    //         FILTER_SEQ_OUTLIERS.out.retained_fasta,
+    //         params.remove_unclassified
+    //     )        
+
+    //     ch_count_filter_unclassified = FILTER_UNCLASSIFIED.out.fasta.countFasta().combine(["filter_unclassified"])
+
+    //     //// combine and save intermediate file 
+    //     if ( params.save_intermediate ) {
+    //         FILTER_UNCLASSIFIED.out.fasta
+    //             .collectFile ( 
+    //                 name: "filter_unclassified.fasta",
+    //                 storeDir: "./output/results",
+    //                 cache: 'lenient'
+    //             )
+    //     }
+
+    //     //// sequence names that failed filter
+    //     FILTER_UNCLASSIFIED.out.removed
+    //         .collectFile ( name: 'filter_unclassified.fasta', newLine: true, cache: false )
+    //         .set { ch_fates_filter_unclassified }
+
+    //     FILTER_UNCLASSIFIED.out.fasta
+    //         .filter { it.size() > 0 }
+    //         .set { ch_select_final_input }
+
+    // } else {
+
+    //     ch_count_filter_unclassified = Channel.of(["NA", "filter_unclassified"])
+
+    //     ch_fates_filter_unclassified = Channel.empty()
+
+    //     FILTER_SEQ_OUTLIERS.out.retained_fasta
+    //         .filter { it.size() > 0 }
+    //         .set { ch_select_final_input }
+    
+    // }
+
+    // //// remove reundant sequences from each species, preferentially retaining internal sequences
+    // SELECT_FINAL_SEQUENCES (
+    //     ch_select_final_input,
+    //     ch_internal_names,
+    //     params.max_group_size,
+    //     params.selection_method
+    // )
+
+    // //// save SELECT_FINAL_SEQUENCES output
+    // if ( params.save_intermediate ) {
+    //     SELECT_FINAL_SEQUENCES.out.fasta
+    //         .flatten()
+    //         .collectFile ( 
+    //             name: "select_final_sequences.fasta",
+    //             storeDir: "./output/results"
+    //         )
+    // }
+
+    // //// count number of sequences passing group pruning
+    // ch_count_select_final_sequences = SELECT_FINAL_SEQUENCES.out.fasta.flatten().countFasta().combine(["select_final_sequences"])
+
+    // //// sequence names that failed filter
+    // SELECT_FINAL_SEQUENCES.out.removed
+    //     .collectFile ( name: 'select_final_sequences.fasta', newLine: true, cache: false )
+    //     .set { ch_fates_select_final_sequences }
+
+    // //// sequence names included in final datasase
+    // SELECT_FINAL_SEQUENCES.out.fasta
+    //     .collectFile ( name: 'final_database.fasta', newLine: true, cache: false )
+    //     .set { ch_fates_final_database }
+
+    
+    // /// collect sequence fates into a list of .csv files for concatenation
+    // Channel.empty()
+    //     .concat ( ch_fates_filter_unclassified )
+    //     .concat ( ch_fates_filter_phmm_full )
+    //     .concat ( ch_fates_filter_phmm_amplicon )
+    //     .concat ( ch_fates_filter_duplicates )
+    //     .concat ( ch_fates_filter_ambiguous )
+    //     .concat ( ch_fates_filter_tax_outliers )
+    //     .concat ( ch_fates_filter_redundant )
+    //     .concat ( ch_fates_filter_seq_outliers )
+    //     .concat ( ch_fates_select_final_sequences )
+    //     .concat ( ch_fates_final_database )
+    //     .collect ()
+    //     .set { ch_fates }
 
     emit:
 
-    ch_final_seqs = SELECT_FINAL_SEQUENCES.out.fasta
-    ch_fates
-    ch_count_filter_unclassified
-    ch_count_filter_phmm_full
-    ch_count_filter_phmm_amplicon
-    ch_count_filter_duplicates
-    ch_count_filter_ambiguous
-    ch_count_filter_tax_outliers
-    ch_count_filter_redundant
-    ch_count_filter_seq_outliers
-    ch_count_select_final_sequences
+    // ch_final_seqs = SELECT_FINAL_SEQUENCES.out.fasta
+    ch_final_seqs = Channel.empty()
+    ch_fates = Channel.empty()
+    ch_count_filter_unclassified = Channel.empty()
+    ch_count_filter_phmm_full = Channel.empty()
+    ch_count_filter_phmm_amplicon = Channel.empty()
+    ch_count_filter_duplicates = Channel.empty()
+    ch_count_filter_ambiguous = Channel.empty()
+    ch_count_filter_tax_outliers = Channel.empty()
+    ch_count_filter_redundant = Channel.empty()
+    ch_count_filter_seq_outliers = Channel.empty()
+    ch_count_select_final_sequences = Channel.empty()
 
 }
