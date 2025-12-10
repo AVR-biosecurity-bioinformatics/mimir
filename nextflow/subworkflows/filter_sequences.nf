@@ -43,45 +43,10 @@ workflow FILTER_SEQUENCES {
     Sequence filtering
     */
 
-    //// remove unclassified sequences
-    if ( params.remove_unclassified == "all_ranks" || params.remove_unclassified == "any_ranks" || params.remove_unclassified == "terminal" ) {
-        FILTER_UNCLASSIFIED (
-            ch_input_seqs,
-            params.remove_unclassified
-        )        
-
-        ch_count_filter_unclassified = FILTER_UNCLASSIFIED.out.fasta.countFasta().combine(["filter_unclassified"])
-
-        //// combine and save intermediate file 
-        if ( params.save_intermediate ) {
-            FILTER_UNCLASSIFIED.out.fasta
-                .collectFile ( 
-                    name: "filter_unclassified.fasta",
-                    storeDir: "./output/results",
-                    cache: 'lenient'
-                )
-        }
-
-        //// sequence names that failed filter
-        FILTER_UNCLASSIFIED.out.removed
-            .collectFile ( name: 'filter_unclassified.fasta', newLine: true, cache: false )
-            .set { ch_fates_filter_unclassified }
-
-        FILTER_UNCLASSIFIED.out.fasta
-            .filter { it.size() > 0 }
-            .set { ch_translate_sequences_input }
-
-    } else {
-
-        ch_count_filter_unclassified = Channel.of(["NA", "filter_unclassified"])
-
-        ch_fates_filter_unclassified = Channel.empty()
-
-        ch_input_seqs
-            .filter { it.size() > 0 }
-            .set { ch_translate_sequences_input }
-    
-    }
+    //// remove empty .fasta files
+    ch_input_seqs
+        .filter { it.size() > 0 }
+        .set { ch_translate_sequences_input }
 
     //// translate sequences in all six frames
     TRANSLATE_SEQUENCES (
@@ -431,9 +396,49 @@ workflow FILTER_SEQUENCES {
         .collectFile ( name: 'filter_seq_outliers.fasta', newLine: true, cache: false )
         .set { ch_fates_filter_seq_outliers }
 
+    //// remove unclassified sequences
+    if ( params.remove_unclassified == "all_ranks" || params.remove_unclassified == "any_ranks" || params.remove_unclassified == "terminal" ) {
+        FILTER_UNCLASSIFIED (
+            FILTER_SEQ_OUTLIERS.out.retained_fasta,
+            params.remove_unclassified
+        )        
+
+        ch_count_filter_unclassified = FILTER_UNCLASSIFIED.out.fasta.countFasta().combine(["filter_unclassified"])
+
+        //// combine and save intermediate file 
+        if ( params.save_intermediate ) {
+            FILTER_UNCLASSIFIED.out.fasta
+                .collectFile ( 
+                    name: "filter_unclassified.fasta",
+                    storeDir: "./output/results",
+                    cache: 'lenient'
+                )
+        }
+
+        //// sequence names that failed filter
+        FILTER_UNCLASSIFIED.out.removed
+            .collectFile ( name: 'filter_unclassified.fasta', newLine: true, cache: false )
+            .set { ch_fates_filter_unclassified }
+
+        FILTER_UNCLASSIFIED.out.fasta
+            .filter { it.size() > 0 }
+            .set { ch_select_final_input }
+
+    } else {
+
+        ch_count_filter_unclassified = Channel.of(["NA", "filter_unclassified"])
+
+        ch_fates_filter_unclassified = Channel.empty()
+
+        FILTER_SEQ_OUTLIERS.out.retained_fasta
+            .filter { it.size() > 0 }
+            .set { ch_select_final_input }
+    
+    }
+
     //// remove reundant sequences from each species, preferentially retaining internal sequences
     SELECT_FINAL_SEQUENCES (
-        FILTER_SEQ_OUTLIERS.out.retained_fasta,
+        ch_select_final_input,
         ch_internal_names,
         params.max_group_size,
         params.selection_method
