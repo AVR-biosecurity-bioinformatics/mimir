@@ -24,6 +24,6 @@ process FILTER_REDUNDANT {
         ${projectDir} \
         ${task.cpus} \
         "${fasta_file}" 
-    
+     
     """
 }

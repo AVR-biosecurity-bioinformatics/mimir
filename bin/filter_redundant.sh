@@ -59,8 +59,7 @@ for i in $FASTA_LIST; do
         < $FASTA
 
     # loop through temporary species-level files
-    for j in tmpspp.*.fasta
-    do
+    for j in tmpspp.*.fasta; do
         # only run dedupe.sh if more than one sequence
         if [[ $( grep -c "^>" $j ) > 1 ]]; then   
             # absorb identical sequences and containments, merging names of duplicate sequences into the header of retained sequence (delim: >)
@@ -95,9 +94,16 @@ for i in $FASTA_LIST; do
         paste primary.txt counts.txt >> counts.tsv
 
         # remove merged names from .fasta, unwrap and append to genus-level file of retained sequences
-    awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' tmp.ret.fasta | \
-        sed 's/^\(>[^>]\+\).*$/\1/' \
-        >> ${BASENAME}.retained.fasta
+        awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' tmp.ret.fasta | \
+            sed 's/^\(>[^>]\+\).*$/\1/' \
+            >> ${BASENAME}.retained.fasta
+
+        # cleanup tmp files
+        rm -f tmp.ret.fasta
+        rm -f tmp.rem.fasta
+        rm -f headers.txt
+        rm -f primary.txt
+        rm -f counts.txt
 
     done
 
@@ -105,9 +111,3 @@ for i in $FASTA_LIST; do
     rm tmpspp.*.fasta
 
 done 
-
-# clean up now to save time cleaning later
-rm tmp.ret.fasta
-rm tmp.rem.fasta
-rm primary.txt
-rm counts.txt

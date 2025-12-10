@@ -6,7 +6,8 @@ Filter sequences
 //// modules to import
 include { ALIGN_BATCH as ALIGN_SPECIES                               } from '../modules/align_batch'
 include { CLUSTER_SEQUENCES                                          } from '../modules/cluster_sequences'
-include { COMBINE_CHUNKS                                             } from '../modules/combine_chunks'
+include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
+include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                         } from '../modules/combine_chunks'
 include { FILTER_AMBIGUOUS                                           } from '../modules/filter_ambiguous'
 include { FILTER_DUPLICATES                                          } from '../modules/filter_duplicates'
 include { FILTER_PHMM_FULL                                           } from '../modules/filter_phmm_full'
@@ -195,14 +196,14 @@ workflow FILTER_SEQUENCES {
 
 
     //// combine sequences into one .fasta file and dealign
-    COMBINE_CHUNKS ( 
+    COMBINE_CHUNKS_1 ( 
         ch_hmm_output,
         "true"
     )
  
     //// remove exact duplicate sequences if they exist
     FILTER_DUPLICATES (
-        COMBINE_CHUNKS.out.fasta
+        COMBINE_CHUNKS_1.out.fasta
     )
 
     //// combine and save intermediate file 
@@ -338,8 +339,40 @@ workflow FILTER_SEQUENCES {
         .collectFile ( name: 'filter_redundant.fasta', newLine: true, cache: false )
         .set { ch_fates_filter_redundant }
 
+    //// collect all genera .fasta files 
+    FILTER_REDUNDANT.out.fasta
+        .map { fasta, counts -> fasta }
+        .flatten()
+        .collectFile( name: 'rf_records.fasta' )
+        .set { ch_redundant_fasta }
+    
+    //// collect all genera counts.tsv files 
+    FILTER_REDUNDANT.out.fasta
+        .map { fasta, counts -> counts }
+        .flatten()
+        .collectFile( name: 'rf_counts.tsv' )
+        .set { ch_redundant_counts }
+
+    ch_redundant_fasta.view()
+    ch_redundant_counts.view()
+    // ch_filter_redundant_input.view()
+    // FILTER_REDUNDANT.out.fasta.view()
+
+    ///// THRESHOLD ESTIMATION
+
+    //// subsample from all records 
 
 
+    //// align subsamples
+
+
+    //// statistically summarise subsamples
+
+
+    //// combine subsample summary statistics
+
+
+    //// estimate global thresholds
 
 
     // //// cluster sequences into OTUs with mmseqs2
