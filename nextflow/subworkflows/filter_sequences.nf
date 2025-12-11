@@ -5,6 +5,7 @@ Filter sequences
 
 //// modules to import
 include { ALIGN_BATCH as ALIGN_SPECIES                               } from '../modules/align_batch'
+include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
 include { CLUSTER_SEQUENCES                                          } from '../modules/cluster_sequences'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                         } from '../modules/combine_chunks'
@@ -22,6 +23,7 @@ include { MERGE_SPLITS as MERGE_SPLITS_GENUS                         } from '../
 include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
 include { SORT_BY_LINEAGE                                            } from '../modules/sort_by_lineage'
 include { SPLIT_BY_RANK as SPLIT_BY_GENUS                            } from '../modules/split_by_rank'
+include { SUBSAMPLE_RECORDS                                          } from '../modules/subsample_records'
 include { TRANSLATE_SEQUENCES                                        } from '../modules/translate_sequences'
 
 
@@ -353,21 +355,43 @@ workflow FILTER_SEQUENCES {
         .collectFile( name: 'rf_counts.tsv' )
         .set { ch_redundant_counts }
 
-    ch_redundant_fasta.view()
-    ch_redundant_counts.view()
+    // ch_redundant_fasta.view()
+    // ch_redundant_counts.view()
     // ch_filter_redundant_input.view()
     // FILTER_REDUNDANT.out.fasta.view()
 
     ///// THRESHOLD ESTIMATION
 
+    //// combine subsample seed from 1 to n (latter to be replaced by params.subsample_n) with .fasta of records
+    channel.of(1..20)
+        .map { n -> n as String }
+        .collectFile( name: 'seeds.txt', newLine: true, sort: false )
+        .splitText( by: 10, file: true ) // 10 seeds per file
+        .set { ch_seeds }
+    
+    ch_redundant_fasta
+        .combine( ch_seeds )
+        .set { ch_subsample_input }
+
     //// subsample from all records 
+    SUBSAMPLE_RECORDS(
+        ch_subsample_input,
+        100
+    )
 
+    SUBSAMPLE_RECORDS.out.fasta
+        .flatten()
+        .set { ch_subsamples }
 
-    //// align subsamples
+    //// align each subsample
+    ALIGN_SUBSAMPLE(
+        ch_subsamples
+    )
 
+    ALIGN_SUBSAMPLE.out.fasta.view()
 
     //// statistically summarise subsamples
-
+    
 
     //// combine subsample summary statistics
 
