@@ -108,7 +108,7 @@ for (i in seeds){
     # get tibble of just pairs and weights
     lin_pairs <- lin_ss %>% dplyr::distinct(pair, weight)
     # sample as many pairs as required sequences, in the edge case that every selected pair is a singleton
-    pairs <- sample(lin_pairs$pair, size = subsample_size*2, replace = F, prob = lin_pairs$weight) 
+    pairs <- sample(lin_pairs$pair, size = subsample_size, replace = F, prob = lin_pairs$weight) 
     # get sequence names for each pair and only keep the required number
     ss <- lin_ss %>% dplyr::filter(pair %in% pairs) %>% .$name %>% .[1:subsample_size] 
     # subset sequence DSS object

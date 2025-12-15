@@ -9,6 +9,7 @@ include { ALIGN_SUBSAMPLE                                            } from '../
 include { CLUSTER_SEQUENCES                                          } from '../modules/cluster_sequences'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                         } from '../modules/combine_chunks'
+include { ESTIMATE_THRESHOLDS                                        } from '../modules/estimate_thresholds'
 include { FILTER_AMBIGUOUS                                           } from '../modules/filter_ambiguous'
 include { FILTER_DUPLICATES                                          } from '../modules/filter_duplicates'
 include { FILTER_PHMM_FULL                                           } from '../modules/filter_phmm_full'
@@ -364,7 +365,7 @@ workflow FILTER_SEQUENCES {
     ///// THRESHOLD ESTIMATION
 
     //// combine subsample seed from 1 to n (latter to be replaced by params.subsample_n) with .fasta of records
-    channel.of(1..10000)
+    channel.of(1..1000)
         .map { n -> n as String }
         .collectFile( name: 'seeds.txt', newLine: true )
         .splitText( by: 100, file: true ) // 100 seeds per file
@@ -391,6 +392,8 @@ workflow FILTER_SEQUENCES {
 
     //// buffer subsamples into summary process to save overhead
     ALIGN_SUBSAMPLE.out.fasta
+        .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
+        .flatten ()
         .buffer( size: 10, remainder: true )
         .set { ch_subsamples_aligned }
 
@@ -398,7 +401,7 @@ workflow FILTER_SEQUENCES {
     SUMMARISE_SUBSAMPLES(
         ch_subsamples_aligned
     )
-    
+
     // SUMMARISE_SUBSAMPLES.out.csv.view()
 
     //// combine subsample summary statistics
@@ -407,7 +410,11 @@ workflow FILTER_SEQUENCES {
         .set { ch_subsample_summaries }
 
     //// estimate global thresholds
-
+    ESTIMATE_THRESHOLDS(
+        ch_subsample_summaries,
+        '2.5', // min_k
+        '2.5' // max_k
+    )
 
     // //// cluster sequences into OTUs with mmseqs2
     // CLUSTER_SEQUENCES (
