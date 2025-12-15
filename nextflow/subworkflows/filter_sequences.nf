@@ -24,6 +24,7 @@ include { SELECT_FINAL_SEQUENCES                                     } from '../
 include { SORT_BY_LINEAGE                                            } from '../modules/sort_by_lineage'
 include { SPLIT_BY_RANK as SPLIT_BY_GENUS                            } from '../modules/split_by_rank'
 include { SUBSAMPLE_RECORDS                                          } from '../modules/subsample_records'
+include { SUMMARISE_SUBSAMPLES                                       } from '../modules/summarise_subsamples'
 include { TRANSLATE_SEQUENCES                                        } from '../modules/translate_sequences'
 
 
@@ -363,10 +364,10 @@ workflow FILTER_SEQUENCES {
     ///// THRESHOLD ESTIMATION
 
     //// combine subsample seed from 1 to n (latter to be replaced by params.subsample_n) with .fasta of records
-    channel.of(1..20)
+    channel.of(1..10000)
         .map { n -> n as String }
-        .collectFile( name: 'seeds.txt', newLine: true, sort: false )
-        .splitText( by: 10, file: true ) // 10 seeds per file
+        .collectFile( name: 'seeds.txt', newLine: true )
+        .splitText( by: 100, file: true ) // 100 seeds per file
         .set { ch_seeds }
     
     ch_redundant_fasta
@@ -376,7 +377,7 @@ workflow FILTER_SEQUENCES {
     //// subsample from all records 
     SUBSAMPLE_RECORDS(
         ch_subsample_input,
-        100
+        3000
     )
 
     SUBSAMPLE_RECORDS.out.fasta
@@ -388,13 +389,22 @@ workflow FILTER_SEQUENCES {
         ch_subsamples
     )
 
-    ALIGN_SUBSAMPLE.out.fasta.view()
+    //// buffer subsamples into summary process to save overhead
+    ALIGN_SUBSAMPLE.out.fasta
+        .buffer( size: 10, remainder: true )
+        .set { ch_subsamples_aligned }
 
     //// statistically summarise subsamples
+    SUMMARISE_SUBSAMPLES(
+        ch_subsamples_aligned
+    )
     
+    // SUMMARISE_SUBSAMPLES.out.csv.view()
 
     //// combine subsample summary statistics
-
+    SUMMARISE_SUBSAMPLES.out.csv
+        .collectFile( keepHeader: true, skip: 1, name: 'subsample_summaries.csv' )
+        .set { ch_subsample_summaries }
 
     //// estimate global thresholds
 

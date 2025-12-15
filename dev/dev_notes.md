@@ -332,6 +332,8 @@ nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89
 # small test with single order (mecoptera)
 nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 27420 --target_rank order --bold_db_path ./input --marker COI --add_root --remove_unclassified none --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --trim_to_amplicon --remove_primers --amplicon_min_length 200
 
+# large test with single order (hemiptera)
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Hemiptera --target_rank order --bold_db_path ./input --marker COI --add_root --remove_unclassified none --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --trim_to_amplicon --remove_primers --amplicon_min_length 200
 
 ```
 

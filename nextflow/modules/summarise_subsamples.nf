@@ -1,14 +1,13 @@
-process SUBSAMPLE_RECORDS {
-    def module_name = "subsample_records"
+process SUMMARISE_SUBSAMPLES {
+    def module_name = "summarise_subsamples"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple path(fasta_file), path(subsample_seeds)
-    val(subsample_size)
+    path(fasta_files, name: 'aligned*.fasta')
 
     output: 
-    path("subsample*.fasta"),                           emit: fasta
+    path("joint_summary.csv"),                           emit: csv
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -16,14 +15,12 @@ process SUBSAMPLE_RECORDS {
 
     script:
     def module_script = "${module_name}.R"
-    """ 
+    """
     #!/usr/bin/env Rscript
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
-    subsample_seeds =              "${subsample_seeds}"
-    subsample_size =               "${subsample_size}"
+    fasta_files =                   "${fasta_files}"
 
     ## global variables
     projectDir = "$projectDir"
