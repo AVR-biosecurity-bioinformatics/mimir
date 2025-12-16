@@ -6,7 +6,7 @@ Filter sequences
 //// modules to import
 include { ALIGN_BATCH as ALIGN_GENUS                                 } from '../modules/align_batch'
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
-include { CLUSTER_SEQUENCES                                          } from '../modules/cluster_sequences'
+include { CLUSTER_PARTIAL                                            } from '../modules/cluster_partial'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                         } from '../modules/combine_chunks'
 include { ESTIMATE_THRESHOLDS                                        } from '../modules/estimate_thresholds'
@@ -406,11 +406,16 @@ workflow FILTER_SEQUENCES {
         .set { ch_subsample_summaries }
 
     //// estimate global thresholds
-    ESTIMATE_THRESHOLDS(
+    ESTIMATE_THRESHOLDS (
         ch_subsample_summaries,
         '2', // min_k
         '3' // max_k
     )
+
+    //// value channel of just the thresholds .csv
+    ESTIMATE_THRESHOLDS.out.csv
+        .first()
+        .set { ch_thresholds }
 
     //// split rf records into fully classified and partially classified (channel contains batches of genera lineages)
     FILTER_REDUNDANT.out.fasta
@@ -421,16 +426,27 @@ workflow FILTER_SEQUENCES {
         ch_classification_split_input
     )
 
-    
-
-
-
     //// align genus-level fully-classified .fastas in batches
     ALIGN_GENUS (
         SPLIT_BY_CLASSIFICATION.out.full
     )
 
     //// do intra-genus filtering
+    // INTRAGENUS_OUTLIERS (
+    //     ALIGN_GENUS.out.fasta,
+    //     ch_redundant_counts
+    // )
+
+    //// cluster partially classified lineages
+    CLUSTER_PARTIAL (
+        SPLIT_BY_CLASSIFICATION.out.part,
+        ch_thresholds
+    )
+
+
+    //// create artificial genera in partially classified lineages
+
+
 
 
     //// split records into chunks for searching
