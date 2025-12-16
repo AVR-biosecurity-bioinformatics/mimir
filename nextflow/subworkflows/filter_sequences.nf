@@ -4,7 +4,7 @@ Filter sequences
 
 
 //// modules to import
-include { ALIGN_BATCH as ALIGN_SPECIES                               } from '../modules/align_batch'
+include { ALIGN_BATCH as ALIGN_GENUS                                 } from '../modules/align_batch'
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
 include { CLUSTER_SEQUENCES                                          } from '../modules/cluster_sequences'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
@@ -23,6 +23,7 @@ include { HMMSEARCH_AMPLICON                                         } from '../
 include { MERGE_SPLITS as MERGE_SPLITS_GENUS                         } from '../modules/merge_splits'
 include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
 include { SORT_BY_LINEAGE                                            } from '../modules/sort_by_lineage'
+include { SPLIT_BY_CLASSIFICATION                                    } from '../modules/split_by_classification'
 include { SPLIT_BY_RANK as SPLIT_BY_GENUS                            } from '../modules/split_by_rank'
 include { SUBSAMPLE_RECORDS                                          } from '../modules/subsample_records'
 include { SUMMARISE_SUBSAMPLES                                       } from '../modules/summarise_subsamples'
@@ -357,11 +358,6 @@ workflow FILTER_SEQUENCES {
         .collectFile( name: 'rf_counts.tsv' )
         .set { ch_redundant_counts }
 
-    // ch_redundant_fasta.view()
-    // ch_redundant_counts.view()
-    // ch_filter_redundant_input.view()
-    // FILTER_REDUNDANT.out.fasta.view()
-
     ///// THRESHOLD ESTIMATION
 
     //// combine subsample seed from 1 to n (latter to be replaced by params.subsample_n) with .fasta of records
@@ -412,9 +408,36 @@ workflow FILTER_SEQUENCES {
     //// estimate global thresholds
     ESTIMATE_THRESHOLDS(
         ch_subsample_summaries,
-        '2.5', // min_k
-        '2.5' // max_k
+        '2', // min_k
+        '3' // max_k
     )
+
+    //// split rf records into fully classified and partially classified (channel contains batches of genera lineages)
+    FILTER_REDUNDANT.out.fasta
+        .map { fasta, counts -> fasta }
+        .set { ch_classification_split_input }
+
+    SPLIT_BY_CLASSIFICATION (
+        ch_classification_split_input
+    )
+
+    
+
+
+
+    //// align genus-level fully-classified .fastas in batches
+    ALIGN_GENUS (
+        SPLIT_BY_CLASSIFICATION.out.full
+    )
+
+    //// do intra-genus filtering
+
+
+    //// split records into chunks for searching
+
+
+    //// searching chunks against all records for highest-identity hits
+
 
     // //// cluster sequences into OTUs with mmseqs2
     // CLUSTER_SEQUENCES (
