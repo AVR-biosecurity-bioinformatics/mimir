@@ -17,6 +17,7 @@ process_packages <- c(
     "furrr",
     "future",
     "httr",
+    "ggplot2",
     "kmer",
     "magrittr",
     "methods",
@@ -76,7 +77,7 @@ est_plot <-
     summary_tibble %>%
     tidyr::pivot_longer(cols = med:mad, names_to = "type", values_to = "value") %>%
     ggplot(aes(x = forcats::fct_relevel(lsr, allowed_ranks), y = value)) +
-    geom_point(alpha = 0.05, position = position_jitter()) +
+    geom_point(alpha = 0.05, position = position_jitter(width = 0.4, height = 0)) +
     geom_violin(scale = "width", adjust = 2, colour = NA, fill = "lightblue2") +
     geom_point(inherit.aes = F, data = summary_summary,  aes(x = lsr, y = value), colour = "red", shape = 15, size = 2.5) +
     scale_y_continuous(limits = c(NA,NA), name = "value") +
