@@ -63,60 +63,69 @@ allowed_ranks <- c("species","genus", "family", "order", "class", "phylum", "kin
 
 # handle when there are fewer or the same number of sequences as the subsample size
 if (length(seqs) <= subsample_size){
-    subsample_size <- length(seqs)
+
+    # write all sequences to file
+    Biostrings::writeXStringSet(seqs, "subsample0.fasta")
+
+} else {
+
+    # get lineages at every rank for all sequences, and get probability weights based on taxonomic diversity
+    lin_total <- 
+        names(seqs) %>%
+        tibble::as_tibble_col(column_name = "name") %>%
+        dplyr::mutate(
+            species = stringr::str_extract(name, "(?<=;).+$"),
+            genus = stringr::str_extract(species, ".+(?=;)"),
+            family = stringr::str_extract(genus, ".+(?=;)"),
+            order = stringr::str_extract(family, ".+(?=;)"),
+            class = stringr::str_extract(order, ".+(?=;)"),
+            phylum = stringr::str_extract(class, ".+(?=;)"),
+            kingdom = stringr::str_extract(phylum, ".+(?=;)")
+        ) %>%
+        # group by each rank's parent lineage, then count distinct taxa per rank
+        dplyr::mutate(count_k = dplyr::n_distinct(kingdom)) %>%
+        dplyr::mutate(.by = allowed_ranks[7], count_p = dplyr::n_distinct(phylum)) %>%
+        dplyr::mutate(.by = allowed_ranks[6], count_c = dplyr::n_distinct(class)) %>%
+        dplyr::mutate(.by = allowed_ranks[5], count_o = dplyr::n_distinct(order)) %>%
+        dplyr::mutate(.by = allowed_ranks[4], count_f = dplyr::n_distinct(family)) %>%
+        dplyr::mutate(.by = allowed_ranks[3], count_g = dplyr::n_distinct(genus)) %>%
+        dplyr::mutate(.by = allowed_ranks[2], count_s = dplyr::n_distinct(species)) %>%
+        # convert counts to probability per species lineage
+        dplyr::mutate(
+            weight = (1/count_k) * (1/count_p) * (1/count_c) * (1/count_o) * (1/count_f) * (1/count_g) * (1/count_s),
+            # downweight partially classified sequences since they give us less information
+            weight = dplyr::if_else(stringr::str_detect(species, ";Unclassified"), weight/10000, weight)
+        ) %>%
+        dplyr::select(name, weight, species)
+
+    for (i in seeds){
+        set.seed(i)
+        # randomly group sequences within species into pairs
+        lin_ss <- 
+            lin_total %>%
+            dplyr::slice_sample(prop = 1) %>% # randomise row order
+            dplyr::group_by(species) %>%
+            dplyr::mutate(pair = paste0(species, ceiling(dplyr::row_number()/2))) %>%
+            dplyr::ungroup() %>%
+            dplyr::distinct(name, pair, weight)
+        # get tibble of just pairs and weights
+        lin_pairs <- lin_ss %>% dplyr::distinct(pair, weight)
+        # sample as many pairs as required sequences, in the edge case that every selected pair is a singleton
+        if (limited_n){
+            pairs <- sample(lin_pairs$pair, size = subsample_size, replace = F, prob = lin_pairs$weight)
+        } else {
+            pairs <- sample(lin_pairs$pair, size = subsample_size, replace = F, prob = lin_pairs$weight)
+        }
+    
+    
+        # get sequence names for each pair and only keep the required number
+        ss <- lin_ss %>% dplyr::filter(pair %in% pairs) %>% .$name %>% .[1:subsample_size] 
+        # subset sequence DSS object
+        ss_seqs <- seqs[names(seqs) %in% ss]
+        # write sequences to file
+        Biostrings::writeXStringSet(ss_seqs, stringr::str_glue("subsample{i}.fasta"))
+    }
 }
-
-# get lineages at every rank for all sequences, and get probability weights based on taxonomic diversity
-lin_total <- 
-    names(seqs) %>%
-    tibble::as_tibble_col(column_name = "name") %>%
-    dplyr::mutate(
-        species = stringr::str_extract(name, "(?<=;).+$"),
-        genus = stringr::str_extract(species, ".+(?=;)"),
-        family = stringr::str_extract(genus, ".+(?=;)"),
-        order = stringr::str_extract(family, ".+(?=;)"),
-        class = stringr::str_extract(order, ".+(?=;)"),
-        phylum = stringr::str_extract(class, ".+(?=;)"),
-        kingdom = stringr::str_extract(phylum, ".+(?=;)")
-    ) %>%
-    # group by each rank's parent lineage, then count distinct taxa per rank
-    dplyr::mutate(count_k = dplyr::n_distinct(kingdom)) %>%
-    dplyr::mutate(.by = allowed_ranks[7], count_p = dplyr::n_distinct(phylum)) %>%
-    dplyr::mutate(.by = allowed_ranks[6], count_c = dplyr::n_distinct(class)) %>%
-    dplyr::mutate(.by = allowed_ranks[5], count_o = dplyr::n_distinct(order)) %>%
-    dplyr::mutate(.by = allowed_ranks[4], count_f = dplyr::n_distinct(family)) %>%
-    dplyr::mutate(.by = allowed_ranks[3], count_g = dplyr::n_distinct(genus)) %>%
-    dplyr::mutate(.by = allowed_ranks[2], count_s = dplyr::n_distinct(species)) %>%
-    # convert counts to probability per species lineage
-    dplyr::mutate(
-        weight = (1/count_k) * (1/count_p) * (1/count_c) * (1/count_o) * (1/count_f) * (1/count_g) * (1/count_s),
-        # downweight partially classified sequences since they give us less information
-        weight = dplyr::if_else(stringr::str_detect(species, ";Unclassified"), weight/10000, weight)
-    ) %>%
-    dplyr::select(name, weight, species)
-
-for (i in seeds){
-    set.seed(i)
-    # randomly group sequences within species into pairs
-    lin_ss <- 
-        lin_total %>%
-        dplyr::slice_sample(prop = 1) %>% # randomise row order
-        dplyr::group_by(species) %>%
-        dplyr::mutate(pair = paste0(species, ceiling(dplyr::row_number()/2))) %>%
-        dplyr::ungroup() %>%
-        dplyr::distinct(name, pair, weight)
-    # get tibble of just pairs and weights
-    lin_pairs <- lin_ss %>% dplyr::distinct(pair, weight)
-    # sample as many pairs as required sequences, in the edge case that every selected pair is a singleton
-    pairs <- sample(lin_pairs$pair, size = subsample_size, replace = F, prob = lin_pairs$weight) 
-    # get sequence names for each pair and only keep the required number
-    ss <- lin_ss %>% dplyr::filter(pair %in% pairs) %>% .$name %>% .[1:subsample_size] 
-    # subset sequence DSS object
-    ss_seqs <- seqs[names(seqs) %in% ss]
-    # write sequences to file
-    Biostrings::writeXStringSet(ss_seqs, stringr::str_glue("subsample{i}.fasta"))
-}
-
 
 
 
