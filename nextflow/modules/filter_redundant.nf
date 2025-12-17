@@ -18,7 +18,7 @@ process FILTER_REDUNDANT {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
-
+    
     #### run module code
     source ${module_name}.sh \
         ${projectDir} \

@@ -87,8 +87,8 @@ for i in $FASTA_LIST; do
         # count number of > per line
         sed 's/[^>]//g' headers.txt | awk '{ print length }' > counts.txt
 
-        # get primary sequence header per line
-        grep -oE "^>[^>]+" headers.txt > primary.txt
+        # get primary sequence header per line, without the leading '>'
+        grep -oE "^>[^>]+" headers.txt | cut -c2- > primary.txt
 
         # paste headers and counts into a tsv containing counts for all sequences in the process
         paste primary.txt counts.txt >> counts.tsv

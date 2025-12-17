@@ -21,6 +21,7 @@ include { FILTER_TAX_OUTLIERS                                        } from '../
 include { FILTER_UNCLASSIFIED                                        } from '../modules/filter_unclassified'
 include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
 include { HMMSEARCH_AMPLICON                                         } from '../modules/hmmsearch_amplicon'
+include { INTRAGENUS_OUTLIERS                                        } from '../modules/intragenus_outliers'
 include { MERGE_SPLITS as MERGE_SPLITS_GENUS                         } from '../modules/merge_splits'
 include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
 include { SORT_BY_LINEAGE                                            } from '../modules/sort_by_lineage'
@@ -433,10 +434,13 @@ workflow FILTER_SEQUENCES {
     )
 
     //// do intra-genus filtering
-    // INTRAGENUS_OUTLIERS (
-    //     ALIGN_GENUS.out.fasta,
-    //     ch_redundant_counts
-    // )
+    INTRAGENUS_OUTLIERS (
+        ALIGN_GENUS.out.fasta,
+        ch_redundant_counts,
+        ch_thresholds,
+        '5',
+        '0.8'
+    )
 
     //// cluster partially classified lineages
     CLUSTER_PARTIAL (
