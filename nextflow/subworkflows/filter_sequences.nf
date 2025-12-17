@@ -9,6 +9,7 @@ include { ALIGN_SUBSAMPLE                                            } from '../
 include { CLUSTER_PARTIAL                                            } from '../modules/cluster_partial'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                         } from '../modules/combine_chunks'
+include { CREATE_SYNTHETIC_GENERA                                    } from '../modules/create_synthetic_genera'
 include { ESTIMATE_THRESHOLDS                                        } from '../modules/estimate_thresholds'
 include { FILTER_AMBIGUOUS                                           } from '../modules/filter_ambiguous'
 include { FILTER_DUPLICATES                                          } from '../modules/filter_duplicates'
@@ -372,7 +373,7 @@ workflow FILTER_SEQUENCES {
         .set { ch_subsample_input }
 
     //// subsample from all records 
-    SUBSAMPLE_RECORDS(
+    SUBSAMPLE_RECORDS (
         ch_subsample_input,
         3000
     )
@@ -382,7 +383,7 @@ workflow FILTER_SEQUENCES {
         .set { ch_subsamples }
 
     //// align each subsample
-    ALIGN_SUBSAMPLE(
+    ALIGN_SUBSAMPLE (
         ch_subsamples
     )
 
@@ -443,10 +444,12 @@ workflow FILTER_SEQUENCES {
         ch_thresholds
     )
 
+    //// create synthetic genera in partially classified lineages
+    CREATE_SYNTHETIC_GENERA (
+        CLUSTER_PARTIAL.out.clusters
+    )
 
-    //// create artificial genera in partially classified lineages
-
-
+    //// combine fully and partially classified sequences
 
 
     //// split records into chunks for searching
