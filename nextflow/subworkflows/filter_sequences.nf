@@ -4,7 +4,8 @@ Filter sequences
 
 
 //// modules to import
-include { ALIGN_BATCH as ALIGN_GENUS                                 } from '../modules/align_batch'
+include { ALIGN_BATCH as ALIGN_GENUS_SMALL                           } from '../modules/align_batch'
+include { ALIGN_BATCH as ALIGN_GENUS_LARGE                           } from '../modules/align_batch'
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
 include { CLUSTER_PARTIAL                                            } from '../modules/cluster_partial'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
@@ -319,7 +320,7 @@ workflow FILTER_SEQUENCES {
         .mix ( MERGE_SPLITS_GENUS.out.fasta.flatten() )
         .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
         .flatten ()
-        .buffer ( size: 500, remainder: true ) 
+        .buffer ( size: 100, remainder: true ) 
         .set { ch_filter_redundant_input }
 
     //// filter out redundant (ie. identical and contained) sequences within each species, counting the number of sequences absorbed
@@ -358,6 +359,7 @@ workflow FILTER_SEQUENCES {
         .map { fasta, counts -> counts }
         .flatten()
         .collectFile( name: 'rf_counts.tsv' )
+        .first()
         .set { ch_redundant_counts }
 
     ///// THRESHOLD ESTIMATION
@@ -428,19 +430,62 @@ workflow FILTER_SEQUENCES {
         ch_classification_split_input
     )
 
-    //// align genus-level fully-classified .fastas in batches
-    ALIGN_GENUS (
-        SPLIT_BY_CLASSIFICATION.out.full
+    //// make two channels of fully-classified genera: small and large
+    SPLIT_BY_CLASSIFICATION.out.full
+        .collect()
+        .flatten()
+        .map { file ->
+            file_size = file.size() as MemoryUnit
+            [ file_size.getKilo() , file ] }
+        // branch channel depending on the size of the file in KB (rounded down)
+        .branch { file_size, file ->
+            small: file_size < 100
+                return file
+            medium: file_size >= 100 && file_size < 1000
+                return file 
+            large: file_size >= 1000
+                return file
+        } 
+        .set { ch_genera_sizebranch }
+
+    //// buffer small files into groups of 500 and medium into groups of 50
+    ch_genera_sizebranch.small
+        .buffer( size: 500, remainder: true )
+        .mix ( ch_genera_sizebranch.medium.buffer( size: 10, remainder: true ) )
+        .set { ch_genera_smaller }
+
+    //// align genus-level fully-classified .fastas in batches (highly accurate mode)
+    ALIGN_GENUS_SMALL (
+        ch_genera_smaller,
+        'small'
     )
+
+    //// align genus-level fully-classified .fastas as single files (faster mode)
+    ALIGN_GENUS_LARGE (
+        ch_genera_sizebranch.large,
+        'large'
+    )
+
+    //// combine outputs from both genus alignment processes
+    ALIGN_GENUS_SMALL.out.fasta
+        .mix ( ALIGN_GENUS_LARGE.out.fasta )
+        .set { ch_aligned_genera }
 
     //// do intra-genus filtering
     INTRAGENUS_OUTLIERS (
-        ALIGN_GENUS.out.fasta,
+        ch_aligned_genera,
         ch_redundant_counts,
         ch_thresholds,
         '5',
         '0.8'
     )
+
+    //// collect outputs from intragenus outlier detection
+    INTRAGENUS_OUTLIERS.out.csv
+        .collectFile( keepHeader: true, skip: 1, name: 'gs_tibble.csv', storeDir: './output/results' )
+        .set { ch_intragenus_results }
+
+    ch_intragenus_results.view()
 
     //// cluster partially classified lineages
     CLUSTER_PARTIAL (

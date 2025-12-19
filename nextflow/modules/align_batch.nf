@@ -5,6 +5,7 @@ process ALIGN_BATCH {
 
     input:
     path(fasta_files)
+    val(file_type)
 
     output: 
     path("*.aligned.fasta"),             emit: fasta
@@ -22,7 +23,8 @@ process ALIGN_BATCH {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${fasta_files}" 
+        "${fasta_files}" \
+        ${file_type}
             
     """
 }

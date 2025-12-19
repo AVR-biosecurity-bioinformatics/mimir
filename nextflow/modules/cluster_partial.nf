@@ -10,7 +10,7 @@ process CLUSTER_PARTIAL {
     output: 
     tuple path(fasta_files), path("clusters.tsv"),                            emit: clusters
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

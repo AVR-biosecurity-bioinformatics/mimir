@@ -7,8 +7,8 @@ process SPLIT_BY_CLASSIFICATION {
     path(fasta_files)
 
     output: 
-    path("*.full.fasta"),                            emit: full
-    path("*.part.fasta"),                            emit: part
+    path("*.full.fasta"),                            emit: full, optional: true
+    path("*.part.fasta"),                            emit: part, optional: true
 
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
@@ -19,7 +19,7 @@ process SPLIT_BY_CLASSIFICATION {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
-
+      
     ### run module code
     bash ${module_name}.sh \
         ${projectDir} \

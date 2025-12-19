@@ -111,11 +111,7 @@ if (length(seqs) <= subsample_size){
         # get tibble of just pairs and weights
         lin_pairs <- lin_ss %>% dplyr::distinct(pair, weight)
         # sample as many pairs as required sequences, in the edge case that every selected pair is a singleton
-        if (limited_n){
-            pairs <- sample(lin_pairs$pair, size = subsample_size, replace = F, prob = lin_pairs$weight)
-        } else {
-            pairs <- sample(lin_pairs$pair, size = subsample_size, replace = F, prob = lin_pairs$weight)
-        }
+        pairs <- sample(lin_pairs$pair, size = subsample_size, replace = F, prob = lin_pairs$weight)
     
     
         # get sequence names for each pair and only keep the required number

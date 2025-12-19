@@ -11,8 +11,8 @@ touch full.list
 touch part.list
 
 for i in ${3}; do
-    # if the lineage string ends with two unclassified ranks, the genus is considered partially classified
-    if head $i -n1 | grep -q ";Unclassified;Unclassified$" - ; then
+    # if the lineage string ends with an unclassified genus rank (optionally unclassified species rank), the genus is considered partially classified
+    if head $i -n1 | grep -q ";Unclassified;[^;]*$" - ; then
         echo $i >> part.list
     # otherwise it is considered fully classified (to genus)
     else

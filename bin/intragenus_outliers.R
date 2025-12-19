@@ -263,6 +263,7 @@ if (length(gs_sminor) > 0){
 seqs_retained <- 
 	seqs_list %>% 
 	do.call(c, .) %>%
+	DECIPHER::RemoveGaps(., removeGaps = "all") %>%
 	.[!names(.) %in% c(names(gs_gminor), names(gs_sminor))]
 
 if (length(seqs_retained) > 0){
