@@ -7,13 +7,22 @@ set -u
 # $3 = task memory in kilobytes
 # $4 = fasta_files
 # $5 = threshold csv
+# $6 = type of clustering process, 'partial' or 'large'
 
 # parse memory limit
 TASK_MEMORY_KB=$3
-SPLIT_MEMORY_LIMIT=$(( TASK_MEMORY_KB * 9 / 10 )) # 90% of total memory should go to mmseqs2
+SPLIT_MEMORY_LIMIT=$(( TASK_MEMORY_KB * 9 / 10 )) # 90% of total memory gos to mmseqs2
 
-# extract family_max threshold from the thresholds .csv file
-FAMILY_MAX=$( awk -F, '(NR>1) && ($1=="family")'  $5 | cut -f4 -d, )
+if [[ $6 == "partial" ]]; then
+	# extract family_max threshold from the thresholds .csv file
+	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="family")'  $5 | cut -f4 -d, )
+elif [[ $6 == "large" ]]; then
+	# use fixed threshold
+	MIN_SEQ_ID="0.98"
+else 
+	echo "${6} is an incorrect value for the type of clustering process required"
+fi
+
 
 ## loop through list of .fasta files, appending final clustering results to a single file
 touch clusters_pre.tsv
@@ -32,7 +41,7 @@ for FILE in $4; do
 		DB \
 		DB.clustered \
 		tmp \
-		--min-seq-id $FAMILY_MAX \
+		--min-seq-id $MIN_SEQ_ID \
 		--threads $2 \
 		-s 7.5 \
 		--split-memory-limit ${SPLIT_MEMORY_LIMIT}K
@@ -48,6 +57,7 @@ for FILE in $4; do
 	cat tmp.tsv >> clusters_pre.tsv
 	rm renamed.fasta
 	rm DB*
+	rm tmp.tsv
 
 done
 
@@ -56,3 +66,4 @@ sed 's/!?!?/ /g' clusters_pre.tsv > clusters.tsv
 
 rm -f clusters_pre.tsv
 rm -f renamed.fasta
+rm -rf tmp

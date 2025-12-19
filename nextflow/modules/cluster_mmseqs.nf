@@ -1,11 +1,12 @@
-process CLUSTER_PARTIAL {
-    def module_name = "cluster_partial"
+process CLUSTER_MMSEQS {
+    def module_name = "cluster_mmseqs"
     // tag "-"
     container "nanozoo/mmseqs2:14.7e284--11077ba"
 
     input:
     path(fasta_files)
     path(thresholds_csv)
+    val(process_type)
 
     output: 
     tuple path(fasta_files), path("clusters.tsv"),                            emit: clusters
@@ -25,7 +26,8 @@ process CLUSTER_PARTIAL {
         ${task.cpus} \
         ${task.memory.getKilo()} \
         "${fasta_files}" \
-        ${thresholds_csv}
+        ${thresholds_csv} \
+        ${process_type}
         
     """
 

@@ -5,9 +5,11 @@ Filter sequences
 
 //// modules to import
 include { ALIGN_BATCH as ALIGN_GENUS_SMALL                           } from '../modules/align_batch'
-include { ALIGN_BATCH as ALIGN_GENUS_LARGE                           } from '../modules/align_batch'
+include { ALIGN_GENUS_CORE                                           } from '../modules/align_genus_core'
+include { ALIGN_GENUS_OTHER                                          } from '../modules/align_genus_other'
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
-include { CLUSTER_PARTIAL                                            } from '../modules/cluster_partial'
+include { CLUSTER_MMSEQS as CLUSTER_LARGE_GENERA                     } from '../modules/cluster_mmseqs'
+include { CLUSTER_MMSEQS as CLUSTER_PARTIAL_GENERA                   } from '../modules/cluster_mmseqs'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                         } from '../modules/combine_chunks'
 include { CREATE_SYNTHETIC_GENERA                                    } from '../modules/create_synthetic_genera'
@@ -20,6 +22,7 @@ include { FILTER_REDUNDANT                                           } from '../
 include { FILTER_SEQ_OUTLIERS                                        } from '../modules/filter_seq_outliers'
 include { FILTER_TAX_OUTLIERS                                        } from '../modules/filter_tax_outliers'
 include { FILTER_UNCLASSIFIED                                        } from '../modules/filter_unclassified'
+include { GET_GENUS_CORE                                             } from '../modules/get_genus_core'
 include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
 include { HMMSEARCH_AMPLICON                                         } from '../modules/hmmsearch_amplicon'
 include { INTRAGENUS_OUTLIERS                                        } from '../modules/intragenus_outliers'
@@ -402,8 +405,6 @@ workflow FILTER_SEQUENCES {
         ch_subsamples_aligned
     )
 
-    // SUMMARISE_SUBSAMPLES.out.csv.view()
-
     //// combine subsample summary statistics
     SUMMARISE_SUBSAMPLES.out.csv
         .collectFile( keepHeader: true, skip: 1, name: 'subsample_summaries.csv' )
@@ -430,9 +431,9 @@ workflow FILTER_SEQUENCES {
         ch_classification_split_input
     )
 
-    //// make two channels of fully-classified genera: small and large
+    //// make three channels of fully-classified genera files: small, medium and large
     SPLIT_BY_CLASSIFICATION.out.full
-        .collect()
+        .collect(sort: true)
         .flatten()
         .map { file ->
             file_size = file.size() as MemoryUnit
@@ -441,17 +442,26 @@ workflow FILTER_SEQUENCES {
         .branch { file_size, file ->
             small: file_size < 100
                 return file
-            medium: file_size >= 100 && file_size < 1000
+            medium: file_size >= 100 && file_size < 2000
                 return file 
-            large: file_size >= 1000
+            large: file_size >= 2000
                 return file
         } 
         .set { ch_genera_sizebranch }
 
-    //// buffer small files into groups of 500 and medium into groups of 50
+    ////buffer medium files into groups of 10
+    ch_genera_sizebranch.medium
+        .collect( sort: true )
+        .flatten()
+        .buffer( size: 10, remainder: true )
+        .set { ch_genera_medium }
+
+    //// buffer small files into groups of 500 and mix with medium files channel
     ch_genera_sizebranch.small
+        .collect( sort:true )
+        .flatten()
         .buffer( size: 500, remainder: true )
-        .mix ( ch_genera_sizebranch.medium.buffer( size: 10, remainder: true ) )
+        .mix ( ch_genera_medium )
         .set { ch_genera_smaller }
 
     //// align genus-level fully-classified .fastas in batches (highly accurate mode)
@@ -460,15 +470,31 @@ workflow FILTER_SEQUENCES {
         'small'
     )
 
-    //// align genus-level fully-classified .fastas as single files (faster mode)
-    ALIGN_GENUS_LARGE (
+    //// for large genera, first cluster to find representatives
+    CLUSTER_LARGE_GENERA (
         ch_genera_sizebranch.large,
+        ch_thresholds,
         'large'
+    )
+
+    //// ...then get representative 'core' sequences
+    GET_GENUS_CORE (
+        CLUSTER_LARGE_GENERA.out.clusters
+    )
+
+    //// align core sequences
+    ALIGN_GENUS_CORE (
+        GET_GENUS_CORE.out.fasta
+    )
+
+    //// add other sequences to alignment
+    ALIGN_GENUS_OTHER (
+        ALIGN_GENUS_CORE.out.fasta
     )
 
     //// combine outputs from both genus alignment processes
     ALIGN_GENUS_SMALL.out.fasta
-        .mix ( ALIGN_GENUS_LARGE.out.fasta )
+        .mix ( ALIGN_GENUS_OTHER.out.fasta )
         .set { ch_aligned_genera }
 
     //// do intra-genus filtering
@@ -488,24 +514,35 @@ workflow FILTER_SEQUENCES {
     ch_intragenus_results.view()
 
     //// cluster partially classified lineages
-    CLUSTER_PARTIAL (
+    CLUSTER_PARTIAL_GENERA (
         SPLIT_BY_CLASSIFICATION.out.part,
-        ch_thresholds
+        ch_thresholds,
+        'partial'
     )
 
     //// create synthetic genera in partially classified lineages
     CREATE_SYNTHETIC_GENERA (
-        CLUSTER_PARTIAL.out.clusters
+        CLUSTER_PARTIAL_GENERA.out.clusters
     )
 
-    //// combine fully and partially classified sequences
-
+    //// collect fully classified (without intragenus outliers) and partially classified (with synthetic genera) into a single .fasta file
+    ch_aligned_genera
+        .mix( CREATE_SYNTHETIC_GENERA.out.fasta )
+        .collectFile ( name: 'genus_processed.fasta' )
+        .set { ch_genus_processed }
 
     //// split records into chunks for searching
+    ch_genus_processed
+        .splitFasta( by: 100, file: true )
+        .set { ch_search_input }
 
-
-    //// searching chunks against all records for highest-identity hits
-
+    // //// searching chunks against all records for highest-identity hits
+    // FIND_TOP_HITS (
+    //     ch_search_input,
+    //     ch_genus_processed,
+    //     ch_thresholds,
+    //     '1000'
+    // )
 
     // //// cluster sequences into OTUs with mmseqs2
     // CLUSTER_SEQUENCES (
