@@ -14,8 +14,8 @@ TASK_MEMORY_KB=$3
 SPLIT_MEMORY_LIMIT=$(( TASK_MEMORY_KB * 9 / 10 )) # 90% of total memory gos to mmseqs2
 
 if [[ $6 == "partial" ]]; then
-	# extract family_max threshold from the thresholds .csv file
-	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="family")'  $5 | cut -f4 -d, )
+	# extract median genus identity from the thresholds .csv file
+	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="genus")'  $5 | cut -f2 -d, )
 elif [[ $6 == "large" ]]; then
 	# use fixed threshold
 	MIN_SEQ_ID="0.98"
