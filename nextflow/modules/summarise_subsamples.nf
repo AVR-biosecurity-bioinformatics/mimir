@@ -9,7 +9,7 @@ process SUMMARISE_SUBSAMPLES {
     output: 
     path("joint_summary.csv"),                           emit: csv
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 

@@ -10,7 +10,7 @@ process ALIGN_SUBSAMPLE {
     output: 
     path("aligned.fasta"),             emit: fasta
 
-    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
