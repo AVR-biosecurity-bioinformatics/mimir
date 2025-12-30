@@ -22,6 +22,8 @@ include { FILTER_REDUNDANT                                           } from '../
 include { FILTER_SEQ_OUTLIERS                                        } from '../modules/filter_seq_outliers'
 include { FILTER_TAX_OUTLIERS                                        } from '../modules/filter_tax_outliers'
 include { FILTER_UNCLASSIFIED                                        } from '../modules/filter_unclassified'
+include { FIND_TOP_HITS                                              } from '../modules/find_top_hits'
+include { FLAG_GENERA_PAIRS                                          } from '../modules/flag_genera_pairs'
 include { GET_GENUS_CORE                                             } from '../modules/get_genus_core'
 include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
 include { HMMSEARCH_AMPLICON                                         } from '../modules/hmmsearch_amplicon'
@@ -397,7 +399,7 @@ workflow FILTER_SEQUENCES {
     ALIGN_SUBSAMPLE.out.fasta
         .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
         .flatten ()
-        .buffer( size: 10, remainder: true )
+        .buffer( size: 5, remainder: true )
         .set { ch_subsamples_aligned }
 
     //// statistically summarise subsamples
@@ -511,38 +513,100 @@ workflow FILTER_SEQUENCES {
         .collectFile( keepHeader: true, skip: 1, name: 'gs_tibble.csv', storeDir: './output/results' )
         .set { ch_intragenus_results }
 
-    ch_intragenus_results.view()
-
-    //// cluster partially classified lineages
+    //// cluster partially classified lineages using median genus pairwise identity
     CLUSTER_PARTIAL_GENERA (
         SPLIT_BY_CLASSIFICATION.out.part,
         ch_thresholds,
         'partial'
     )
 
-    //// create synthetic genera in partially classified lineages
+    //// create synthetic genera in partially classified lineages 
     CREATE_SYNTHETIC_GENERA (
         CLUSTER_PARTIAL_GENERA.out.clusters
     )
 
     //// collect fully classified (without intragenus outliers) and partially classified (with synthetic genera) into a single .fasta file
-    ch_aligned_genera
+    INTRAGENUS_OUTLIERS.out.retained
         .mix( CREATE_SYNTHETIC_GENERA.out.fasta )
         .collectFile ( name: 'genus_processed.fasta' )
+        .first()
         .set { ch_genus_processed }
 
     //// split records into chunks for searching
     ch_genus_processed
-        .splitFasta( by: 100, file: true )
+        .splitFasta( by: 1000, file: true )
         .set { ch_search_input }
 
-    // //// searching chunks against all records for highest-identity hits
-    // FIND_TOP_HITS (
-    //     ch_search_input,
-    //     ch_genus_processed,
-    //     ch_thresholds,
-    //     '1000'
+    //// searching chunks against all records for highest-identity hits
+    FIND_TOP_HITS (
+        ch_search_input.first(),
+        ch_genus_processed,
+        '100'
+    )
+
+    // //// align top hits per sequence
+    // ALIGN_TOP_HITS (
+
     // )
+
+
+    //// 
+
+    //// convert top hits to flagged genera pairs
+    // FLAG_GENERA_PAIRS (
+    //     FIND_TOP_HITS.out.tsv.first(),
+    //     ch_thresholds,
+    //     ch_genus_processed,
+    //     ch_redundant_counts
+    // )
+
+
+    //// build connection graph for max threshold violation
+    // BUILD_MAX_GRAPH ()
+
+    //// branch max components by number of sequences
+
+
+    //// align small components of the max graph
+    // ALIGN_MAX_SMALL ()
+
+    //// get core and non-core sequences of large components
+    // GET_CORE_MAX ()
+
+    //// align core sequences 
+    // ALIGN_CORE_MAX ()
+
+    //// add other sequences
+    // ALIGN_OTHER_MAX ()
+
+    //// find max threshold outliers within each component
+    // FIND_MAX_OUTLIERS ()
+
+
+    //// build connection graph for min threshold violation
+    // BUILD_MIN_GRAPH ()
+
+    //// branch min components by number of sequences
+
+
+    //// align small components of the min graph
+    // ALIGN_MIN_SMALL ()
+
+    //// get core and non-core sequences of large components
+    // GET_CORE_MIN ()
+
+    //// align core sequences 
+    // ALIGN_CORE_MIN ()
+
+    //// add other sequences
+    // ALIGN_OTHER_MIN ()
+
+    //// find min threshold outliers within each component
+    // FIND_MIN_OUTLIERS ()
+
+
+
+
 
     // //// cluster sequences into OTUs with mmseqs2
     // CLUSTER_SEQUENCES (

@@ -1,15 +1,15 @@
-process CLUSTER_MMSEQS {
-    def module_name = "cluster_mmseqs"
+process FIND_TOP_HITS {
+    def module_name = "find_top_hits"
     // tag "-"
     container "nanozoo/mmseqs2:14.7e284--11077ba"
 
     input:
-    path(fasta_files)
-    path(thresholds_csv)
-    val(process_type)
+    path(query_fasta)
+    path(target_fasta)
+    val(n_top_hits)
 
     output: 
-    tuple path(fasta_files), path("clusters.tsv"),                            emit: clusters
+    path("results_filtered.tsv"),                                         emit: tsv
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -25,9 +25,9 @@ process CLUSTER_MMSEQS {
         ${projectDir} \
         ${task.cpus} \
         ${task.memory.getKilo()} \
-        "${fasta_files}" \
-        ${thresholds_csv} \
-        ${process_type}
+        "${query_fasta}" \
+        "${target_fasta}" \
+        ${n_top_hits}
         
     """
 
