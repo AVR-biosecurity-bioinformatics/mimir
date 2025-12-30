@@ -66,6 +66,7 @@ for i in *.split; do
     fi
     # remove temp files
     rm -f *.tmp
+
 done
 
 # remove unneeded files
