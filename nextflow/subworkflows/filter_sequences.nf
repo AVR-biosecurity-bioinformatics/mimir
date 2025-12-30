@@ -8,6 +8,7 @@ include { ALIGN_BATCH as ALIGN_GENUS_SMALL                           } from '../
 include { ALIGN_GENUS_CORE                                           } from '../modules/align_genus_core'
 include { ALIGN_GENUS_OTHER                                          } from '../modules/align_genus_other'
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
+include { ALIGN_TOP_HITS                                             } from '../modules/align_top_hits'
 include { CLUSTER_MMSEQS as CLUSTER_LARGE_GENERA                     } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_PARTIAL_GENERA                   } from '../modules/cluster_mmseqs'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
@@ -544,10 +545,11 @@ workflow FILTER_SEQUENCES {
         '100'
     )
 
-    // //// align top hits per sequence
-    // ALIGN_TOP_HITS (
-
-    // )
+    //// align top hits per sequence
+    ALIGN_TOP_HITS (
+        FIND_TOP_HITS.out.tsv,
+        ch_genus_processed
+    )
 
 
     //// 
