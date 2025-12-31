@@ -540,7 +540,7 @@ workflow FILTER_SEQUENCES {
 
     //// searching chunks against all records for highest-identity hits
     FIND_TOP_HITS (
-        ch_search_input.first(),
+        ch_search_input,
         ch_genus_processed,
         '100'
     )

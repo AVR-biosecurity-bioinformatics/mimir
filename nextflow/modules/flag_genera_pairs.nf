@@ -10,7 +10,7 @@ process FLAG_GENERA_PAIRS {
     path(counts_file)
 
     output: 
-    path("flagged_genera.csv"),                                  emit: csv
+    path("genera_pairs.csv"),                                  emit: csv
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

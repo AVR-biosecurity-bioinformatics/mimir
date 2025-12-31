@@ -58,7 +58,7 @@ for i in *.split; do
             > $(basename $i .split).aligned.fasta 
         # throw error if output file is empty
         if [ -s $(basename $i .split).aligned.fasta ]; then
-            echo "Finished aligning $i"        
+            echo "Finished aligning $i"
         else 
             echo "Alignment output for $i is empty"
             exit 1
