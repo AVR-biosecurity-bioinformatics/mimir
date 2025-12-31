@@ -74,20 +74,15 @@ rm -rf tmp
 cat results.tsv | \
     awk '
         BEGIN {
-            prev_lin = ""
+            prev_query = ""
             file_index = 0
         }
         { 
-        # get genus lineage string of query
-        split($1, query_array, ";", seps )
-        lineage_string=""
-        for (i = 2; i <= 7; i++ )
-            lineage_string = lineage_string ";" query_array[i]
-        if (lineage_string != prev_lin) {
+        if ( $1 != prev_query ) {
             file_index++
         }
         print $0 > file_index".split" 
-        prev_lin = lineage_string
+        prev_query = $1
     }' - 
 
 # loop through each one-query table, removing lines with targets in the same genus, and appending to combined file

@@ -11,25 +11,20 @@ set -o pipefail
 # unwrap fasta file
 awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' $4 > unwrapped.fasta
 
-# split input table by query, explicitly sorting by query
+# split input table by query, explicitly sorting by query beforehand
 cat $3 | \
     sort -k1,1 - | \
     awk '
         BEGIN {
-            prev_lin = ""
+            prev_query = ""
             file_index = 0
         }
         { 
-        # get genus lineage string of query
-        split($1, query_array, ";")
-        lineage_string=""
-        for (i = 2; i <= 7; i++ )
-            lineage_string = lineage_string ";" query_array[i]
-        if (lineage_string != prev_lin) {
+        if ( $1 != prev_query ) {
             file_index++
         }
         print $0 > file_index".split" 
-        prev_lin = lineage_string
+        prev_query = $1
     }' - 
 
 # for each query, extract the query and all target sequences into a single .fasta file, then align using mafft in a pipe

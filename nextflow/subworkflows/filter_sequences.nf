@@ -535,14 +535,14 @@ workflow FILTER_SEQUENCES {
 
     //// split records into chunks for searching
     ch_genus_processed
-        .splitFasta( by: 1000, file: true )
+        .splitFasta( by: 500, file: true )
         .set { ch_search_input }
 
     //// searching chunks against all records for highest-identity hits
     FIND_TOP_HITS (
         ch_search_input,
         ch_genus_processed,
-        '100'
+        '50'
     )
 
     //// align inter-genus top hits per sequence
@@ -559,10 +559,11 @@ workflow FILTER_SEQUENCES {
         ch_redundant_counts
     )
 
-    //// build connection graph for max threshold violation
+    //// build graph of connected genera, outputting components
     // BUILD_MAX_GRAPH ()
 
-    //// branch max components by number of sequences
+
+    //// branch components by file size
 
 
     //// align small components of the max graph
