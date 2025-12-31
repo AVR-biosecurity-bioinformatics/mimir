@@ -4,7 +4,7 @@ process FLAG_GENERA_PAIRS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(top_hits_file)
+    path(fasta_files, name: 'aligned*.fasta')
     path(thresholds_file)
     path(seqs_file)
     path(counts_file)
@@ -23,7 +23,7 @@ process FLAG_GENERA_PAIRS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    top_hits_file =                     "${top_hits_file}"
+    fasta_files =                       "${fasta_files}"
     thresholds_file =                   "${thresholds_file}"
     seqs_file =                         "${seqs_file}"
     counts_file =                       "${counts_file}"

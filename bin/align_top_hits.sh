@@ -36,14 +36,17 @@ cat $3 | \
 for i in *.split; do
     # get query
     QUERY=$(head $i -n1 | cut -f1)
-    # get targets
+    # get query sequence
+    grep --no-group-separator -A1 -F "$QUERY" unwrapped.fasta > query.fasta
+    # get target sequences
     cat $i | cut -f2 > targets.tmp
-    # cat into list
-    echo $QUERY | cat - targets.tmp > list.tmp
+    grep --no-group-separator -A1 -F -f targets.tmp unwrapped.fasta > targets.fasta
+    # cat into single .fasta, making sure query is first
+    cat query.fasta targets.fasta > combined.fasta
     # if list of sequences only contains one, skip alignment
-    if [[ $( cat list.tmp | wc -l ) > 1 ]]; then
+    if [[ $( grep -c ">" combined.fasta ) > 1 ]]; then
         # get sequences that match header, then align with mafft
-        grep --no-group-separator -A1 -F -f list.tmp unwrapped.fasta | \
+        cat combined.fasta | \
             mafft \
                 --nuc \
                 --linelength -1 \
@@ -55,18 +58,19 @@ for i in *.split; do
             > $(basename $i .split).aligned.fasta 
         # throw error if output file is empty
         if [ -s $(basename $i .split).aligned.fasta ]; then
-            echo "Finished aligning $i"
+            echo "Finished aligning $i"        
         else 
             echo "Alignment output for $i is empty"
             exit 1
         fi
     else 
-        echo "Skipping alignment for $i"
         touch $(basename $i .split).aligned.fasta 
     fi
     # remove temp files
     rm -f *.tmp
-
+    rm -f query.fasta
+    rm -f targets.fasta
+    rm -f combined.fasta
 done
 
 # remove unneeded files

@@ -18,7 +18,7 @@ process ALIGN_TOP_HITS {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
-
+    
     ### run module code #
     bash ${module_name}.sh \
         ${projectDir} \

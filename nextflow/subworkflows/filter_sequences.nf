@@ -545,23 +545,19 @@ workflow FILTER_SEQUENCES {
         '100'
     )
 
-    //// align top hits per sequence
+    //// align inter-genus top hits per sequence
     ALIGN_TOP_HITS (
         FIND_TOP_HITS.out.tsv,
         ch_genus_processed
     )
 
-
-    //// 
-
-    //// convert top hits to flagged genera pairs
-    // FLAG_GENERA_PAIRS (
-    //     FIND_TOP_HITS.out.tsv.first(),
-    //     ch_thresholds,
-    //     ch_genus_processed,
-    //     ch_redundant_counts
-    // )
-
+    // convert top hits to flagged genera pairs
+    FLAG_GENERA_PAIRS (
+        ALIGN_TOP_HITS.out.fasta,
+        ch_thresholds,
+        ch_genus_processed,
+        ch_redundant_counts
+    )
 
     //// build connection graph for max threshold violation
     // BUILD_MAX_GRAPH ()

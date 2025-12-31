@@ -43,7 +43,7 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "top_hits_file",
+    "fasta_files",
     "thresholds_file",
     "seqs_file",
     "counts_file"
@@ -52,7 +52,11 @@ lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-top_hits <- readr::read_tsv(top_hits_file, col_names = c("query", "target"), show_col_types = F)
+# read in list of sequences
+seqs_list <- 
+    stringr::str_extract_all(fasta_files, pattern = "[^\\s,\\[\\]]+") %>% 
+    unlist() %>%
+    lapply(., Biostrings::readDNAStringSet)
 
 thresholds <- readr::read_csv(thresholds_file, show_col_types = F)
 
