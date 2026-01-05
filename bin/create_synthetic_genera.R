@@ -93,3 +93,17 @@ seqs <- seqs_list %>% do.call(c, .)
 
 # write sequences to file
 Biostrings::writeXStringSet(seqs, "seqs_out.fasta")
+
+# get cluster rep IDs without species name as regex pattern
+cluster_pattern <- 
+	clusters$rep %>% 
+	unique() %>%
+	stringr::str_remove(., ";[^;]+$") %>%
+	stringr::str_replace(., "\\|", "\\\\|") %>%
+	stringr::str_replace(., "^", "^") %>%
+	stringr::str_flatten(., collapse = "|")
+
+# get new names of cluster
+cluster_reps <- names(seqs)[names(seqs) %>% stringr::str_detect(., cluster_pattern)]
+
+readr::write_lines(cluster_reps, "reps.txt")

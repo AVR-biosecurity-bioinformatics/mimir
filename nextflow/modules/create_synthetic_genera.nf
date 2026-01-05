@@ -8,6 +8,7 @@ process CREATE_SYNTHETIC_GENERA {
 
     output: 
     path("seqs_out.fasta"),                                  emit: fasta
+    path("reps.txt"),                                        emit: reps
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

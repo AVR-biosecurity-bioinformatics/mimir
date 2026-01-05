@@ -4,28 +4,18 @@ set -u
 ## args are the following:
 # $1 = projectDir 
 # $2 = threads
-# $3 = task memory in kilobytes
-# $4 = query_fasta
-# $5 = target_fasta
-# $6 = n_top_hits (number of top hits to return per sequence)
+# $3 = query_fasta
+# $4 = n_top_hits (number of top hits to return per sequence)
 
-N_TOP_HITS=$6
+N_TOP_HITS=$4
 
 # replace each space in sequence headers of fasta files with the string "!?!?"
-sed '/^>/ s/ /!?!?/g' $4 > query.fasta
-sed '/^>/ s/ /!?!?/g' $5 > target.fasta
-
-# create database
-makeblastdb \
-	-in target.fasta \
-	-input_type fasta \
-	-out blast.db \
-	-dbtype nucl
+sed '/^>/ s/ /!?!?/g' $3 > query.fasta
 
 # run blast
 blastn \
 	-query query.fasta \
-	-db blast.db \
+	-db blast_db \
 	-out results_pre.tsv \
 	-strand plus \
 	-task dc-megablast \
@@ -80,7 +70,4 @@ echo "Finished filtering hits"
 # remove unneeded files
 rm -f *.split
 rm -f results.tsv
-rm -rf ./tmp
-rm -f blast.db*
 rm -f query.fasta
-rm -f target.fasta

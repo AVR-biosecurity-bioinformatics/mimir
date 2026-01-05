@@ -30,8 +30,10 @@ include { GET_GENUS_CORE                                             } from '../
 include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
 include { HMMSEARCH_AMPLICON                                         } from '../modules/hmmsearch_amplicon'
 include { INTRAGENUS_OUTLIERS                                        } from '../modules/intragenus_outliers'
+include { MAKE_BLAST_DATABASE                                        } from '../modules/make_blast_database'
 include { MERGE_SPLITS as MERGE_SPLITS_GENUS                         } from '../modules/merge_splits'
 include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
+include { SELECT_SEARCH_RECORDS                                      } from '../modules/select_search_records'
 include { SORT_BY_LINEAGE                                            } from '../modules/sort_by_lineage'
 include { SPLIT_BY_CLASSIFICATION                                    } from '../modules/split_by_classification'
 include { SPLIT_BY_RANK as SPLIT_BY_GENUS                            } from '../modules/split_by_rank'
@@ -527,6 +529,11 @@ workflow FILTER_SEQUENCES {
         CLUSTER_PARTIAL_GENERA.out.clusters
     )
 
+    //// collect cluster reps from synthetic genera
+    CREATE_SYNTHETIC_GENERA.out.reps
+        .collectFile ( name: "cluster_reps.txt" )
+        .set { ch_synthetic_reps }
+
     //// collect fully classified (without intragenus outliers) and partially classified (with synthetic genera) into a single .fasta file
     INTRAGENUS_OUTLIERS.out.retained
         .mix( CREATE_SYNTHETIC_GENERA.out.fasta )
@@ -534,10 +541,6 @@ workflow FILTER_SEQUENCES {
         .first()
         .set { ch_genus_processed }
 
-    //// split records into chunks for searching
-    ch_genus_processed
-        .splitFasta( by: 100, file: true )
-        .set { ch_search_input }
 
     // //// searching chunks against all records for highest-identity hits
     // FIND_TOP_HITS (
@@ -546,17 +549,29 @@ workflow FILTER_SEQUENCES {
     //     '50'
     // )
 
-    //// select sequences from total for top-hit searching
-    // MAKE_TARGET_DATABASE ()
-
-
-    BLAST_TOP_HITS (
-        ch_search_input.first(),
+    // select sequences from total for top-hit searching
+    SELECT_SEARCH_RECORDS (
         ch_genus_processed,
-        '50'
+        ch_intragenus_results,
+        ch_synthetic_reps
     )
 
+    //// create blastn database of target records
+    MAKE_BLAST_DATABASE (
+        SELECT_SEARCH_RECORDS.out.fasta
+    )
 
+    //// split records into chunks for searching
+    SELECT_SEARCH_RECORDS.out.fasta
+        .splitFasta( by: 200, file: true )
+        .set { ch_search_input }
+
+    //// searching chunks against all records for highest-identity hits
+    BLAST_TOP_HITS (
+        ch_search_input,
+        MAKE_BLAST_DATABASE.out.blast_db.first(),
+        '50'
+    )
 
     //// align inter-genus top hits per sequence
     ALIGN_TOP_HITS (
@@ -564,7 +579,7 @@ workflow FILTER_SEQUENCES {
         ch_genus_processed
     )
 
-    // convert top hits to flagged genera pairs
+    // convert top hits to flagged genera pairs 
     FLAG_GENERA_PAIRS (
         ALIGN_TOP_HITS.out.alignment,
         ch_thresholds,

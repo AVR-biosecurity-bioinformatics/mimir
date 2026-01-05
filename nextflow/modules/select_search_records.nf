@@ -1,21 +1,15 @@
-process INTRAGENUS_OUTLIERS {
-    def module_name = "intragenus_outliers"
+process SELECT_SEARCH_RECORDS {
+    def module_name = "select_search_records"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(fasta_files)
-    path(rf_counts_tsv)
-    path(thresholds_csv)
-    val(con_min_n)
-    val(con_min_prop)
+    path(fasta_file)
+    path(ig_tibble_file)
+    path(cluster_reps_file)
 
     output: 
-    path("gs_tibble.csv"),                                  emit: csv
-    path("retained.fasta"),                                 emit: retained
-    path("gminor.fasta"),                                   emit: removed_g
-    path("sminor.fasta"),                                   emit: removed_s
-    
+    path("reps.fasta"),                                        emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -28,12 +22,10 @@ process INTRAGENUS_OUTLIERS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_files =                    "${fasta_files}"
-    rf_counts_tsv =                  "${rf_counts_tsv}"
-    thresholds_csv =                 "${thresholds_csv}"
-    con_min_n =                      "${con_min_n}"
-    con_min_prop =                   "${con_min_prop}"
-    
+    fasta_file =                       "${fasta_file}"
+    ig_tibble_file =                   "${ig_tibble_file}"
+    cluster_reps_file =                "${cluster_reps_file}"
+
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

@@ -1,15 +1,13 @@
-process BLAST_TOP_HITS {
-    def module_name = "blast_top_hits"
+process MAKE_BLAST_DATABASE {
+    def module_name = "make_blast_database"
     // tag "-"
     container "ncbi/blast:2.17.0"
 
     input:
-    path(query_fasta)
-    path(blast_db)
-    val(n_top_hits)
+    path(target_fasta)
 
     output: 
-    path("results_filtered.tsv"),                                         emit: tsv
+    path("blast_db.*"),                                         emit: blast_db
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -24,8 +22,7 @@ process BLAST_TOP_HITS {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${query_fasta}" \
-        ${n_top_hits}
+        ${target_fasta}
         
     """
 
