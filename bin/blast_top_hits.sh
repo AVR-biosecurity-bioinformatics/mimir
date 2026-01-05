@@ -9,68 +9,34 @@ set -u
 # $5 = target_fasta
 # $6 = n_top_hits (number of top hits to return per sequence)
 
-# parse memory limit
-TASK_MEMORY_MB=$3
-SPLIT_MEMORY_LIMIT=$(( TASK_MEMORY_MB * 8 / 10 )) # 80% of total memory goes to mmseqs2
-
 N_TOP_HITS=$6
 
 # replace each space in sequence headers of fasta files with the string "!?!?"
 sed '/^>/ s/ /!?!?/g' $4 > query.fasta
 sed '/^>/ s/ /!?!?/g' $5 > target.fasta
 
-# create tmp directory
-mkdir ./tmp
+# create database
+makeblastdb \
+	-in target.fasta \
+	-input_type fasta \
+	-out blast.db \
+	-dbtype nucl
 
-# create databases for query and target fasta files
-mmseqs createdb \
-	query.fasta \
-	queryDB \
-	--dbtype 2
-
-mmseqs createdb \
-	target.fasta \
-	targetDB \
-	--dbtype 2
-
-# compute prefiltering scores
-mmseqs prefilter \
-	queryDB \
-	targetDB \
-	pfDB \
-	--local-tmp ./tmp \
-	-s 7.5 \
-    --split-memory-limit 7G \
-    --split-mode 0 \
-	--max-seqs 1000 \
-	--threads $2 
-
-# align prefiltered sequences
-mmseqs align \
-	queryDB \
-	targetDB \
-	pfDB \
-	alDB \
-	--threads $2 
-
-# convert alignment output to table
-mmseqs convertalis \
-	queryDB \
-	targetDB \
-	alDB \
-	results_pre.tsv \
-	--format-output "query,target"
+# run blast
+blastn \
+	-query query.fasta \
+	-db blast.db \
+	-out results_pre.tsv \
+	-strand plus \
+	-task dc-megablast \
+	-word_size 11 \
+	-outfmt "6 qseqid sseqid" \
+	-num_threads $2 \
+	-max_target_seqs 1000
 
 # convert tsv back to original sequence names
 sed 's/!?!?/ /g' results_pre.tsv > results.tsv
-
-# remove unneeded files from searching
-rm -f alDB*
-rm -f pfDB*
-rm -f query*
-rm -f target*
 rm -f results_pre.tsv
-rm -rf tmp
 
 ## filter results to only keep target hits outside of the query's genus
 
@@ -97,24 +63,16 @@ for i in *.split; do
         BEGIN { hit_count = 1 }
         {
         # get genus lineage string of query
-        split($1, query_array, ";", seps )
-        query_string=""
-        for (i = 2; i <= 7; i++ )
-            query_string = query_string ";" query_array[i]
+        split($1, query_array, ";" )
+        query_string = query_array[2] ";" query_array[3] ";" query_array[4] ";" query_array[5] ";" query_array[6] ";" query_array[7]
         # get genus lineage string of target
-        split($2, target_array, ";", seps )
-        target_string=""
-        for (i = 2; i <= 7; i++ )
-            target_string = target_string ";" target_array[i]
-        if ( query_string != target_string ){
-            if ( hit_count < n_top_hits ){
-                print $0
-            }
-        }
+        split($2, target_array, ";" )
+        target_string = target_array[2] ";" target_array[3] ";" target_array[4] ";" target_array[5] ";" target_array[6] ";" target_array[7]
+        if ( query_string != target_string && hit_count < n_top_hits ) print $0;
         hit_count++
-    	}' \
-		$i \
-		>> results_filtered.tsv
+        }' \
+        $i \
+    >> results_filtered.tsv
 done 
 
 echo "Finished filtering hits"
@@ -123,6 +81,6 @@ echo "Finished filtering hits"
 rm -f *.split
 rm -f results.tsv
 rm -rf ./tmp
-
-
-#### using blast instead of mmseqs2
+rm -f blast.db*
+rm -f query.fasta
+rm -f target.fasta

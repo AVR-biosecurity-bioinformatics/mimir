@@ -43,7 +43,7 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "fasta_files",
+    "alignment_file",
     "thresholds_file",
     "seqs_file",
     "counts_file"
@@ -53,10 +53,22 @@ lapply(nf_vars, nf_var_check)
 ### process variables 
 
 # read in list of sequences
+alignment_single <- readr::read_lines(alignment_file)
+
+# process single-line alignment format into DSS format
 seqs_list <- 
-    stringr::str_extract_all(fasta_files, pattern = "[^\\s,\\[\\]]+") %>% 
-    unlist() %>%
-    lapply(., Biostrings::readDNAStringSet)
+	alignment_single %>%
+	lapply(
+		.,
+		function(x){
+			x_split <- stringr::str_split_1(x, ">>>")
+			x_head <- x_split[c(TRUE,FALSE)] %>% stringr::str_remove(., "^>") 
+			x_seq <- x_split[c(FALSE,TRUE)]
+			names(x_seq) <- x_head
+			out <- Biostrings::DNAStringSet(x_seq)
+			return(out)
+		}
+	) 
 
 thresholds <- readr::read_csv(thresholds_file, show_col_types = F)
 
@@ -64,10 +76,10 @@ seqs <- Biostrings::readDNAStringSet(seqs_file)
 
 counts <- readr::read_tsv(counts_file, col_names = c("name","n"), show_col_types = FALSE)
 
-### run code
-
 allowed_ranks <- c("kingdom","phylum", "class", "order", "family", "genus", "species")
 root_ranks <- c("root", allowed_ranks)
+
+### run code
 
 # for each DSS object in seqs_list, produce a distance matrix, then pull the distance from the first sequence (which is the query)
 flags <-
@@ -191,7 +203,8 @@ genera_pairs <-
 		g_q = stringr::str_extract(query, "(?<=;).+$") %>% stringr::str_extract(., ".+(?=;)"), 
 		g_t = stringr::str_extract(target, "(?<=;).+$") %>% stringr::str_extract(., ".+(?=;)")
 	) %>%
-	dplyr::select(query = g_q, target = g_t)
+	dplyr::select(query = g_q, target = g_t) %>%
+	dplyr::distinct()
 
 # write out
 readr::write_csv(genera_pairs, "genera_pairs.csv")

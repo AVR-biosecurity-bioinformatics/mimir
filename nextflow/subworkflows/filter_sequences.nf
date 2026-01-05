@@ -9,6 +9,7 @@ include { ALIGN_GENUS_CORE                                           } from '../
 include { ALIGN_GENUS_OTHER                                          } from '../modules/align_genus_other'
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
 include { ALIGN_TOP_HITS                                             } from '../modules/align_top_hits'
+include { BLAST_TOP_HITS                                             } from '../modules/blast_top_hits'
 include { CLUSTER_MMSEQS as CLUSTER_LARGE_GENERA                     } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_PARTIAL_GENERA                   } from '../modules/cluster_mmseqs'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
@@ -535,25 +536,37 @@ workflow FILTER_SEQUENCES {
 
     //// split records into chunks for searching
     ch_genus_processed
-        .splitFasta( by: 500, file: true )
+        .splitFasta( by: 100, file: true )
         .set { ch_search_input }
 
-    //// searching chunks against all records for highest-identity hits
-    FIND_TOP_HITS (
-        ch_search_input,
+    // //// searching chunks against all records for highest-identity hits
+    // FIND_TOP_HITS (
+    //     ch_search_input.first(),
+    //     ch_genus_processed,
+    //     '50'
+    // )
+
+    //// select sequences from total for top-hit searching
+    // MAKE_TARGET_DATABASE ()
+
+
+    BLAST_TOP_HITS (
+        ch_search_input.first(),
         ch_genus_processed,
         '50'
     )
 
+
+
     //// align inter-genus top hits per sequence
     ALIGN_TOP_HITS (
-        FIND_TOP_HITS.out.tsv,
+        BLAST_TOP_HITS.out.tsv,
         ch_genus_processed
     )
 
     // convert top hits to flagged genera pairs
     FLAG_GENERA_PAIRS (
-        ALIGN_TOP_HITS.out.fasta,
+        ALIGN_TOP_HITS.out.alignment,
         ch_thresholds,
         ch_genus_processed,
         ch_redundant_counts

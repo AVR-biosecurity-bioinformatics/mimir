@@ -1,8 +1,7 @@
-process FIND_TOP_HITS {
-    def module_name = "find_top_hits"
+process BLAST_TOP_HITS {
+    def module_name = "blast_top_hits"
     // tag "-"
-    // container "nanozoo/mmseqs2:14.7e284--11077ba"
-    container "staphb/mmseqs2:18-8cc5c"
+    container "ncbi/blast:2.17.0"
 
     input:
     path(query_fasta)
