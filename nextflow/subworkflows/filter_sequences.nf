@@ -10,6 +10,7 @@ include { ALIGN_GENUS_OTHER                                          } from '../
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
 include { ALIGN_TOP_HITS                                             } from '../modules/align_top_hits'
 include { BLAST_TOP_HITS                                             } from '../modules/blast_top_hits'
+include { BUILD_GRAPH_MAX                                            } from '../modules/build_graph_max'
 include { CLUSTER_MMSEQS as CLUSTER_LARGE_GENERA                     } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_PARTIAL_GENERA                   } from '../modules/cluster_mmseqs'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
@@ -541,14 +542,6 @@ workflow FILTER_SEQUENCES {
         .first()
         .set { ch_genus_processed }
 
-
-    // //// searching chunks against all records for highest-identity hits
-    // FIND_TOP_HITS (
-    //     ch_search_input.first(),
-    //     ch_genus_processed,
-    //     '50'
-    // )
-
     // select sequences from total for top-hit searching
     SELECT_SEARCH_RECORDS (
         ch_genus_processed,
@@ -556,42 +549,63 @@ workflow FILTER_SEQUENCES {
         ch_synthetic_reps
     )
 
+    SELECT_SEARCH_RECORDS.out.fasta
+        .first()
+        .set { ch_search_records }
+
     //// create blastn database of target records
     MAKE_BLAST_DATABASE (
-        SELECT_SEARCH_RECORDS.out.fasta
+        ch_search_records
     )
 
-    //// split records into chunks for searching
-    SELECT_SEARCH_RECORDS.out.fasta
-        .splitFasta( by: 200, file: true )
-        .set { ch_search_input }
+    MAKE_BLAST_DATABASE.out.blast_db
+        .first()
+        .set { ch_blast_db }
 
-    //// searching chunks against all records for highest-identity hits
+    //// split records into chunks for searching
+    ch_search_records
+        .splitFasta( by: 200, file: true )
+        .set { ch_search_queries }
+
+    //// searching chunks against representative records for highest-identity hits
     BLAST_TOP_HITS (
-        ch_search_input,
-        MAKE_BLAST_DATABASE.out.blast_db.first(),
-        '50'
+        ch_search_queries,
+        ch_blast_db,
+        '50' // params.n_top_hits (number of top inter-genus hits to keep per query, more is more sensitive)
     )
 
     //// align inter-genus top hits per sequence
     ALIGN_TOP_HITS (
         BLAST_TOP_HITS.out.tsv,
-        ch_genus_processed
+        ch_search_records
     )
 
-    // convert top hits to flagged genera pairs 
+    //// convert top hits to flagged genera pairs 
     FLAG_GENERA_PAIRS (
         ALIGN_TOP_HITS.out.alignment,
         ch_thresholds,
-        ch_genus_processed,
-        ch_redundant_counts
+        ch_genus_processed, // not necessary?
+        ch_redundant_counts // not necessary?
     )
 
-    //// build graph of connected genera, outputting components
-    // BUILD_MAX_GRAPH ()
+    //// combine flagged genera into a single file
+    FLAG_GENERA_PAIRS.out.csv
+        .collectFile ( name: 'flagged_genera.csv', keepHeader: true, skip: 1 )
+        .set { ch_flagged_genera }
 
+    //// build graph of connected genera, outputting groups of components
+    BUILD_GRAPH_MAX (
+        ch_flagged_genera,
+        ch_genus_processed,
+        ch_redundant_counts, 
+        '1000' // max number of sequences to output for each group of components (n>1)
+    )
 
-    //// branch components by file size
+    BUILD_GRAPH_MAX.out.fasta
+        .flatten()
+        .view()
+
+    //// branch component groups by number of records
 
 
     //// align small components of the max graph

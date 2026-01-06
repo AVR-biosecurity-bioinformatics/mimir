@@ -1,16 +1,16 @@
-process FLAG_GENERA_PAIRS {
-    def module_name = "flag_genera_pairs"
+process BUILD_GRAPH_MAX {
+    def module_name = "build_graph_max"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(alignment_file)
-    path(thresholds_file)
+    path(flagged_genera_file)
     path(seqs_file)
     path(counts_file)
+    val(component_group_size)
 
     output: 
-    path("genera_pairs.csv"),                                  emit: csv
+    path("component_group*.fasta"),                                  emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,11 +23,11 @@ process FLAG_GENERA_PAIRS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    alignment_file =                    "${alignment_file}"
-    thresholds_file =                   "${thresholds_file}"
-    seqs_file =                         "${seqs_file}"
-    counts_file =                       "${counts_file}"
-    
+    flagged_genera_file =                  "${flagged_genera_file}"
+    seqs_file =                            "${seqs_file}"
+    counts_file =                          "${counts_file}"
+    component_group_size =                 "${component_group_size}"
+
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
