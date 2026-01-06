@@ -5,6 +5,7 @@ Filter sequences
 
 //// modules to import
 include { ALIGN_BATCH as ALIGN_GENUS_SMALL                           } from '../modules/align_batch'
+include { ALIGN_BATCH as ALIGN_MAX_SMALL                             } from '../modules/align_batch'
 include { ALIGN_GENUS_CORE                                           } from '../modules/align_genus_core'
 include { ALIGN_GENUS_OTHER                                          } from '../modules/align_genus_other'
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
@@ -598,18 +599,29 @@ workflow FILTER_SEQUENCES {
         ch_flagged_genera,
         ch_genus_processed,
         ch_redundant_counts, 
-        '1000' // max number of sequences to output for each group of components (n>1)
+        '1000' // max number of sequences to output for each group of components (n>1); params.component_size
     )
 
+    //// branch component groups by number of records
     BUILD_GRAPH_MAX.out.fasta
         .flatten()
-        .view()
-
-    //// branch component groups by number of records
-
+        .map { fasta ->
+            n_seqs = fasta.readLines().count { it =~ />/ }
+            [ fasta, n_seqs ]
+        }
+        .branch { fasta, n_seqs ->
+            small: n_seqs <= 1000 // use params.component_size
+                return fasta
+            large: n_seqs > 1000 // use params.component_size
+                return fasta
+        }
+        .set { ch_max_components }
 
     //// align small components of the max graph
-    // ALIGN_MAX_SMALL ()
+    ALIGN_MAX_SMALL (
+        ch_max_components.small,
+        "small"
+    )
 
     //// get core and non-core sequences of large components
     // GET_CORE_MAX ()
