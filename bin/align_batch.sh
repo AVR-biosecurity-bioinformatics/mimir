@@ -20,7 +20,7 @@ for FILE in ${3}; do
                 --thread ${2} \
                 --linelength -1 \
                 --globalpair \
-                --maxiterate 10 \
+                --maxiterate 1000 \
                 $FILE \
                 > ${BASE}.aligned.fasta
         else 
