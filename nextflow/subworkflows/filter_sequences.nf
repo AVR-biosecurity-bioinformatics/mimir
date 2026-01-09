@@ -152,7 +152,7 @@ workflow FILTER_SEQUENCES {
 
 
     //// trim and/or filter based on amplicon PHMM
-    if ( ch_amplicon_phmm ){
+    if ( params.primer_fwd && params.primer_rev ){
         //// do a second round of hmm searching using trimmed PHMM
         HMMSEARCH_AMPLICON (
             FILTER_PHMM_FULL.out.retained,
@@ -227,7 +227,6 @@ workflow FILTER_SEQUENCES {
             .filter { it.size() > 0 } // remove empty files
             .collect ()
     }
-
 
     //// combine sequences into one .fasta file and dealign
     COMBINE_CHUNKS ( 
