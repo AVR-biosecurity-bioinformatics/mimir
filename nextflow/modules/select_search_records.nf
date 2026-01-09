@@ -1,17 +1,15 @@
-process RENAME_GENBANK {
-    def module_name = "rename_genbank"
+process SELECT_SEARCH_RECORDS {
+    def module_name = "select_search_records"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple path(gb_file), path(accessions_file)
-    path(ncbi_rankedlineage_noname)
-    val(placeholder_as_unclassified)
-    val(digits_as_unclassified)
+    path(fasta_file)
+    path(ig_tibble_file)
+    path(cluster_reps_file)
 
     output: 
-    path("renamed.fasta"),                    emit: fasta
-    path("accessions_failed.txt"),            emit: accessions_failed
+    path("reps.fasta"),                                        emit: fasta
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -21,16 +19,14 @@ process RENAME_GENBANK {
     def module_script = "${module_name}.R"
     """
     #!/usr/bin/env Rscript
-      
+    
     ### defining Nextflow environment variables as R variables
-    ### input channel variables
-    gb_file =                           "${gb_file}"
-    accessions_file =                   "${accessions_file}"
-    ncbi_rankedlineage_noname =         "${ncbi_rankedlineage_noname}"
-    placeholder_as_unclassified =       "${placeholder_as_unclassified}"
-    digits_as_unclassified =            "${digits_as_unclassified}"
+    ## input channel variables
+    fasta_file =                       "${fasta_file}"
+    ig_tibble_file =                   "${ig_tibble_file}"
+    cluster_reps_file =                "${cluster_reps_file}"
 
-    ### global variables
+    ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
 

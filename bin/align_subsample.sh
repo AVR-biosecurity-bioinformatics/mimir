@@ -5,7 +5,7 @@ set -o pipefail
 ## args are the following:
 # $1 = projectDir 
 # $2 = cpus
-# $3 = core.fasta
+# $3 = .fasta
 
 # if only one sequence in file, skip alignment
 if [[ $( grep -c "^>" $3 ) > 1 ]]; then 
@@ -15,17 +15,17 @@ if [[ $( grep -c "^>" $3 ) > 1 ]]; then
         --thread ${2} \
         --linelength -1 \
         --globalpair \
-        --maxiterate 1000 \
+        --maxiterate 10 \
         ${3} \
-        > core_aligned.fasta 
+        > aligned.fasta 
 else 
     # rename as aligned
-    cp $3 core_aligned.fasta
+    cp $3 aligned.fasta
 fi 
 
 # throw error if output file is empty
-if [ -s core_aligned.fasta ]; then
-    echo "Finished aligning core sequences"        
+if [ -s aligned.fasta ]; then
+    echo "Finished aligning sequences"        
 else 
     echo "alignment output file is empty"
     exit 1

@@ -1,14 +1,21 @@
-process GET_CORE_SEQUENCES {
-    def module_name = "get_core_sequences"
+process INTRAGENUS_OUTLIERS {
+    def module_name = "intragenus_outliers"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(fasta_file)
+    path(fasta_files)
+    path(rf_counts_tsv)
+    path(thresholds_csv)
+    val(con_min_n)
+    val(con_min_prop)
 
     output: 
-    path("core.fasta"),                                  emit: core
-    path("other.fasta"),                                 emit: other
+    path("gs_tibble.csv"),                                  emit: csv
+    path("retained.fasta"),                                 emit: retained
+    path("gminor.fasta"),                                   emit: removed_g
+    path("sminor.fasta"),                                   emit: removed_s
+    
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -21,8 +28,12 @@ process GET_CORE_SEQUENCES {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_file =                   "${fasta_file}"
-
+    fasta_files =                    "${fasta_files}"
+    rf_counts_tsv =                  "${rf_counts_tsv}"
+    thresholds_csv =                 "${thresholds_csv}"
+    con_min_n =                      "${con_min_n}"
+    con_min_prop =                   "${con_min_prop}"
+    
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

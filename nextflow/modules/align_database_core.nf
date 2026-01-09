@@ -1,13 +1,14 @@
-process ALIGN_CORE {
-    def module_name = "align_core"
+process ALIGN_DATABASE_CORE {
+    def module_name = "align_database_core"
     // tag "-"
     container "staphb/mafft:7.526"
 
+
     input:
-    tuple path('core.fasta'), path(other_fasta)
+    path('core.fasta')
 
     output: 
-    tuple path("core_aligned.fasta"), path(other_fasta),             emit: fasta
+    path("aligned.fasta"),             emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

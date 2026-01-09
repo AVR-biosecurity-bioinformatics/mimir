@@ -1,14 +1,13 @@
-process ALIGN_BATCH {
-    def module_name = "align_batch"
+process MAKE_BLAST_DATABASE {
+    def module_name = "make_blast_database"
     // tag "-"
-    container "staphb/mafft:7.526"
+    container "ncbi/blast:2.17.0"
 
     input:
-    path(fasta_files)
-    val(file_type)
+    path(target_fasta)
 
     output: 
-    path("*.aligned.fasta"),             emit: fasta
+    path("blast_db.*"),                                         emit: blast_db
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -18,13 +17,13 @@ process ALIGN_BATCH {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
-    
-    ### run module code #
+       
+    ### run module code
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${fasta_files}" \
-        ${file_type}
-            
+        ${target_fasta}
+        
     """
+
 }

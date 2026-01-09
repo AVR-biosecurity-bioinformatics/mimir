@@ -1,17 +1,13 @@
-process RENAME_GENBANK {
-    def module_name = "rename_genbank"
+process SUMMARISE_SUBSAMPLES {
+    def module_name = "summarise_subsamples"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple path(gb_file), path(accessions_file)
-    path(ncbi_rankedlineage_noname)
-    val(placeholder_as_unclassified)
-    val(digits_as_unclassified)
+    path(fasta_files, name: 'aligned*.fasta')
 
     output: 
-    path("renamed.fasta"),                    emit: fasta
-    path("accessions_failed.txt"),            emit: accessions_failed
+    path("joint_summary.csv"),                           emit: csv
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -21,16 +17,12 @@ process RENAME_GENBANK {
     def module_script = "${module_name}.R"
     """
     #!/usr/bin/env Rscript
-      
+    
     ### defining Nextflow environment variables as R variables
-    ### input channel variables
-    gb_file =                           "${gb_file}"
-    accessions_file =                   "${accessions_file}"
-    ncbi_rankedlineage_noname =         "${ncbi_rankedlineage_noname}"
-    placeholder_as_unclassified =       "${placeholder_as_unclassified}"
-    digits_as_unclassified =            "${digits_as_unclassified}"
+    ## input channel variables
+    fasta_files =                   "${fasta_files}"
 
-    ### global variables
+    ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
 

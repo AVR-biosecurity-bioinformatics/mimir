@@ -1,14 +1,14 @@
-process ALIGN_BATCH {
-    def module_name = "align_batch"
+process ALIGN_TOP_HITS {
+    def module_name = "align_top_hits"
     // tag "-"
     container "staphb/mafft:7.526"
 
     input:
-    path(fasta_files)
-    val(file_type)
+    path(top_hits_tsv)
+    path(seqs_fasta)
 
     output: 
-    path("*.aligned.fasta"),             emit: fasta
+    path("alignment.out"),                            emit: alignment
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,8 +23,8 @@ process ALIGN_BATCH {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${fasta_files}" \
-        ${file_type}
+        "${top_hits_tsv}" \
+        "${seqs_fasta}"
             
     """
 }

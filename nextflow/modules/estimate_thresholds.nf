@@ -1,19 +1,19 @@
-process RENAME_GENBANK {
-    def module_name = "rename_genbank"
+process ESTIMATE_THRESHOLDS {
+    def module_name = "estimate_thresholds"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple path(gb_file), path(accessions_file)
-    path(ncbi_rankedlineage_noname)
-    val(placeholder_as_unclassified)
-    val(digits_as_unclassified)
+    path(summary_csv)
+    val(min_k)
+    val(max_k)
 
     output: 
-    path("renamed.fasta"),                    emit: fasta
-    path("accessions_failed.txt"),            emit: accessions_failed
+    path("thresholds.csv"),                           emit: csv
+    path("estimation_plot.pdf"),                         emit: estimation_plot
+    path("sample_size_histogram.pdf"),                   emit: hist
 
-    // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
+    publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
     // when: 
 
@@ -21,16 +21,14 @@ process RENAME_GENBANK {
     def module_script = "${module_name}.R"
     """
     #!/usr/bin/env Rscript
-      
+    
     ### defining Nextflow environment variables as R variables
-    ### input channel variables
-    gb_file =                           "${gb_file}"
-    accessions_file =                   "${accessions_file}"
-    ncbi_rankedlineage_noname =         "${ncbi_rankedlineage_noname}"
-    placeholder_as_unclassified =       "${placeholder_as_unclassified}"
-    digits_as_unclassified =            "${digits_as_unclassified}"
+    ## input channel variables
+    summary_csv =                   "${summary_csv}"
+    min_k =                         "${min_k}"
+    max_k =                         "${max_k}"
 
-    ### global variables
+    ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
 

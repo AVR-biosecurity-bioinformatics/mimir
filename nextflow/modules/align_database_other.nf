@@ -1,13 +1,15 @@
-process ALIGN_CORE {
-    def module_name = "align_core"
+process ALIGN_DATABASE_OTHER {
+    def module_name = "align_database_other"
     // tag "-"
     container "staphb/mafft:7.526"
 
+
     input:
-    tuple path('core.fasta'), path(other_fasta)
+    path('core.aligned.fasta')
+    path('other.fasta')
 
     output: 
-    tuple path("core_aligned.fasta"), path(other_fasta),             emit: fasta
+    path("all.aligned.fasta"),             emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -22,7 +24,9 @@ process ALIGN_CORE {
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        core.fasta
+        core.aligned.fasta \
+        other.fasta
+
     
     """
 }

@@ -317,30 +317,26 @@ nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89
 
 
 # parse tardigrade sequences using freshwater primers
-nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Siphonaptera --target_rank order --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/tardi_parsed.fasta --use_bold false --use_genbank false --use_mito false --marker COI --add_root --remove_unclassified none --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 42241 --target_rank phylum --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/tardi_parsed.fasta --input_chunk_size 500 --use_bold false --use_genbank false --use_mito false --marker COI --add_root --remove_unclassified none --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --trim_to_amplicon --remove_primers --amplicon_min_length 200
 
 # parse DS-EUGENMAP Lepidoptera sequences using freshwater primers
-nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 30001 --target_rank class --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/lep_bold_seqs.fasta --use_bold false --use_genbank false --use_mito false --marker COI --add_root --remove_unclassified none --trim_to_primers --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --min_length_trimmed 200 
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 7088  --target_rank order --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/lep_bold_seqs.fasta --input_chunk_size 500 --use_bold false --use_genbank false --use_mito false --marker COI --add_root --remove_unclassified none --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --trim_to_amplicon --remove_primers --amplicon_min_length 200
 
-# bird primer bug
-NXF_VER=23.05.0-edge nextflow run . \
-	-profile basc_slurm,debug \
-	--entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 \
-	--target_taxon 8782 \
-	--target_rank class \
-	--use_bold false \
-	--marker COI \
-	--add_root \
-	--remove_unclassified any_ranks \
-	--trim_to_primers \
-	--primer_fwd CGCYTWAACAYTCYGCCATCTTACC \
-	--primer_rev ATGTTGTTTATGAGTGGGAATGCTATG \
-	--min_length_trimmed 300 \
-	--max_group_size 1 \
-	--placeholder_as_unclassified
+# get siphonaptera, neuroptera, ephemeroptera and DS-EUGENMAP Lepidoptera sequences for taxfilter testing
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_list test/sn_list.tsv --internal_seqs /group/home/js7t/personal/dev/mimir/test/taxfiltering/validation_sets/lep_bold_seqs.fasta --bold_db_path ./input --marker COI --add_root --remove_unclassified none --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --trim_to_amplicon --remove_primers --amplicon_min_length 200
 
 
+# get mecoptera, dermaptera, embioptera, plecoptera and diplopoda sequences for taxfilter testing
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_list test/minor_groups.tsv --bold_db_path ./input --marker COI --add_root --remove_unclassified none --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --trim_to_amplicon --remove_primers --amplicon_min_length 200
 
+# small test with single order (mecoptera)
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon 27420 --target_rank order --bold_db_path ./input --marker COI --add_root --remove_unclassified none --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --trim_to_amplicon --remove_primers --amplicon_min_length 200
+
+# large test with single order (hemiptera)
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Hemiptera --target_rank order --bold_db_path ./input --marker COI --add_root --remove_unclassified none --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --trim_to_amplicon --remove_primers --amplicon_min_length 200
+
+# very large test with single order (diptera)
+nextflow run . -profile basc_slurm,debug --entrez_key 364ddb16f9f8fdf6133982af89d0bd762c09 --target_taxon Diptera --target_rank order --bold_db_path ./input --marker COI --add_root --remove_unclassified none --primer_fwd GGDACWGGWTGAACWGTWTAYCCHCC --primer_rev GTRATWGCHCCDGCTARWACWGG --trim_to_amplicon --remove_primers --amplicon_min_length 200
 
 ```
 
