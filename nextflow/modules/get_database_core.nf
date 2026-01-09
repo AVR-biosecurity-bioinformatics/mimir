@@ -1,5 +1,5 @@
-process GET_CORE_SEQUENCES {
-    def module_name = "get_core_sequences"
+process GET_DATABASE_CORE {
+    def module_name = "get_database_core"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 

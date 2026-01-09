@@ -1,13 +1,15 @@
-process ALIGN_GENUS_OTHER {
-    def module_name = "align_genus_other"
+process ALIGN_DATABASE_OTHER {
+    def module_name = "align_database_other"
     // tag "-"
     container "staphb/mafft:7.526"
 
+
     input:
-    tuple path('core.fasta'), path('other.fasta')
+    path('core.aligned.fasta')
+    path('other.fasta')
 
     output: 
-    path("aligned.fasta"),                           emit: fasta
+    path("all.aligned.fasta"),             emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -17,13 +19,14 @@ process ALIGN_GENUS_OTHER {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
- 
+
     #### run module code
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        core.fasta \
+        core.aligned.fasta \
         other.fasta
+
     
     """
 }

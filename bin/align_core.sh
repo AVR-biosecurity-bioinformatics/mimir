@@ -15,16 +15,16 @@ if [[ $( grep -c "^>" $3 ) > 1 ]]; then
         --thread ${2} \
         --linelength -1 \
         --globalpair \
-        --maxiterate 10 \
+        --maxiterate 1000 \
         ${3} \
-        > aligned.fasta 
+        > core_aligned.fasta 
 else 
     # rename as aligned
-    cp $3 aligned.fasta
+    cp $3 core_aligned.fasta
 fi 
 
 # throw error if output file is empty
-if [ -s aligned.fasta ]; then
+if [ -s core_aligned.fasta ]; then
     echo "Finished aligning core sequences"        
 else 
     echo "alignment output file is empty"

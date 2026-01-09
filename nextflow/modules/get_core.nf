@@ -1,5 +1,5 @@
-process GET_GENUS_CORE {
-    def module_name = "get_genus_core"
+process GET_CORE {
+    def module_name = "get_core"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 

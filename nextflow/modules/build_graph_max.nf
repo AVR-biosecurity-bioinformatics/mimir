@@ -27,7 +27,7 @@ process BUILD_GRAPH_MAX {
     seqs_file =                            "${seqs_file}"
     counts_file =                          "${counts_file}"
     component_group_size =                 "${component_group_size}"
-
+    
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

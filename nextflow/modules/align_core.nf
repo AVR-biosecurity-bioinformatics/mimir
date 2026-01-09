@@ -3,12 +3,11 @@ process ALIGN_CORE {
     // tag "-"
     container "staphb/mafft:7.526"
 
-
     input:
-    path('core.fasta')
+    tuple path('core.fasta'), path(other_fasta)
 
     output: 
-    path("aligned.fasta"),             emit: fasta
+    tuple path("core_aligned.fasta"), path(other_fasta),             emit: fasta
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

@@ -7,18 +7,22 @@ set -u
 # $3 = task memory in kilobytes
 # $4 = fasta_files
 # $5 = threshold csv
-# $6 = type of clustering process, 'partial' or 'large'
+# $6 = type of clustering process, 'partial', 'large_genus', 'component'
 
 # parse memory limit
 TASK_MEMORY_KB=$3
-SPLIT_MEMORY_LIMIT=$(( TASK_MEMORY_KB * 9 / 10 )) # 90% of total memory gos to mmseqs2
+SPLIT_MEMORY_LIMIT=$(( TASK_MEMORY_KB * 8 / 10 )) # 80% of total memory goes to mmseqs2
 
+# determine the min sequence identity for the clusters
 if [[ $6 == "partial" ]]; then
 	# extract median genus identity from the thresholds .csv file
 	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="genus")'  $5 | cut -f2 -d, )
-elif [[ $6 == "large" ]]; then
-	# use fixed threshold
-	MIN_SEQ_ID="0.98"
+elif [[ $6 == "large_genus" ]]; then
+	# use median species identity
+	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="species")'  $5 | cut -f2 -d, )
+elif [[ $6 == "component" ]]; then
+	# also use median genus identity
+	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="genus")'  $5 | cut -f2 -d, )
 else 
 	echo "${6} is an incorrect value for the type of clustering process required"
 fi

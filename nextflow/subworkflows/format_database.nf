@@ -4,11 +4,11 @@ Format final database
 
 
 //// modules to import
-include { ALIGN_CORE                                                 } from '../modules/align_core'
-include { ALIGN_OTHER                                                } from '../modules/align_other'
+include { ALIGN_DATABASE_CORE                                        } from '../modules/align_database_core'
+include { ALIGN_DATABASE_OTHER                                       } from '../modules/align_database_other'
 include { COMBINE_CHUNKS                                             } from '../modules/combine_chunks'
 include { FORMAT_OUTPUT                                              } from '../modules/format_output'
-include { GET_CORE_SEQUENCES                                         } from '../modules/get_core_sequences'
+include { GET_DATABASE_CORE                                          } from '../modules/get_database_core'
 include { TRAIN_IDTAXA                                               } from '../modules/train_idtaxa'
 
 
@@ -39,22 +39,22 @@ workflow FORMAT_DATABASE {
         //// whole-database alignment method based on mafft-sparsecore.rb (adding sequences to a core alignment)
 
         //// define 'core' and 'other' sequences based on taxonomy and length
-        GET_CORE_SEQUENCES (
+        GET_DATABASE_CORE (
             COMBINE_CHUNKS.out.fasta
         )
 
         //// align core sequences
-        ALIGN_CORE (
-            GET_CORE_SEQUENCES.out.core
+        ALIGN_DATABASE_CORE (
+            GET_DATABASE_CORE.out.core
         )
 
         //// add other sequences to core alignment
-        ALIGN_OTHER (
-            ALIGN_CORE.out.fasta,
+        ALIGN_DATABASE_OTHER (
+            ALIGN_DATABASE_CORE.out.fasta,
             GET_CORE_SEQUENCES.out.other
         )
 
-        ALIGN_OTHER.out.fasta
+        ALIGN_DATABASE_OTHER.out.fasta
             .set { ch_aligned_database }
 
         //// save aligned database
