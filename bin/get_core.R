@@ -60,10 +60,10 @@ n_seqs <- length(seqs)
 # proportion of total sequences that are cluster reps
 rep_prop <- length(rep_names) / n_seqs
 
-# if reps are <5% of the sequences, top up to 5% of the total sequences with a sample of other sequences
-if (rep_prop < 0.05){
+# if reps are < 2000 sequences, top up with a sample of other sequences
+if (length(rep_names) < 2000 ){
 	# remainder to get
-	n_remainder <- ceiling((0.05 - rep_prop) * n_seqs)
+	n_remainder <- 2000 - length(rep_names)
 	other_names <- names(seqs)[!names(seqs) %in% rep_names]
     # sample from other names
     remainder_names <- sample(other_names, n_remainder, replace = FALSE)

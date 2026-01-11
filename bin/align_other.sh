@@ -20,6 +20,7 @@ if [ -s $4 ]; then
         > aligned.fasta
 else 
     # rename as aligned
+    echo "All sequences are already aligned"
     cp $3 aligned.fasta
 fi 
 
