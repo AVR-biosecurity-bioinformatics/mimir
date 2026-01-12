@@ -251,7 +251,7 @@ if (nrow(mc_large) > 1){
 	# if there were no large components to split, output empty subcomponents tibble
 	mc_sub <- tibble::tibble(
 		genus = character(),
-		component = double(),
+		component = character(),
 		act_n = integer(),
 		component_n = integer()
 	)

@@ -21,7 +21,7 @@ elif [[ $6 == "large_genus" ]]; then
 	# use median species identity
 	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="species")'  $5 | cut -f2 -d, )
 elif [[ $6 == "component" ]]; then
-	# also use median genus identity
+	# use median genus identity
 	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="genus")'  $5 | cut -f2 -d, )
 else 
 	echo "${6} is an incorrect value for the type of clustering process required"

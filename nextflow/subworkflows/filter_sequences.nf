@@ -37,6 +37,7 @@ include { HMMSEARCH_FULL                                             } from '../
 include { HMMSEARCH_AMPLICON                                         } from '../modules/hmmsearch_amplicon'
 include { INTRAGENUS_OUTLIERS                                        } from '../modules/intragenus_outliers'
 include { MAKE_BLAST_DATABASE                                        } from '../modules/make_blast_database'
+include { MAX_THRESHOLD_OUTLIERS                                     } from '../modules/max_threshold_outliers'
 include { MERGE_SPLITS as MERGE_SPLITS_GENUS                         } from '../modules/merge_splits'
 include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
 include { SELECT_SEARCH_RECORDS                                      } from '../modules/select_search_records'
@@ -590,7 +591,9 @@ workflow FILTER_SEQUENCES {
         ALIGN_TOP_HITS.out.alignment,
         ch_thresholds,
         ch_genus_processed, // not necessary?
-        ch_redundant_counts // not necessary?
+        ch_redundant_counts 
+        //// NOTE: This process needs to be changed so that it checks if query and target sizes could allow consensus
+        //// if not, two genera from the top hits can be combined into a 'joint-genus' that nevers gets split during sub-component grouping
     )
 
     //// combine flagged genera into a single file
@@ -649,8 +652,20 @@ workflow FILTER_SEQUENCES {
         ALIGN_MAX_CORE.out.fasta
     )
 
+    ALIGN_MAX_SMALL.out.fasta
+        .mix ( ALIGN_MAX_OTHER.out.fasta )
+        .collect()
+        .set { ch_aligned_max_components }
+
     //// find max threshold outliers within each component
-    // MAX_THRESHOLD_OUTLIERS ()
+    MAX_THRESHOLD_OUTLIERS (
+        ch_aligned_max_components,
+        ch_genus_processed,
+        ch_redundant_counts,
+        ch_thresholds,
+        '5',
+        '0.8'
+    )
 
 
     //// build connection graph for min threshold violation

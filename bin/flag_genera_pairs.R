@@ -117,7 +117,7 @@ flags <-
 				        fid = 1 - fid,
 				        query = query_name
 				    ) %>%
-				    # keep only top 100 hits, not including self
+				    # exclude self-hits
 				    dplyr::filter(target != query) %>%
 				    # extract taxonomy of target sequences
 				    dplyr::mutate(
