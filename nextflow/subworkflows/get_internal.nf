@@ -30,7 +30,6 @@ workflow GET_INTERNAL {
     //// populate and chunk internal channel
     IMPORT_INTERNAL.out.fasta
         .filter { it.size() > 0 } // remove empty files if they exist
-        .splitText( by: params.input_chunk_size, file: true )
         .set { ch_internal_fasta }
 
     //// get internal sequence names for preferencing

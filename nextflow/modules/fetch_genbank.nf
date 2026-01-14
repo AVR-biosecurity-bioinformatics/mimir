@@ -3,7 +3,7 @@ process FETCH_GENBANK {
     def module_name = "fetch_genbank"
     // tag "-"
     container "emehinovic72/edirect:latest"
-    maxForks 10
+    // maxForks 100
 
     input:
     path(acc_list, name: 'accessions.txt')
@@ -20,7 +20,7 @@ process FETCH_GENBANK {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
-    
+      
     #### run module code
     bash ${module_name}.sh \
         ${projectDir} \

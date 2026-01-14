@@ -217,8 +217,8 @@ workflow MIMIR {
             PARSE_INPUTS.out.ch_bold_targets,
             PARSE_INPUTS.out.ch_bold_query,
             PARSE_INPUTS.out.ch_lineageparents,
-            PARSE_INPUTS.out.ch_synonyms,
-
+            PARSE_INPUTS.out.ch_synonyms
+            // GET_GENBANK.out.ch_genbank_accessions
         )
 
         ch_bold_fasta = GET_BOLD.out.ch_bold_fasta
@@ -318,6 +318,7 @@ workflow MIMIR {
         .mix ( ch_mito_fasta )
         .mix ( ch_genome_fasta )
         .mix ( ch_internal_fasta )
+        .splitFasta( by: params.input_chunk_size, file: true )
         .set { ch_input_seqs }  
 
     //// count number of total input sequences

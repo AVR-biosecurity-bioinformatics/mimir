@@ -17,13 +17,11 @@ fi
 ACC_LIST=${3}
 
 ## fetch sequences as GenBank flat file
-# epost \
-# 	-input $ACC_LIST \
-# 	-db nuccore \
-# 	| \
-#     efetch \
-# 	-format gb \
-# 	> sequences.gb
+
+# pause between 0-10 sec
+RAND_N=$(shuf -i 1-1000 -n1)
+SLEEP_SEC=$(awk -v rand_n="$RAND_N" 'BEGIN { printf("%.2f", rand_n / 100) }')
+sleep $SLEEP_SEC
 
 efetch \
 	-input "$ACC_LIST" \

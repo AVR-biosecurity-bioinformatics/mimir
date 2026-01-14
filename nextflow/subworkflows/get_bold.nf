@@ -49,7 +49,7 @@ workflow GET_BOLD {
         .combine ( ch_bold_targets ) 
         .set { ch_extract_bold_input }
 
-    //// extract sequences from BOLD database file
+    //// extract sequences from BOLD database file using awk
     EXTRACT_BOLD (
         ch_extract_bold_input,
         ch_bold_query,
@@ -57,6 +57,23 @@ workflow GET_BOLD {
         params.min_length_input,
         params.max_length_input
     )
+
+
+    // //// extract sequences from whole BOLD database file using awk
+    // EXTRACT_BOLD_AWK (
+    //     ch_extract_bold_input,
+    //     ch_bold_query,
+    //     params.bold_idmethod_filter,
+    //     params.min_length_input,
+    //     params.max_length_input
+    // )
+
+    //// split into manageable chunks 
+
+    //// process BOLD sequences, remove duplicated GenBank sequences (if needed), and harmonise to NCBI taxonomy
+    //// TODO: move 'ncbi_synonyms_filtered' creation to a new process in PARSE_INPUTS subworkflow
+
+
 
     //// match BOLD taxon names to NCBI taxon names
     MATCH_BOLD (
@@ -77,6 +94,9 @@ workflow GET_BOLD {
         }
         .set{ ch_matched_bold }
 
+    //// merge BOLD sequences using operators, not process
+
+
     //// merge BOLD chunks into single .fasta and .csv files
     MERGE_BOLD (
         ch_matched_bold.fasta.collect(sort: true),
@@ -86,7 +106,6 @@ workflow GET_BOLD {
 
     //// chunk BOLD sequences into smaller .fasta files for processing
     MERGE_BOLD.out.fasta
-        .splitFasta( by: params.input_chunk_size, file: true )
         .set { ch_bold_fasta }
 
     

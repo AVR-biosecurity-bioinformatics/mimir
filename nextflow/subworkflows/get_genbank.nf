@@ -39,7 +39,12 @@ workflow GET_GENBANK {
         .splitText( by: params.genbank_fetch_size, file: true )
         .set { ch_genbank_acc_chunks }
 
-    //// fetch Genbank sequences as .fasta + taxid list
+    //// collect all accessions into a single file for BOLD record filtering
+    QUERY_GENBANK.out.seq_acc
+        .collectFile ( name: 'genbank_accessions.txt' )
+        .set { ch_genbank_accessions } 
+
+    //// fetch Genbank sequences as .gb format
     FETCH_GENBANK (
         ch_genbank_acc_chunks,
         ch_entrez_key
@@ -57,6 +62,7 @@ workflow GET_GENBANK {
     emit:
 
     ch_genbank_fasta                = RENAME_GENBANK.out.fasta
+    ch_genbank_accessions
     
 
 }
