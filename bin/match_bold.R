@@ -45,35 +45,51 @@ nf_vars <- c(
     "params_dict",
     "seq_tibble",
     "ncbi_lineageparents",
-    "ncbi_synonyms",
+    "ncbi_filteredsynonyms",
+    "genbank_accessions",
     "placeholder_as_unclassified",
-    "digits_as_unclassified"
+    "digits_as_unclassified",
+    "bold_idmethod_filter"
     )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-# get basename chunk for output naming
-chunk_index <- tools::file_path_sans_ext(basename(seq_tibble)) %>% stringr::str_extract("(?<=bold_db_targets\\.).+?$") 
-
 # create bold_db_targets (do in pipe to save memory)
-bold_db_targets <- readRDS(seq_tibble)  
+bold_db_targets <- 
+    readr::read_tsv(seq_tibble) %>%
+    dplyr::select(
+        processid,
+        bold_taxid = taxid,
+        kingdom,
+        phylum,
+        class,
+        order,
+        family,
+        genus, 
+        species,
+        nuc,
+        identification_method,
+        insdc_acs, 
+        sequence_run_site
+    )
 
 # read in ncbi db files
-ncbi_lineageparents <-   readRDS(ncbi_lineageparents)
-ncbi_synonyms <-         readRDS(ncbi_synonyms)
+ncbi_lineageparents <- readRDS(ncbi_lineageparents)
+ncbi_filteredsynonyms <- readRDS(ncbi_filteredsynonyms)
+
+# read in accessions as vector
+gb_acc <- readr::read_lines(genbank_accessions)
+
+# parse if genbank was being used
+if (all(gb_acc == c("NOFILE"))){
+	use_genbank <- FALSE
+} else {
+	use_genbank <- TRUE
+}
 
 # ranks vector of only ranks we want to keep
-allowed_ranks <-
-    c(
-        "kingdom",
-        "phylum",
-        "class",
-        "order",
-        "family",
-        "genus",
-        "species"
-    )
+allowed_ranks <- c("kingdom", "phylum", "class", "order", "family", "genus", "species")
 
 # parse params.placeholder_as_unclassified
 if ( placeholder_as_unclassified == "true" ){
@@ -93,23 +109,16 @@ if ( digits_as_unclassified == "true" ){
     stop("'digits_as_unclassified' must be 'true' or 'false'")
 }
 
+# parse params.bold_idmethod_filter
+if ( bold_idmethod_filter == "true" ){
+    bold_idmethod_filter <- TRUE
+} else if ( bold_idmethod_filter == "false" ){
+    bold_idmethod_filter <- FALSE
+} else {
+    stop("'bold_idmethod_filter' must be 'true' or 'false'")
+}
+
 ### run code
-
-# create a filtered synonyms tibble
-ncbi_synonyms_filtered <- 
-    ncbi_synonyms %>% 
-    dplyr::filter(rank %in% allowed_ranks) %>% # only keep synonyms for allowed ranks
-    dplyr::left_join( # add parent_taxon to verify synonym 
-        ., 
-        ncbi_lineageparents %>% dplyr::select(tax_id, parent_taxon, grandparent_taxon),
-        by = join_by(tax_id)
-    ) %>%
-    dplyr::select(synonym = name_txt, tax_name, rank, parent_taxon, grandparent_taxon) # only keep four columns
-    ## NOTE: 'synonym' is the taxon name synonymous with the valid taxon name 'tax_name', 'rank' is the rank of the taxon
-
-### TODO: manually add in known synonyms between BOLD and NCBI
-## for example: family "Xylophagaidae" in NCBI is called "Xylophagidae" in BOLD
-
 
 ## replace BOLD taxon name with NCBI name if they're the same rank, an NCBI synonym and parent_taxon name also matches (should still work if both are synonyms as gets replaced progressively down the hierarchy)
 # do this while tracking replacement - create columns that contain old names if they're replaced
@@ -118,37 +127,38 @@ bold_db_targets_syns <-
     dplyr::mutate(across(kingdom:species, .fns = ~replace(., . == "None", NA))) %>% # replace "None" with NA within rank columns
     ## for each rank, find and replace based on ncbi synonyms
     # kingdom
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "kingdom"), by = join_by(kingdom == synonym)) %>%
+    dplyr::left_join(., ncbi_filteredsynonyms %>% dplyr::filter(rank == "kingdom"), by = join_by(kingdom == synonym)) %>%
     dplyr::mutate(kingdom_old = if_else(!is.na(tax_name), kingdom, NA), kingdom = if_else(!is.na(tax_name), tax_name, kingdom)) %>% 
     dplyr::select(-tax_name, -rank, -parent_taxon, -grandparent_taxon) %>%
     # phylum
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "phylum"), by = join_by(phylum == synonym, kingdom == parent_taxon)) %>%
+    dplyr::left_join(., ncbi_filteredsynonyms %>% dplyr::filter(rank == "phylum"), by = join_by(phylum == synonym, kingdom == parent_taxon)) %>%
     dplyr::mutate(phylum_old = if_else(!is.na(tax_name), phylum, NA), phylum = if_else(!is.na(tax_name), tax_name, phylum)) %>% 
     dplyr::select(-tax_name, -rank, -grandparent_taxon) %>%
     # class
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "class"), by = join_by(class == synonym, phylum == parent_taxon, kingdom == grandparent_taxon)) %>%
+    dplyr::left_join(., ncbi_filteredsynonyms %>% dplyr::filter(rank == "class"), by = join_by(class == synonym, phylum == parent_taxon, kingdom == grandparent_taxon)) %>%
     dplyr::mutate(class_old = if_else(!is.na(tax_name), class, NA), class = if_else(!is.na(tax_name), tax_name, class)) %>% 
     dplyr::select(-tax_name, -rank) %>%
     # order
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "order"), by = join_by(order == synonym, class == parent_taxon, phylum == grandparent_taxon)) %>%
+    dplyr::left_join(., ncbi_filteredsynonyms %>% dplyr::filter(rank == "order"), by = join_by(order == synonym, class == parent_taxon, phylum == grandparent_taxon)) %>%
     dplyr::mutate(order_old = if_else(!is.na(tax_name), order, NA), order = if_else(!is.na(tax_name), tax_name, order)) %>% 
     dplyr::select(-tax_name, -rank) %>%
     # family
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "family"), by = join_by(family == synonym, order == parent_taxon, class == grandparent_taxon)) %>%
+    dplyr::left_join(., ncbi_filteredsynonyms %>% dplyr::filter(rank == "family"), by = join_by(family == synonym, order == parent_taxon, class == grandparent_taxon)) %>%
     dplyr::mutate(family_old = if_else(!is.na(tax_name), family, NA), family = if_else(!is.na(tax_name), tax_name, family)) %>% 
     dplyr::select(-tax_name, -rank) %>%
     # genus
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "genus"), by = join_by(genus == synonym, family == parent_taxon, order == grandparent_taxon)) %>%
+    dplyr::left_join(., ncbi_filteredsynonyms %>% dplyr::filter(rank == "genus"), by = join_by(genus == synonym, family == parent_taxon, order == grandparent_taxon)) %>%
     dplyr::mutate(genus_old = if_else(!is.na(tax_name), genus, NA), genus = if_else(!is.na(tax_name), tax_name, genus)) %>% 
     dplyr::select(-tax_name, -rank) %>%
     # species
-    dplyr::left_join(., ncbi_synonyms_filtered %>% dplyr::filter(rank == "species"), by = join_by(species == synonym, genus == parent_taxon, family == grandparent_taxon)) %>%
+    dplyr::left_join(., ncbi_filteredsynonyms %>% dplyr::filter(rank == "species"), by = join_by(species == synonym, genus == parent_taxon, family == grandparent_taxon)) %>%
     dplyr::mutate(species_old = if_else(!is.na(tax_name), species, NA), species = if_else(!is.na(tax_name), tax_name, species)) %>% 
     dplyr::select(-tax_name, -rank) %>%
+    dplyr::mutate(across(kingdom:species, .fns = ~replace(., is.na(.), "UNCLASSIFIED"))) %>% # replace NA with UNCLASSIFIED within rank columns (temporarily)
     ## if species was replaced but not the genus, use species name to correct genus name
     dplyr::mutate(
         genus_old = if_else(
-            !stringr::str_starts(species, genus) & !is.na(species), # if genus and species don't align and species isn't NA...
+            species != "UNCLASSIFIED" & !stringr::str_starts(species, genus), # if genus and species don't align and species isn't NA...
             genus, # record old genus name
             NA # else keep NA
         ),
@@ -157,8 +167,8 @@ bold_db_targets_syns <-
             genus, # keep original genus name
             stringr::str_extract(species, "^\\w+(?= )") # else use start of species binomial as new genus name
         )
-    )
-    ### TODO: Do some proper testing of the above code to check it is handling the resolution correctly - check the "synchanges.csv" output file
+    ) %>%
+    dplyr::mutate(across(kingdom:species, .fns = ~replace(., . == "UNCLASSIFIED", NA))) # replace UNCLASSIFIED with NA within rank columns
 
 # check no rows have been added or removed
 if (nrow(bold_db_targets_syns) != nrow(bold_db_targets)) {
@@ -178,7 +188,6 @@ bold_db_targets_nosyn <-
     dplyr::select(-dplyr::ends_with("_old"))
 
 ### matching BOLD taxonomy to NCBI taxonomy
-
 ## create new 'identification_rank' (lowest ID rank) and 'identification' (lowest ID taxa) using synonym-adjusted tibble
 bold_id_tibble <- 
     bold_db_targets_nosyn %>%
@@ -210,7 +219,7 @@ bold_id_tibble <-
                 ind <- match(.x, allowed_ranks)
                 return(allowed_ranks[max(ind - 2,1)])
             }
-        ) %>% unlist(),
+        ) %>% unlist()
     ) %>% 
     # handle cases where identification_rank, parent_rank and/or grand_parent rank are the same
     # this happens in situations where the identification_rank is phylum or kingdom
@@ -280,7 +289,10 @@ bold_unmatched_seqs <-
         seqid = processid,
         taxid = bold_taxid,
         kingdom:species,
-        nuc
+        nuc,
+        identification_method,
+        insdc_acs,
+        sequence_run_site
     ) %>%
     dplyr::mutate(
         taxid = stringr::str_replace(taxid, "^", "BOLD:"),
@@ -294,7 +306,10 @@ bold_matched_seqs <-
         seqid = processid,
         taxid = tax_id,
         kingdom:species,
-        nuc
+        nuc,
+        identification_method,
+        insdc_acs,
+        sequence_run_site
     ) %>%
     dplyr::mutate(
         taxid = stringr::str_replace(taxid, "^", "NCBI:"),
@@ -305,10 +320,12 @@ bold_matched_seqs <-
 bold_seqs <- 
     dplyr::bind_rows(bold_matched_seqs, bold_unmatched_seqs)
 
-## create FASTA format from sequence tibble
-bold_seqs_prefasta <- 
-    bold_seqs %>%
-    # conditionally replace 'placeholder' species names (eg. "Genus sp. XYZ") with "Unclassified"
+## filter and process the sequence records before exporting
+bold_seqs_processed <- 
+	bold_seqs %>% 
+	# make sure all sequences are upper-case
+	dplyr::mutate(nuc = toupper(nuc)) %>%
+	# conditionally replace 'placeholder' species names (eg. "Genus sp. XYZ") with "Unclassified"
     {
         if (placeholder_as_unclassified) {
             dplyr::mutate(
@@ -336,29 +353,64 @@ bold_seqs_prefasta <-
             )
         } else { . }
     } %>%
+	# remove sequences mined from GenBank if GenBank is being used
+    {	if (use_genbank){
+    		dplyr::filter(., !stringr::str_detect(sequence_run_site, "GenBank|NCBI"))
+    	} else { . }
+    } %>%
+	# conditionally filter out explicitly BOLD-classified sequences
+    {   if( bold_idmethod_filter ) {
+        	dplyr::filter(., !stringr::str_detect(identification_method,            "BIN|(B|b)arcode|DNA|BOLD|(T|t)ree|(S|s)equence"))
+    	} else { . } 
+    } %>%
+	# categorise sequences into those that have explicit GenBank duplicates and those that don't
+	dplyr::mutate(gb_dup = insdc_acs %in% gb_acc) %>%
+	dplyr::select(-identification_method, -sequence_run_site)
+
+## create FASTA format from sequence tibble
+bold_seqs_prefasta <- 
+    bold_seqs_processed %>%
     tidyr::unite("id", c(seqid, taxid), sep = "|") %>% # combine ids into a single column
     tidyr::unite("ranks", kingdom:species, sep = ";") %>% # combine ranks into a single column
     dplyr::mutate(
-        # ranks = stringr::str_replace_all(ranks, "[ \\/:\\(\\)&,'#<>]", "_"), # replace problematic characters in lineage string with underscores
-        # ranks = stringr::str_replace_all(ranks, "_+", "_") # replace two or more underscores in a row with a single underscore in lineage string
         ranks = stringr::str_replace_all(ranks, " +", " ") # replace runs of spaces with a single space (to allow HMMER output parsing later)
     ) %>%
-    tidyr::unite("header", id:ranks, sep = ";") %>% # create header column
-    dplyr::mutate(
-        header = stringr::str_replace(header, "^", ">") # add ">" to start of header
-    )
+    tidyr::unite("header", id:ranks, sep = ";") 
   
-bold_seqs_header <- bold_seqs_prefasta %>% dplyr::pull(header) # get header as vector
-bold_seqs_nuc <- bold_seqs_prefasta %>% dplyr::pull(nuc) # get sequence as vector
+# DSS object of sequences (including GB-duplicates -- these get processed later)
+seqs_out <- 
+	bold_seqs_prefasta %>%
+	dplyr::select(-gb_dup, -insdc_acs) %>%
+	tibble::deframe() %>%
+	Biostrings::DNAStringSet(.)
 
-# interleave into .fasta format 
-bold_seqs_fasta <- rbind(bold_seqs_header, bold_seqs_nuc) # create matrix
-attributes(bold_seqs_fasta) <- NULL # unset dim 
+# table of GB-duplicate sequence names with their GB accessions
+seqs_dup <- 
+	bold_seqs_prefasta %>%
+	dplyr::filter(gb_dup) %>%
+	dplyr::select(-gb_dup, -nuc) %>%
+	dplyr::rename(name = header, genbank_acc = insdc_acs)
 
 ### save outputs
 # tibble of changes to BOLD sequence taxonomy by matching to NCBI synonyms
-readr::write_csv(bold_ncbi_synchanges, paste0("synchanges.",chunk_index,".csv"))
+readr::write_csv(bold_ncbi_synchanges, "synchanges.csv")
 # tibble of taxa (from sequences) that can be found in BOLD and NCBI 
-readr::write_csv(matching_taxids, paste0("matching_taxids.",chunk_index,".csv"))
-# write FASTA of sequences in the correct format
-readr::write_lines(bold_seqs_fasta, paste0("bold_seqs.",chunk_index,".fasta"))
+readr::write_csv(matching_taxids, "matching_taxids.csv")
+# write FASTA of non-GB-duplicate sequences 
+Biostrings::writeXStringSet(seqs_out, "bold_seqs.fasta")
+# write table of GB-duplicate sequences 
+readr::write_csv(seqs_dup, "bold_gp_dups.csv")
+
+# clean up environment before saving
+rm(seqs_dup)
+rm(seqs_out)
+rm(bold_seqs_processed)
+rm(bold_seqs_prefasta)
+rm(bold_seqs)
+rm(bold_matched_seqs)
+rm(bold_ncbi_unmatched)
+rm(bold_ncbi_joined)
+rm(bold_id_tibble)
+rm(bold_db_targets_syns)
+rm(bold_db_targets)
+gc()

@@ -76,12 +76,6 @@ workflow PARSE_INPUTS {
         MAKE_TAXIDNAMES.out.taxidnames
     )
 
-    //// make synonyms tibble
-    MAKE_SYNONYMS (
-        MAKE_TAXIDNAMERANK.out.taxidnamerank,
-        MAKE_NAMES.out.names
-    )
-
     //// make lineageparents tibble
     MAKE_LINEAGEPARENTS (
         MAKE_RANKEDLINEAGE.out.rankedlineage,
@@ -92,6 +86,13 @@ workflow PARSE_INPUTS {
     MAKE_RANKEDLINEAGE_NONAME (
         MAKE_RANKEDLINEAGE.out.rankedlineage,
         MAKE_TAXIDNAMERANK.out.taxidnamerank
+    )
+
+    //// make synonyms tibble
+    MAKE_SYNONYMS (
+        MAKE_TAXIDNAMERANK.out.taxidnamerank,
+        MAKE_NAMES.out.names,
+        MAKE_LINEAGEPARENTS.out.lineageparents
     )
 
     /* 
@@ -112,15 +113,21 @@ workflow PARSE_INPUTS {
             [ id.text.trim(), rank ] }
         .set { ch_taxon_idrank }
 
-    //// parse marker gene into formats understandable for each database/process
-    PARSE_MARKER (
-        ch_marker
-    )
+    //// collect bold taxa and rank tables into a single file
+    PARSE_TARGETS.out.bold
+        .collectFile ( name: 'bold_names_ranks.csv', keepHeader: true, skip: 1 )
+        .set { ch_bold_targets }
 
     //// collect target gencodes .csvs into a single file
     PARSE_TARGETS.out.gencodes
         .collectFile ( name: 'gencodes.csv', keepHeader: true, skip: 1 )
         .set { ch_target_gencodes }
+
+    //// parse marker gene into formats understandable for each database/process
+    PARSE_MARKER (
+        ch_marker
+    )
+
 
     //// processes relevant to trimming sequences
     if ( params.primer_fwd && params.primer_rev ) {
@@ -168,15 +175,15 @@ workflow PARSE_INPUTS {
 
     emit:
 
-    ch_taxon_idrank                 
-    ch_bold_targets                 = PARSE_TARGETS.out.bold
+    ch_taxon_idrank
+    ch_bold_targets
     ch_genbank_query                = PARSE_MARKER.out.genbank_query
     ch_bold_query                   = PARSE_MARKER.out.bold_query
     ch_marker_coding                = PARSE_MARKER.out.coding
     ch_marker_type                  = PARSE_MARKER.out.type
     ch_rankedlineage_noname         = MAKE_RANKEDLINEAGE_NONAME.out.rankedlineage_noname
     ch_lineageparents               = MAKE_LINEAGEPARENTS.out.lineageparents
-    ch_synonyms                     = MAKE_SYNONYMS.out.synonyms
+    ch_filteredsynonyms             = MAKE_SYNONYMS.out.filteredsynonyms
     ch_gencodes                     = MAKE_GENCODES.out.gencodes
     ch_full_phmm                    = PARSE_MARKER.out.phmm
     ch_amplicon_phmm

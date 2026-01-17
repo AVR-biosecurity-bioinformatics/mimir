@@ -1,22 +1,21 @@
-process MATCH_BOLD {
-    def module_name = "match_bold"
+process HANDLE_DUPLICATES {
+    def module_name = "handle_duplicates"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(seq_tibble)
-    path(ncbi_lineageparents)
-    path(ncbi_filteredsynonyms)
-    path(genbank_accessions)
-    val(placeholder_as_unclassified)
-    val(digits_as_unclassified)
-    val(bold_idmethod_filter)
+    path(bold_seqs_file, name: 'bold_in.fasta')
+    path(genbank_seqs_file, name: 'genbank_in.fasta')
+    path(gb_dups_file, name: 'dups_in.csv')
+    path(rankedlineage_noname)
+    val(prefer_source)
+    val(duplicate_taxonomy)
+    val(duplicate_sequence)
 
     output: 
-    path("bold_seqs.fasta"),                   emit: fasta
-    path("matching_taxids.csv"),               emit: matching_taxids
-    path("synchanges.csv"),                    emit: synchanges
-    path("bold_gp_dups.csv"),                  emit: gb_dups
+    path("bold_out.fasta"),                         emit: bold
+    path("genbank_out.fasta"),                      emit: genbank
+    path("bold_gb_duplicates.csv"),                 emit: gb_dups
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -29,14 +28,14 @@ process MATCH_BOLD {
      
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    seq_tibble =                    "${seq_tibble}"
-    ncbi_lineageparents =           "${ncbi_lineageparents}"
-    ncbi_filteredsynonyms =         "${ncbi_filteredsynonyms}"
-    genbank_accessions =            "${genbank_accessions}"
-    placeholder_as_unclassified =   "${placeholder_as_unclassified}"
-    digits_as_unclassified =        "${digits_as_unclassified}"
-    bold_idmethod_filter =          "${bold_idmethod_filter}"
-    
+    bold_seqs_file =                    "${bold_seqs_file}"
+    genbank_seqs_file =                 "${genbank_seqs_file}"
+    gb_dups_file =                      "${gb_dups_file}"
+    rankedlineage_noname =              "${rankedlineage_noname}"
+    prefer_source =                     "${prefer_source}"
+    duplicate_taxonomy =                "${duplicate_taxonomy}"
+    duplicate_sequence =                "${duplicate_sequence}"
+
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

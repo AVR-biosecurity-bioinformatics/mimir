@@ -87,13 +87,17 @@ log.info paramsSummaryLog(workflow)
 */
 
 //// subworkflows
-include { FILTER_SEQUENCES                                             } from './nextflow/subworkflows/filter_sequences'
+include { FILTER_SEQUENCES                                            } from './nextflow/subworkflows/filter_sequences'
 include { FORMAT_DATABASE                                             } from './nextflow/subworkflows/format_database'
-include { GET_BOLD                                             } from './nextflow/subworkflows/get_bold'
-include { GET_GENBANK                                             } from './nextflow/subworkflows/get_genbank'
-include { GET_INTERNAL                                             } from './nextflow/subworkflows/get_internal'
-include { PARSE_INPUTS                                             } from './nextflow/subworkflows/parse_inputs'
-include { SUMMARISE_DATABASE                                             } from './nextflow/subworkflows/summarise_database'
+include { GET_BOLD                                                    } from './nextflow/subworkflows/get_bold'
+include { GET_GENBANK                                                 } from './nextflow/subworkflows/get_genbank'
+include { GET_INTERNAL                                                } from './nextflow/subworkflows/get_internal'
+include { PARSE_INPUTS                                                } from './nextflow/subworkflows/parse_inputs'
+include { SUMMARISE_DATABASE                                          } from './nextflow/subworkflows/summarise_database'
+
+//// modules
+include { HANDLE_DUPLICATES                                           } from './nextflow/modules/handle_duplicates'
+
 
 
 /*
@@ -189,21 +193,14 @@ workflow MIMIR {
         )
 
         ch_genbank_fasta = GET_GENBANK.out.ch_genbank_fasta
+        ch_genbank_accessions = GET_GENBANK.out.ch_genbank_accessions
         
     } else {
         
         ch_genbank_fasta = Channel.empty()
+        ch_genbank_accessions = Channel.fromPath("assets/NOFILE")
     
     }
-
-    //// collect GenBank sequences into a single .fasta for source tracking
-    ch_genbank_fasta
-        .collectFile ( name: 'genbank.fasta', newLine: true, cache: true )
-        .set { ch_source_genbank }
-
-    //// count sequences from GenBank
-    ch_count_genbank = ch_source_genbank.countFasta().combine(["genbank"])
-
 
     /*
     Get sequences from BOLD
@@ -217,8 +214,8 @@ workflow MIMIR {
             PARSE_INPUTS.out.ch_bold_targets,
             PARSE_INPUTS.out.ch_bold_query,
             PARSE_INPUTS.out.ch_lineageparents,
-            PARSE_INPUTS.out.ch_synonyms
-            // GET_GENBANK.out.ch_genbank_accessions
+            PARSE_INPUTS.out.ch_filteredsynonyms,
+            ch_genbank_accessions
         )
 
         ch_bold_fasta = GET_BOLD.out.ch_bold_fasta
@@ -229,14 +226,45 @@ workflow MIMIR {
     
     }
 
+    if ( params.use_genbank && ( params.bold_db_path || params.bold_db_url ) && params.use_bold ){
+
+        //// handle duplicated sequence records that are present in both GenBank and BOLD
+        HANDLE_DUPLICATES (
+            ch_bold_fasta.collectFile ( name: 'bold.fasta' ),
+            ch_genbank_fasta.collectFile ( name: 'genbank.fasta' ),
+            GET_BOLD.out.ch_gb_dups,
+            PARSE_INPUTS.out.ch_rankedlineage_noname,
+            params.prefer_source,
+            params.duplicate_taxonomy,
+            params.duplicate_sequence
+        )
+    
+        //// NOTE: BOLD and GenBank .fasta channels are collected into single files here, then split in `FILTER_SEQUENCES`
+        ch_bold_input = HANDLE_DUPLICATES.out.bold
+        ch_genbank_input = HANDLE_DUPLICATES.out.genbank
+        HANDLE_DUPLICATES.out.gb_dups.collectFile( name: 'bold_genbank_duplicates.csv', storeDir: './output/results' )
+
+    } else {
+        //// NOTE: If handling isn't done, .fasta files aren't collected and there is no collect() bottleneck
+        ch_bold_input = ch_bold_fasta
+        ch_genbank_input = ch_genbank_fasta
+    }
+
+    //// collect GenBank sequences into a single .fasta for source tracking
+    ch_genbank_input
+        .collectFile ( name: 'genbank.fasta', newLine: true, cache: true )
+        .set { ch_source_genbank }
+
+    //// count sequences from GenBank
+    ch_count_genbank = ch_source_genbank.countFasta().combine(["genbank"])
+
     //// collect BOLD sequences into a single .fasta for source tracking
-    ch_bold_fasta
+    ch_bold_input
         .collectFile ( name: 'bold.fasta', newLine: true, cache: true )
         .set { ch_source_bold }
 
     //// count number of BOLD sequences
-    ch_count_bold = ch_bold_fasta.countFasta().combine(["bold"])
-
+    ch_count_bold = ch_bold_input.countFasta().combine(["bold"])
 
     /*
     Import and format internal (user-supplied) sequences
@@ -248,23 +276,23 @@ workflow MIMIR {
             ch_internal_seqs
         )
 
-        ch_internal_fasta = GET_INTERNAL.out.ch_internal_fasta
+        ch_internal_input = GET_INTERNAL.out.ch_internal_fasta
         ch_internal_names = GET_INTERNAL.out.ch_internal_names
 
     } else {
 
-        ch_internal_fasta = Channel.empty()
+        ch_internal_input = Channel.empty()
         ch_internal_names = Channel.empty()
 
     }
 
     //// collect internal sequences into a single .fasta for source tracking
-    GET_INTERNAL.out.ch_internal_fasta
+    ch_internal_input
         .collectFile ( name: 'internal.fasta', newLine: true, cache: true )
         .set { ch_source_internal }
 
     //// count number of internal sequences 
-    ch_count_internal = ch_internal_fasta.countFasta().combine(["internal"])
+    ch_count_internal = ch_internal_input.countFasta().combine(["internal"])
 
 
     /*
@@ -272,15 +300,15 @@ workflow MIMIR {
     */
 
     //// PLACEHOLDER for dedicated mito subworkflow
-    ch_mito_fasta               = Channel.empty()
+    ch_mito_input               = Channel.empty()
 
     //// collect mitochondrial genome sequences into a single .fasta for source tracking
-    ch_mito_fasta
+    ch_mito_input
         .collectFile ( name: 'mito.fasta', newLine: true, cache: true )
         .set { ch_source_mito }
 
     //// count number of mitochondrial sequences 
-    ch_count_mito = ch_mito_fasta.countFasta().combine(["mito"])
+    ch_count_mito = ch_mito_input.countFasta().combine(["mito"])
 
 
     /*
@@ -288,13 +316,13 @@ workflow MIMIR {
     */
 
     //// PLACEHOLDER for dedicated genome subworkflow
-    ch_genome_fasta             = Channel.empty()
+    ch_genome_input             = Channel.empty()
 
     //// count number of genome assembly-derived sequences 
-    ch_count_genome = ch_genome_fasta.countFasta().combine(["genome"])
+    ch_count_genome = ch_genome_input.countFasta().combine(["genome"])
 
     //// collect whole genome sequences into a single .fasta for source tracking
-    ch_genome_fasta
+    ch_genome_input
         .collectFile ( name: 'genome.fasta', newLine: true, cache: true )
         .set { ch_source_genome }
 
@@ -304,20 +332,20 @@ workflow MIMIR {
     */
 
     //// count number of external input sequences
-    ch_count_external = ch_genbank_fasta
-        .mix ( ch_bold_fasta )
-        .mix ( ch_mito_fasta )
-        .mix ( ch_genome_fasta )
+    ch_count_external = ch_genbank_input
+        .mix ( ch_bold_input )
+        .mix ( ch_mito_input )
+        .mix ( ch_genome_input )
         .countFasta()
         .combine(["external"])
 
     //// concat output channels into a single channel for PHMM alignment
     Channel.empty()
-        .mix ( ch_genbank_fasta )
-        .mix ( ch_bold_fasta )
-        .mix ( ch_mito_fasta )
-        .mix ( ch_genome_fasta )
-        .mix ( ch_internal_fasta )
+        .mix ( ch_genbank_input )
+        .mix ( ch_bold_input )
+        .mix ( ch_mito_input )
+        .mix ( ch_genome_input )
+        .mix ( ch_internal_input )
         .splitFasta( by: params.input_chunk_size, file: true )
         .set { ch_input_seqs }  
 
