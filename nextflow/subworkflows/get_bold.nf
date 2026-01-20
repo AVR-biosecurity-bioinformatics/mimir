@@ -52,9 +52,9 @@ workflow GET_BOLD {
     //// process BOLD sequences, remove duplicated GenBank sequences (if needed), and harmonise to NCBI taxonomy
     MATCH_BOLD (
         ch_bold_db_extracted, 
-        ch_lineageparents,
-        ch_filteredsynonyms,
-        ch_genbank_accessions,
+        ch_lineageparents.first(),
+        ch_filteredsynonyms.first(),
+        ch_genbank_accessions.first(),
         params.placeholder_as_unclassified,
         params.digits_as_unclassified,
         params.bold_idmethod_filter

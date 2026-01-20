@@ -116,6 +116,8 @@ max_graph <-
     ) %>%
     igraph::simplify() 
 
+message("Built graph")
+
 # determine each component of graph
 max_components <- 
     max_graph %>%
@@ -132,7 +134,9 @@ max_components <-
 		component_n = sum(act_n),
 		component = as.character(component) # this is needed later combining with subcomponent ids (of form "x_y")
 	) 
-	
+
+message("Determined components")
+
 # for components above component_group_size (sum(n_act)), split them into groups (potentially redundant to keep all pairs together)
 
 # split tibble into large and small components
@@ -151,7 +155,9 @@ mc_small <-
 		component_n = sum(act_n)
 	) %>%
 	dplyr::filter(component_n <= component_group_size)
-	
+
+message("Defined small and and large components")
+
 # split large component tibble by component, then parse into list format
 # ultimately large components, if possible, get split into subcomponents, which are potentially overlapping/redundant connected groups of genera that are m
 # some subcomponents will be larger than the max component size if individual genera pairs are by themselves larger than this limit
@@ -160,12 +166,16 @@ if (nrow(mc_large) > 1){
 	# split by component
 	mcl_split <- split(mc_large, mc_large$component)
 	
+	message("Splitting components...")
+
 	## for each component, process, then save all as subcomponents tibble
 	mc_sub <- 
 		lapply(
 			names(mcl_split), # each element in the list is named by the component (eg. '6')
 			function(component_id){
 				
+				message(stringr::str_glue("Component {component_id}, {match(component_id, names(mcl_split))} of {length(mcl_split)}"))
+
 				# get genera in component
 				g_vec <- mcl_split[[component_id]]$genus
 				
@@ -260,6 +270,8 @@ if (nrow(mc_large) > 1){
 # combine small and subcomponented-large components together
 mc_all <- dplyr::bind_rows(mc_small, mc_sub)
 
+message("Combined small and processed large components")
+
 # group small components together so groups with more than 1 member have max 'component_group_size' sequences
 # this is so we don't align more than 'component_group_size' sequences together unless we have to
 component_groups <- 
@@ -272,6 +284,8 @@ component_groups <-
 		group = cumsum(component_n == cs)
 	) %>%
 	dplyr::select(component, group) 
+
+message("Defined component groups")
 
 # split by component group
 mc_split <- 

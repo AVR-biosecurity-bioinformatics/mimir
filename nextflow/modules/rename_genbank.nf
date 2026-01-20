@@ -29,7 +29,7 @@ process RENAME_GENBANK {
     ncbi_rankedlineage_noname =         "${ncbi_rankedlineage_noname}"
     placeholder_as_unclassified =       "${placeholder_as_unclassified}"
     digits_as_unclassified =            "${digits_as_unclassified}"
-
+    
     ### global variables
     projectDir = "$projectDir"
     params_dict = "$params"

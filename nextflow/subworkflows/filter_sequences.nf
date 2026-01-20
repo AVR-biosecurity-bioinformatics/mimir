@@ -427,7 +427,7 @@ workflow FILTER_SEQUENCES {
     ESTIMATE_THRESHOLDS (
         ch_subsample_summaries,
         '2', // min_k
-        '3' // max_k
+        '3.5' // max_k
     )
 
     //// value channel of just the thresholds .csv
@@ -606,7 +606,7 @@ workflow FILTER_SEQUENCES {
         ch_flagged_genera,
         ch_genus_processed,
         ch_redundant_counts, 
-        '2000' // max number of sequences to output for each group of components (n>1); params.component_size
+        '3000' // max number of sequences to output for each group of components (n>1); params.component_size
     )
 
     //// branch component groups by number of records
@@ -617,9 +617,9 @@ workflow FILTER_SEQUENCES {
             [ fasta, n_seqs ]
         }
         .branch { fasta, n_seqs ->
-            small: n_seqs <= 2000 // use params.component_size
+            small: n_seqs <= 3000 // use params.component_size
                 return fasta
-            large: n_seqs > 2000 // use params.component_size
+            large: n_seqs > 3000 // use params.component_size
                 return fasta
         }
         .set { ch_max_components }

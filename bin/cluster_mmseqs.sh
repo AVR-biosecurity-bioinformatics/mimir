@@ -15,13 +15,19 @@ SPLIT_MEMORY_LIMIT=$(( TASK_MEMORY_KB * 8 / 10 )) # 80% of total memory goes to 
 
 # determine the min sequence identity for the clusters
 if [[ $6 == "partial" ]]; then
-	# extract median genus identity from the thresholds .csv file
-	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="genus")'  $5 | cut -f2 -d, )
+	echo "MIN_SEQ_ID will be determined per .fasta file"
+	# get median for genus and species for calculations
+	MED_GENUS=$( awk -F, '(NR>1) && ($1=="genus")'  $5 | cut -f2 -d, )
+	MED_SPECIES=$( awk -F, '(NR>1) && ($1=="species")'  $5 | cut -f2 -d, )
+	# minimum records to change min_seq_id 
+	MIN_N=50000
+	# records at which scaling stops at median species ID
+	MAX_N=500000
 elif [[ $6 == "large_genus" ]]; then
 	# use median species identity
 	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="species")'  $5 | cut -f2 -d, )
 elif [[ $6 == "component" ]]; then
-	# use median genus identity
+	# use median genus identity 
 	MIN_SEQ_ID=$( awk -F, '(NR>1) && ($1=="genus")'  $5 | cut -f2 -d, )
 else 
 	echo "${6} is an incorrect value for the type of clustering process required"
@@ -31,6 +37,31 @@ fi
 ## loop through list of .fasta files, appending final clustering results to a single file
 touch clusters_pre.tsv
 for FILE in $4; do 
+	# determine sequence identity based on number of sequences, for partial clustering only
+	if [[ $6 == "partial" ]]; then
+		# count number of records in file
+		N_SEQS=$( grep -c ">" $4 )
+		if [[ $N_SEQS < $MIN_N ]]; then 
+			# use genus if few sequences
+			MIN_SEQ_ID=$MED_GENUS
+		elif [[ $N_SEQS > $MAX_N ]]; then
+			# use species if many sequences
+			MIN_SEQ_ID=$MED_SPECIES
+		else 
+			# scale between genus and species on log-scale if in-between
+			MIN_SEQ_ID=$( awk \
+				-v species_id="$MED_SPECIES" \
+				-v genus_id="$MED_GENUS" \
+				-v n_seqs="$N_SEQS" \
+				-v min_n="$MIN_N" \
+				-v max_n="$MAX_N" \
+				' BEGIN { 
+					scaling_factor=(log(n_seqs) - log(min_n)) / (log(max_n) - log(min_n))
+					print genus_id + ((species_id - genus_id) * scaling_factor) 
+				} ' )
+		fi 
+	fi
+	
 	# replace each space in sequence headers of fasta with the string "!?!?"
 	sed '/^>/ s/ /!?!?/g' $FILE > renamed.fasta
 

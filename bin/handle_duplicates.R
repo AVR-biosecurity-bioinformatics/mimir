@@ -46,19 +46,16 @@ nf_vars <- c(
     "bold_seqs_file",
     "genbank_seqs_file",
     "rankedlineage_noname",
-    "gb_dups_file"
+    "gb_dups_file",
+    "gb_failed_file"
     )
 lapply(nf_vars, nf_var_check)
 
 ### process variables 
 
-bold_seqs <- Biostrings::readDNAStringSet(bold_seqs_file)
-
-genbank_seqs <- Biostrings::readDNAStringSet(genbank_seqs_file)
-
 gb_dups <- readr::read_csv(gb_dups_file)
 
-rankedlineage_noname <- readRDS(rankedlineage_noname)
+gb_failed <- readr::read_lines(gb_failed_file)
 
 if (!prefer_source %in% c("bold","genbank")) stop("'--prefer_source' must be 'bold' or 'genbank'")
 if (!duplicate_taxonomy %in% c("keep_source","lca")) stop("'--duplicate_taxonomy' must be 'keep_source' or 'lca'")
@@ -108,6 +105,8 @@ select_sequence_source <- function(sb, sg, type, prefer = prefer_source){
 ### run code
 
 # get a tibble of NCBI taxids for all lineages
+rankedlineage_noname <- readRDS(rankedlineage_noname)
+
 taxid_lin <- 
 	rankedlineage_noname %>%
 	dplyr::mutate(
@@ -118,29 +117,44 @@ taxid_lin <-
 	dplyr::arrange(taxid_new) %>% 
 	dplyr::distinct(lin_new, .keep_all = T)
 
+message("Finished building 'taxid_lin'")
+
+rm(rankedlineage_noname)
+gc()
+
 ## create tibbles of bold and genbank sequence lineages with sequences
 bold_tibble <- 
-	bold_seqs %>%
+	Biostrings::readDNAStringSet(bold_seqs_file) %>%
 	as.character() %>%
 	tibble::enframe(name = "name_bold", value = "sequence_bold") %>%
 	dplyr::mutate(
-		seqid_bold = stringr::str_extract(name_bold, "^.+(?=\\|)"),
+		seqid_bold = stringr::str_extract(name_bold, "^.+?(?=\\|)"),
 		taxid_bold = stringr::str_extract(name_bold, "(?<=\\|).+?(?=;)"),
 		lin_bold = stringr::str_extract(name_bold, "(?<=;).+$")
 	) %>%
-	dplyr::distinct() # remove duplicates if there are any
-	
+	dplyr::distinct() %>% # remove duplicates if there are any
+	dplyr::filter(name_bold %in% gb_dups$name) # only keep rows needed for joining to save memory
+
+message("Finished building 'bold_tibble'")
+
+gc()
+
 genbank_tibble <- 
-	genbank_seqs %>% 
+	Biostrings::readDNAStringSet(genbank_seqs_file) %>% 
 	as.character() %>%
 	tibble::enframe(name = "name_genbank", value = "sequence_genbank") %>%
 	dplyr::mutate(
-		seqid_genbank = stringr::str_extract(name_genbank, "^.+(?=\\|)"),
+		seqid_genbank = stringr::str_extract(name_genbank, "^.+?(?=\\|)"),
 		taxid_genbank = stringr::str_extract(name_genbank, "(?<=\\|).+?(?=;)"),
 		lin_genbank = stringr::str_extract(name_genbank, "(?<=;).+$"),
-		acc_genbank = stringr::str_extract(name_genbank, "^.+(?=\\.)")
+		acc_genbank = stringr::str_extract(name_genbank, "^.+?(?=\\.\\d+\\|)")
 	) %>%
-	dplyr::distinct() # remove duplicates if there are any
+	dplyr::distinct() %>% # remove duplicates if there are any
+    dplyr::filter(acc_genbank %in% gb_dups$genbank_acc) # only keep rows needed for joining to save memory
+
+message("Finished building 'genbank_tibble'")
+
+gc()
 
 if (genbank_tibble$acc_genbank %>% duplicated() %>% any()){
 	stop("Some GenBank accessions are duplicated")
@@ -150,6 +164,8 @@ if (genbank_tibble$acc_genbank %>% duplicated() %>% any()){
 dups_joined <- 
 	gb_dups %>%
 	dplyr::rename(name_bold = name, acc_genbank = genbank_acc) %>%
+	# remove BOLD duplicates whose GenBank accessions were never fetched
+	dplyr::filter(!acc_genbank %in% gb_failed) %>%
 	dplyr::left_join(., genbank_tibble, by = "acc_genbank") %>%
 	dplyr::select(-acc_genbank) %>%
 	dplyr::left_join(., bold_tibble, by = "name_bold") %>%
@@ -158,6 +174,26 @@ dups_joined <-
 		seq_match = sequence_bold == sequence_genbank
 	)
 
+message("Finished building 'dups_joined'")
+
+# write file of BOLD records that were supposed to be duplicates but the GenBank record was never fetched
+gb_dups %>%
+	dplyr::rename(name_bold = name, acc_genbank = genbank_acc) %>%
+	dplyr::filter(acc_genbank %in% gb_failed) %>%
+	readr::write_csv(., "singleton_duplicates.csv")
+
+# write file of BOLD records that are missing GenBank sequences 
+dups_joined %>%
+	dplyr::filter(name_genbank %>% is.na) %>%
+	dplyr::left_join(., gb_dups, by = c("name_bold" = "name")) %>%
+	readr::write_csv(., "genbank_missing.csv")
+
+# write message 
+
+rm(bold_tibble)
+rm(genbank_tibble)
+gc()
+
 # work out which duplicate record to keep, and how taxonomy is kept or changed
 # evaluate: 
 # 1. duplicate_sequence to select source
@@ -165,6 +201,8 @@ dups_joined <-
 # 3. change taxonomy if duplicate_taxonomy == 'lca', otherwise use source taxonomy
 dups_processed <- 
 	dups_joined %>%
+	# remove sequences that didn't get joined to a GenBank record for whatever reason 
+	dplyr::filter(!is.na(name_genbank)) %>%
 	# group rowwise as custom functions aren't vectorised
 	dplyr::rowwise() %>%
 	dplyr::mutate(
@@ -211,6 +249,8 @@ dups_processed <-
 	) %>%
 	dplyr::select(source_new, seqid_new, taxid_new, lin_new, sequence_new, name_bold, name_genbank, name_new)
 
+message("Finished building 'dups_processed'")
+
 # if any new fields are NA, throw error
 dups_na_check <- 
 	dups_processed %>%
@@ -218,6 +258,8 @@ dups_na_check <-
 
 if (nrow(dups_na_check) > 0) stop("Duplicate processing produced one or more NA values for new fields")
 	
+message("Duplicate processing checked")
+
 # split sequences into BOLD source and GenBank source as DSS objects
 processed_bold <- 
 	dups_processed %>% 
@@ -233,16 +275,28 @@ processed_genbank <-
 	tibble::deframe() %>% 
 	Biostrings::DNAStringSet(.)
 
+bold_dups <- dups_processed$name_bold
+genbank_dups <- dups_processed$name_genbank
+
+# export processing tibble for debugging
+readr::write_csv(dups_processed, "bold_gb_duplicates.csv")
+
+rm(dups_processed)
+
+# import all sequence records 
+bold_seqs <- Biostrings::readDNAStringSet(bold_seqs_file)
+genbank_seqs <- Biostrings::readDNAStringSet(genbank_seqs_file)
+
 # add processed duplicates (per source) to input sequences without the duplicates
 bold_seqs_out <- 
     c(
-        bold_seqs[!names(bold_seqs) %in% dups_processed$name_bold], 
+        bold_seqs[!names(bold_seqs) %in% bold_dups], 
         processed_bold
     )
 
 genbank_seqs_out <- 
     c(
-        genbank_seqs[!names(genbank_seqs) %in% dups_processed$name_genbank], 
+        genbank_seqs[!names(genbank_seqs) %in% genbank_dups], 
         processed_genbank
     )
 
@@ -250,7 +304,6 @@ genbank_seqs_out <-
 Biostrings::writeXStringSet(bold_seqs_out, "bold_out.fasta", width = 9999)
 Biostrings::writeXStringSet(genbank_seqs_out, "genbank_out.fasta", width = 9999)
 
-# export processing tibble for debugging
-readr::write_csv(dups_processed, "bold_gb_duplicates.csv")
-
+rm(bold_seqs)
+rm(genbank_seqs)
 gc()

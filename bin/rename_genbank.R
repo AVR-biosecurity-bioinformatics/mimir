@@ -168,8 +168,8 @@ seqs <-
     unlist() %>%
     char2DNAbin()
 
-# write list of accessions not parsed into sequences
-seq_accessions <- names(seqs) %>% stringr::str_extract(., "^.+(?=\\|)")
+# write list of accessions (not versions) not parsed into sequences
+seq_accessions <- names(seqs) %>% stringr::str_extract(., "^.+?(?=\\.\\d+\\|)")
 noseq_accessions <- accessions[!accessions %in% seq_accessions] 
 if ( length(noseq_accessions) > 0 ){
     write_lines(noseq_accessions, "accessions_failed.txt")

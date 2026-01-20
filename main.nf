@@ -194,11 +194,13 @@ workflow MIMIR {
 
         ch_genbank_fasta = GET_GENBANK.out.ch_genbank_fasta
         ch_genbank_accessions = GET_GENBANK.out.ch_genbank_accessions
+        ch_accessions_failed = GET_GENBANK.out.ch_accessions_failed
         
     } else {
         
         ch_genbank_fasta = Channel.empty()
         ch_genbank_accessions = Channel.fromPath("assets/NOFILE")
+        ch_accessions_failed = Channel.empty()
     
     }
 
@@ -233,6 +235,7 @@ workflow MIMIR {
             ch_bold_fasta.collectFile ( name: 'bold.fasta' ),
             ch_genbank_fasta.collectFile ( name: 'genbank.fasta' ),
             GET_BOLD.out.ch_gb_dups,
+            ch_accessions_failed,
             PARSE_INPUTS.out.ch_rankedlineage_noname,
             params.prefer_source,
             params.duplicate_taxonomy,

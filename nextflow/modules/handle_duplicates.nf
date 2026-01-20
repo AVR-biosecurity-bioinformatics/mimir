@@ -7,6 +7,7 @@ process HANDLE_DUPLICATES {
     path(bold_seqs_file, name: 'bold_in.fasta')
     path(genbank_seqs_file, name: 'genbank_in.fasta')
     path(gb_dups_file, name: 'dups_in.csv')
+    path(gb_failed_file, name: 'accessions_failed.txt')
     path(rankedlineage_noname)
     val(prefer_source)
     val(duplicate_taxonomy)
@@ -31,6 +32,7 @@ process HANDLE_DUPLICATES {
     bold_seqs_file =                    "${bold_seqs_file}"
     genbank_seqs_file =                 "${genbank_seqs_file}"
     gb_dups_file =                      "${gb_dups_file}"
+    gb_failed_file =                    "${gb_failed_file}"
     rankedlineage_noname =              "${rankedlineage_noname}"
     prefer_source =                     "${prefer_source}"
     duplicate_taxonomy =                "${duplicate_taxonomy}"

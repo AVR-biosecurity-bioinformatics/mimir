@@ -56,13 +56,19 @@ workflow GET_GENBANK {
         ch_rankedlineage_noname,
         params.placeholder_as_unclassified,
         params.digits_as_unclassified
-    )
+    ) 
+
+    //// collect list of accessions that failed to be retrieved
+    RENAME_GENBANK.out.accessions_failed
+        .collectFile ( name: 'accessions_failed.txt' )
+        .set { ch_accessions_failed } 
 
     
     emit:
 
     ch_genbank_fasta                = RENAME_GENBANK.out.fasta
     ch_genbank_accessions
+    ch_accessions_failed
     
 
 }

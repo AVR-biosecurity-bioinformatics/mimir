@@ -323,8 +323,10 @@ bold_seqs <-
 ## filter and process the sequence records before exporting
 bold_seqs_processed <- 
 	bold_seqs %>% 
-	# make sure all sequences are upper-case
-	dplyr::mutate(nuc = toupper(nuc)) %>%
+	# make sure all sequences are upper-case and convert I to N
+	dplyr::mutate(
+        nuc = toupper(nuc) %>% stringr::str_replace_all(., "I", "N")
+    ) %>%
 	# conditionally replace 'placeholder' species names (eg. "Genus sp. XYZ") with "Unclassified"
     {
         if (placeholder_as_unclassified) {

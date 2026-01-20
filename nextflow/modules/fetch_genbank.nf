@@ -3,7 +3,7 @@ process FETCH_GENBANK {
     def module_name = "fetch_genbank"
     // tag "-"
     container "emehinovic72/edirect:latest"
-    // maxForks 100
+    maxForks 10
 
     input:
     path(acc_list, name: 'accessions.txt')
