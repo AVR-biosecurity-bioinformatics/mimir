@@ -31,7 +31,7 @@ process BUILD_GRAPH_MAX {
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
-
+    
     tryCatch({
     ### source functions and themes, load packages, and import Nextflow params
     ### from "bin/process_start.R"

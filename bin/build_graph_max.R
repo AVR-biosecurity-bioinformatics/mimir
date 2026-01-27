@@ -148,6 +148,8 @@ mc_large <-
 	) %>%
 	dplyr::filter(component_n > component_group_size)
 
+readr::write_csv(mc_large, "mc_large.csv")
+
 mc_small <- 
 	max_components %>%
 	dplyr::mutate(
@@ -155,6 +157,8 @@ mc_small <-
 		component_n = sum(act_n)
 	) %>%
 	dplyr::filter(component_n <= component_group_size)
+
+readr::write_csv(mc_small, "mc_small.csv")
 
 message("Defined small and and large components")
 
@@ -168,32 +172,39 @@ if (nrow(mc_large) > 1){
 	
 	message("Splitting components...")
 
+	# make a tibble of flagged pairs with query, target, query act_n and target act_n
+	flagged_joined <- 
+		flagged_genera %>%
+		dplyr::left_join(., genus_summary, by = dplyr::join_by(query == genus)) %>%
+		dplyr::select(query, target, q_n = act_n) %>%
+		dplyr::left_join(., genus_summary, by = dplyr::join_by(target == genus)) %>%
+		dplyr::select(query, target, q_n, t_n = act_n) 
+		
 	## for each component, process, then save all as subcomponents tibble
 	mc_sub <- 
 		lapply(
 			names(mcl_split), # each element in the list is named by the component (eg. '6')
 			function(component_id){
 				
-				message(stringr::str_glue("Component {component_id}, {match(component_id, names(mcl_split))} of {length(mcl_split)}"))
+				message(stringr::str_glue("Component {component_id}, {match(component_id, names(mcl_split))} of {length(mcl_split)}:"))
 
 				# get genera in component
 				g_vec <- mcl_split[[component_id]]$genus
 				
 				# create list of genera pairs, with each genus named with its act_n sequence size
 				gp_list <- 
-					flagged_genera %>% 
+					flagged_joined %>% 
 					dplyr::filter(query %in% g_vec, target %in% g_vec) %>%
 					dplyr::mutate(
-						vec = mapply(c, query, target, SIMPLIFY = F)
+						vec = mapply(c, query, target, q_n, t_n, SIMPLIFY = F)
 					) %>%
 					dplyr::pull(vec) %>%
-					unname() %>%
+					unname() %>% 
 					lapply(
 						.,
 						function(x){
-							out <- x
-							names(out)[1] <- genus_summary[genus_summary$genus == x[1],]$act_n
-							names(out)[2] <- genus_summary[genus_summary$genus == x[2],]$act_n
+							out <- x[1:2]
+							names(out) <- x[3:4]
 							return(out)
 						}
 					) 
@@ -213,27 +224,69 @@ if (nrow(mc_large) > 1){
 				gp_list <- gp_list[gp_order]
 				
 				# group pairs into potentially redundant subcomponents
-				subcomp_list <- list()
+				# subcomp_list <- list()
+				# for (i in seq_along(gp_list)){
+				# 	found <- FALSE
+				# 	# append first instance of matching genus to that element of subcomp_list
+				# 	for (j in seq_along(subcomp_list)){
+				# 		if (any(gp_list[[i]] %in% subcomp_list[[j]])){
+				# 			found <- TRUE
+				# 			new_j <- base::append(subcomp_list[[j]], gp_list[[i]])
+				# 			subcomp_list[[j]] <- new_j[!duplicated(new_j)] # remove repeated genera within element
+				# 			break()
+				# 		}
+				# 	}
+				# 	# if neither genus was found in any existing elements, create a new element in subcomp_list
+				# 	if (!found){
+				# 		subcomp_list <- base::append(subcomp_list, gp_list[i])
+				# 	}
+				# 	# arrange subcomp_list in ascending order of total number of sequences in the genera, so smallest groups are compared first
+				# 	seq_sum <- sapply(subcomp_list, function(x) names(x) %>% as.numeric() %>% sum())
+				# 	subcomp_list <- subcomp_list[order(seq_sum, decreasing = F)]
+				# 	if (i %% 100 == 0) message(stringr::str_glue("\t{i} of {length(gp_list)}"))
+				# }
+				subcomp_list <- list("0" = NULL)
 				for (i in seq_along(gp_list)){
-					found <- FALSE
-					# append first instance of matching genus to that element of subcomp_list
-					for (j in seq_along(subcomp_list)){
-						if (any(gp_list[[i]] %in% subcomp_list[[j]])){
-							found <- TRUE
-							new_j <- base::append(subcomp_list[[j]], gp_list[[i]])
-							subcomp_list[[j]] <- new_j[!duplicated(new_j)] # remove repeated genera within element
-							break()
-						}
+					j <- gp_list[[i]]
+					g <- rep(seq_along(subcomp_list), sapply(subcomp_list, length))
+					gm <- g[match(j, unlist(subcomp_list))]
+					if (all(is.na(gm))){
+						# if both genera weren't found, replace the first element of subcomp_list, which should be default after sorting	
+						# subcomp_list[[match(TRUE, sapply(subcomp_list, identical, x_el))]] <- j
+						#subcomp_list[[match(TRUE, sapply(subcomp_list, is.null))]] <- j
+						#subcomp_list[[1]] <- j
+						subcomp_list <- base::append(subcomp_list, list(j))
+						loc <- length(subcomp_list)
+						# make sum of sequences name of new element
+						names(subcomp_list)[loc] <- sum(as.numeric(names(j)))
+						
+					} else {
+						# if one or both genera were found, append the result to the earliest matching element
+						first_match <- min(gm[!is.na(gm)])
+						updated_match <- c(subcomp_list[[first_match]], j)
+						subcomp_list[[first_match]] <- updated_match[!duplicated(updated_match)] # remove repeated genera within element
+						loc <- first_match
+						# make sum of sequences name of new element
+						names(subcomp_list)[loc] <- sum(as.numeric(names(subcomp_list[[first_match]])))
 					}
-					# if neither genus was found in any existing elements, create a new element in subcomp_list
-					if (!found){
-						subcomp_list <- base::append(subcomp_list, gp_list[i])
+					# sort subcomp_list so the elements with the smallest sum of genera sizes are first
+					#seq_sum <- sapply(subcomp_list,	function(x) sum(as.numeric(names(x))))
+					# find first element larger than the new or updated element
+					first_larger <- Position(function(x) x > as.numeric(names(subcomp_list)[loc]), as.numeric(names(subcomp_list)))
+					if (is.na(first_larger)){
+						subcomp_list <- append(subcomp_list[-loc], subcomp_list[loc], length(subcomp_list))
+					} else {
+						# move loc to just before this position
+						subcomp_list <- append(subcomp_list[-loc], subcomp_list[loc], first_larger)
 					}
-					# arrange subcomp_list in ascending order of total number of sequences in the genera, so smallest groups are compared first
-					seq_sum <- sapply(subcomp_list, function(x) names(x) %>% as.numeric() %>% sum())
-					subcomp_list <- subcomp_list[order(seq_sum, decreasing = F)]
+					
+					#subcomp_list <- subcomp_list[order(seq_sum, method = "radix")]
+					if ((i %% 100 == 0) || (i == length(gp_list))) message(stringr::str_glue("\t{i} of {length(gp_list)}"))
 				}
 
+				# remove remaining null elements
+				subcomp_list[sapply(subcomp_list, is.null)] <- NULL
+				
 				# convert subcomp_list into a tibble format (implicit output)
 				lapply(
 					seq_along(subcomp_list), 
@@ -293,6 +346,8 @@ mc_split <-
 	dplyr::left_join(., component_groups, by = "component") %>%
 	dplyr::arrange(group, component) %>% 
 	split(., .$group) 
+
+readr::write_csv(mc_split %>% dplyr::bind_rows(), "component_groups.csv")
 
 # for each group of components of genera, get the associated sequence records and write to file
 lapply(
