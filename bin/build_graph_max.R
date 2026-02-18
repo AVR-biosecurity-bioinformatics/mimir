@@ -224,44 +224,19 @@ if (nrow(mc_large) > 1){
 				gp_list <- gp_list[gp_order]
 				
 				# group pairs into potentially redundant subcomponents
-				# subcomp_list <- list()
-				# for (i in seq_along(gp_list)){
-				# 	found <- FALSE
-				# 	# append first instance of matching genus to that element of subcomp_list
-				# 	for (j in seq_along(subcomp_list)){
-				# 		if (any(gp_list[[i]] %in% subcomp_list[[j]])){
-				# 			found <- TRUE
-				# 			new_j <- base::append(subcomp_list[[j]], gp_list[[i]])
-				# 			subcomp_list[[j]] <- new_j[!duplicated(new_j)] # remove repeated genera within element
-				# 			break()
-				# 		}
-				# 	}
-				# 	# if neither genus was found in any existing elements, create a new element in subcomp_list
-				# 	if (!found){
-				# 		subcomp_list <- base::append(subcomp_list, gp_list[i])
-				# 	}
-				# 	# arrange subcomp_list in ascending order of total number of sequences in the genera, so smallest groups are compared first
-				# 	seq_sum <- sapply(subcomp_list, function(x) names(x) %>% as.numeric() %>% sum())
-				# 	subcomp_list <- subcomp_list[order(seq_sum, decreasing = F)]
-				# 	if (i %% 100 == 0) message(stringr::str_glue("\t{i} of {length(gp_list)}"))
-				# }
 				subcomp_list <- list("0" = NULL)
 				for (i in seq_along(gp_list)){
 					j <- gp_list[[i]]
 					g <- rep(seq_along(subcomp_list), sapply(subcomp_list, length))
 					gm <- g[match(j, unlist(subcomp_list))]
 					if (all(is.na(gm))){
-						# if both genera weren't found, replace the first element of subcomp_list, which should be default after sorting	
-						# subcomp_list[[match(TRUE, sapply(subcomp_list, identical, x_el))]] <- j
-						#subcomp_list[[match(TRUE, sapply(subcomp_list, is.null))]] <- j
-						#subcomp_list[[1]] <- j
+						# if both genera weren't found, append to list	
 						subcomp_list <- base::append(subcomp_list, list(j))
 						loc <- length(subcomp_list)
 						# make sum of sequences name of new element
 						names(subcomp_list)[loc] <- sum(as.numeric(names(j)))
-						
 					} else {
-						# if one or both genera were found, append the result to the earliest matching element
+						# if one or both genera were found, append the result within the earliest matching element
 						first_match <- min(gm[!is.na(gm)])
 						updated_match <- c(subcomp_list[[first_match]], j)
 						subcomp_list[[first_match]] <- updated_match[!duplicated(updated_match)] # remove repeated genera within element
@@ -269,14 +244,15 @@ if (nrow(mc_large) > 1){
 						# make sum of sequences name of new element
 						names(subcomp_list)[loc] <- sum(as.numeric(names(subcomp_list[[first_match]])))
 					}
-					# sort subcomp_list so the elements with the smallest sum of genera sizes are first
-					#seq_sum <- sapply(subcomp_list,	function(x) sum(as.numeric(names(x))))
+					## use the names of the elements to determine where the newest element should go 
+					## this avoids sorting the list each iteration, as you just need to move the focal element so increasing order is maintained
 					# find first element larger than the new or updated element
 					first_larger <- Position(function(x) x > as.numeric(names(subcomp_list)[loc]), as.numeric(names(subcomp_list)))
 					if (is.na(first_larger)){
+						# if there was no larger element, move focal element to the end of the list
 						subcomp_list <- append(subcomp_list[-loc], subcomp_list[loc], length(subcomp_list))
 					} else {
-						# move loc to just before this position
+						# if there was a larger element, move focal element to the position before it
 						subcomp_list <- append(subcomp_list[-loc], subcomp_list[loc], first_larger)
 					}
 					

@@ -448,16 +448,20 @@ workflow FILTER_SEQUENCES {
     SPLIT_BY_CLASSIFICATION.out.full
         .collect(sort: true)
         .flatten()
-        .map { file ->
-            file_size = file.size() as MemoryUnit
-            [ file_size.getKilo() , file ] }
-        // branch channel depending on the size of the file in KB (rounded down)
-        .branch { file_size, file ->
-            small: file_size < 100
+        // .map { file ->
+        //     file_size = file.size() as MemoryUnit
+        //     [ file_size.getKilo() , file ] }
+        .map { fasta ->
+            n_seqs = fasta.readLines().count { it =~ />/ }
+            [ fasta, n_seqs ]
+        }
+        // branch channel depending on the number of sequences in the file
+        .branch { file, n_seqs ->
+            small: n_seqs < 500
                 return file
-            medium: file_size >= 100 && file_size < 2000
+            medium: n_seqs >= 500 && n_seqs < 3000
                 return file 
-            large: file_size >= 2000
+            large: n_seqs >= 3000
                 return file
         } 
         .set { ch_genera_sizebranch }
