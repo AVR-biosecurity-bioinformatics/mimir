@@ -684,8 +684,8 @@ workflow FILTER_SEQUENCES {
         ch_genus_processed,
         ch_redundant_counts,
         ch_thresholds,
-        '5',
-        '0.8'
+        params.consensus_min_n,
+        params.consensus_min_prop
     )
 
 
