@@ -380,60 +380,77 @@ workflow FILTER_SEQUENCES {
 
     ///// THRESHOLD ESTIMATION
 
-    //// combine subsample seed from 1 to n (latter to be replaced by params.subsample_n) with .fasta of records
-    channel.of(1..1000)
-        .map { n -> n as String }
-        .collectFile( name: 'seeds.txt', newLine: true )
-        .splitText( by: 100, file: true ) // 100 seeds per file
-        .set { ch_seeds }
+    if ( !params.thresholds ){
+        
+        int subsample_n = params.threshold_subsample_n as Integer
+
+        //// combine subsample seed from 1 to n with .fasta of records
+        channel.of(1..subsample_n)
+            .map { n -> n as String }
+            .collectFile( name: 'seeds.txt', newLine: true )
+            .splitText( by: 100, file: true ) // 100 seeds per file
+            .set { ch_seeds }
+        
+        ch_redundant_fasta
+            .combine( ch_seeds )
+            .set { ch_subsample_input }
+
+        //// subsample from all records 
+        SUBSAMPLE_RECORDS (
+            ch_subsample_input,
+            params.threshold_sample_size
+        )
+
+        SUBSAMPLE_RECORDS.out.fasta
+            .flatten()
+            .set { ch_subsamples }
+
+        //// align each subsample
+        ALIGN_SUBSAMPLE (
+            ch_subsamples
+        )
+
+        //// buffer subsamples into summary process to save overhead
+        ALIGN_SUBSAMPLE.out.fasta
+            .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
+            .flatten ()
+            .buffer( size: 5, remainder: true )
+            .set { ch_subsamples_aligned }
+
+        //// statistically summarise subsamples
+        SUMMARISE_SUBSAMPLES(
+            ch_subsamples_aligned
+        )
+
+        //// combine subsample summary statistics
+        SUMMARISE_SUBSAMPLES.out.csv
+            .collectFile( keepHeader: true, skip: 1, name: 'subsample_summaries.csv' )
+            .set { ch_subsample_summaries }
+
+        //// estimate global thresholds
+        ESTIMATE_THRESHOLDS (
+            ch_subsample_summaries,
+            params.threshold_min_k,
+            params.threshold_max_k
+        )
+
+        //// value channel of just the thresholds .csv
+        ESTIMATE_THRESHOLDS.out.csv
+            .first()
+            .set { ch_thresholds }
     
-    ch_redundant_fasta
-        .combine( ch_seeds )
-        .set { ch_subsample_input }
+    } else {
 
-    //// subsample from all records 
-    SUBSAMPLE_RECORDS (
-        ch_subsample_input,
-        3000
-    )
+        ch_thresholds = channel.fromPath ( params.thresholds, checkIfExists: true, type: 'file').first()
 
-    SUBSAMPLE_RECORDS.out.fasta
-        .flatten()
-        .set { ch_subsamples }
+    }
 
-    //// align each subsample
-    ALIGN_SUBSAMPLE (
-        ch_subsamples
-    )
-
-    //// buffer subsamples into summary process to save overhead
-    ALIGN_SUBSAMPLE.out.fasta
-        .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
-        .flatten ()
-        .buffer( size: 5, remainder: true )
-        .set { ch_subsamples_aligned }
-
-    //// statistically summarise subsamples
-    SUMMARISE_SUBSAMPLES(
-        ch_subsamples_aligned
-    )
-
-    //// combine subsample summary statistics
-    SUMMARISE_SUBSAMPLES.out.csv
-        .collectFile( keepHeader: true, skip: 1, name: 'subsample_summaries.csv' )
-        .set { ch_subsample_summaries }
-
-    //// estimate global thresholds
-    ESTIMATE_THRESHOLDS (
-        ch_subsample_summaries,
-        '2', // min_k
-        '3.5' // max_k
-    )
-
-    //// value channel of just the thresholds .csv
-    ESTIMATE_THRESHOLDS.out.csv
-        .first()
-        .set { ch_thresholds }
+    //// store thresholds file in results directory
+    ch_thresholds
+        .collectFile(
+            name: 'thresholds.csv',
+            storeDir: './output/results'
+        )
 
     //// split rf records into fully classified and partially classified (channel contains batches of genera lineages)
     FILTER_REDUNDANT.out.fasta
@@ -519,8 +536,8 @@ workflow FILTER_SEQUENCES {
         ch_aligned_genera,
         ch_redundant_counts,
         ch_thresholds,
-        '5',
-        '0.8'
+        params.consensus_min_n,
+        params.consensus_min_prop
     )
 
     //// collect outputs from intragenus outlier detection
@@ -581,7 +598,7 @@ workflow FILTER_SEQUENCES {
     BLAST_TOP_HITS (
         ch_search_queries,
         ch_blast_db,
-        '50' // params.n_top_hits (number of top inter-genus hits to keep per query, more is more sensitive)
+        params.top_hits_n
     )
 
     //// align inter-genus top hits per sequence
@@ -610,7 +627,7 @@ workflow FILTER_SEQUENCES {
         ch_flagged_genera,
         ch_genus_processed,
         ch_redundant_counts, 
-        '3000' // max number of sequences to output for each group of components (n>1); params.component_size
+        params.component_group_size
     )
 
     //// branch component groups by number of records
