@@ -8,7 +8,7 @@ process ALIGN_TOP_HITS {
     path(seqs_fasta)
 
     output: 
-    path("alignment.out"),                            emit: alignment
+    path("alignment.cfa"),                            emit: cfa
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

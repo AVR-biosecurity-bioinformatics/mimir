@@ -4,7 +4,7 @@ process MAX_THRESHOLD_OUTLIERS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(alignment_files, name: 'alignment*.fasta')
+    path(alignment_cfa)
     path(seqs_file)
     path(rf_counts_tsv)
     path(thresholds_csv)
@@ -27,7 +27,7 @@ process MAX_THRESHOLD_OUTLIERS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    alignment_files =                "${alignment_files}"
+    alignment_cfa =                  "${alignment_cfa}"
     seqs_file =                      "${seqs_file}"
     rf_counts_tsv =                  "${rf_counts_tsv}"
     thresholds_csv =                 "${thresholds_csv}"

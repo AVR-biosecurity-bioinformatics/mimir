@@ -28,7 +28,7 @@ cat $3 | \
     }' - 
 
 # for each query, extract the query and all target sequences into a single .fasta file, then align using mafft in a pipe, and append in single-line format to out file
-touch alignment.out
+touch alignment.cfa
 for i in *.split; do
     # get query
     QUERY=$(head $i -n1 | cut -f1)
@@ -52,7 +52,7 @@ for i in *.split; do
                 --quiet \
                 - | \
             sed -e ':a;N;$!ba;s/\n/>>>/g' \
-            >> alignment.out 
+            >> alignment.cfa 
     fi
     # remove temp files
     rm -f *.tmp

@@ -465,9 +465,6 @@ workflow FILTER_SEQUENCES {
     SPLIT_BY_CLASSIFICATION.out.full
         .collect(sort: true)
         .flatten()
-        // .map { file ->
-        //     file_size = file.size() as MemoryUnit
-        //     [ file_size.getKilo() , file ] }
         .map { fasta ->
             n_seqs = fasta.readLines().count { it =~ />/ }
             [ fasta, n_seqs ]
@@ -526,14 +523,20 @@ workflow FILTER_SEQUENCES {
         ALIGN_GENUS_CORE.out.fasta
     )
 
-    //// combine outputs from both genus alignment processes
-    ALIGN_GENUS_SMALL.out.fasta
-        .mix ( ALIGN_GENUS_OTHER.out.fasta )
-        .set { ch_aligned_genera }
+    //// combine outputs from both genus alignment processes into a single .cfa file
+    ALIGN_GENUS_SMALL.out.cfa
+        .mix ( ALIGN_GENUS_OTHER.out.cfa )
+        .collectFile( name: 'aligned_genera.cfa' )
+        .set { ch_aligned_genera_cfa }
+
+    //// split into 500 alignments per element
+    ch_aligned_genera_cfa
+        .splitText ( by: 500, file: true )
+        .set { ch_intragenus_input }
 
     //// do intra-genus filtering
     INTRAGENUS_OUTLIERS (
-        ch_aligned_genera,
+        ch_intragenus_input,
         ch_redundant_counts,
         ch_thresholds,
         params.consensus_min_n,
@@ -609,7 +612,7 @@ workflow FILTER_SEQUENCES {
 
     //// convert top hits to flagged genera pairs 
     FLAG_GENERA_PAIRS (
-        ALIGN_TOP_HITS.out.alignment,
+        ALIGN_TOP_HITS.out.cfa,
         ch_thresholds,
         ch_genus_processed, // not necessary?
         ch_redundant_counts 
@@ -673,9 +676,9 @@ workflow FILTER_SEQUENCES {
         ALIGN_MAX_CORE.out.fasta
     )
 
-    ALIGN_MAX_SMALL.out.fasta
-        .mix ( ALIGN_MAX_OTHER.out.fasta )
-        .collect()
+    ALIGN_MAX_SMALL.out.cfa
+        .mix ( ALIGN_MAX_OTHER.out.cfa )
+        .collectFile( name: 'aligned_max.cfa' )
         .set { ch_aligned_max_components }
 
     //// find max threshold outliers within each component
@@ -687,6 +690,8 @@ workflow FILTER_SEQUENCES {
         params.consensus_min_n,
         params.consensus_min_prop
     )
+
+
 
 
     //// build connection graph for min threshold violation

@@ -7,7 +7,7 @@ process ALIGN_OTHER {
     tuple path('core.fasta'), path('other.fasta')
 
     output: 
-    path("aligned.fasta"),                           emit: fasta
+    path("alignment.cfa"),                           emit: cfa
 
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 

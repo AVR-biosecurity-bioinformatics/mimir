@@ -43,7 +43,7 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "fasta_files",
+    "alignment_cfa",
     "rf_counts_tsv",
     "thresholds_csv",
     "con_min_n",
@@ -54,11 +54,22 @@ lapply(nf_vars, nf_var_check)
 ### process variables 
 
 # read in list of sequences
-fasta_list <-
-    stringr::str_extract_all(fasta_files, pattern = "[^\\s,\\[\\]]+") %>% unlist()
+alignment_single <- readr::read_lines(alignment_cfa)
 
-# read in sequences as list
-seqs_list <- lapply(fasta_list, Biostrings::readDNAStringSet)
+# process concatenated fasta format into DSS format
+seqs_list <- 
+	alignment_single %>%
+	lapply(
+		.,
+		function(x){
+			x_split <- stringr::str_split_1(x, ">>>")
+			x_head <- x_split[c(TRUE,FALSE)] %>% stringr::str_remove(., "^>") 
+			x_seq <- x_split[c(FALSE,TRUE)]
+			names(x_seq) <- x_head
+			out <- Biostrings::DNAStringSet(x_seq)
+			return(out)
+		}
+	)
 
 # read in rf_counts csv
 rf_counts <- readr::read_tsv(rf_counts_tsv, col_names = c("name","n"), show_col_types = FALSE)

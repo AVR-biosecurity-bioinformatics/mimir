@@ -43,7 +43,7 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "alignment_file",
+    "alignment_cfa",
     "thresholds_file",
     "seqs_file",
     "counts_file"
@@ -53,9 +53,9 @@ lapply(nf_vars, nf_var_check)
 ### process variables 
 
 # read in list of sequences
-alignment_single <- readr::read_lines(alignment_file)
+alignment_single <- readr::read_lines(alignment_cfa)
 
-# process single-line alignment format into DSS format
+# process concatenated fasta format into DSS format
 seqs_list <- 
 	alignment_single %>%
 	lapply(

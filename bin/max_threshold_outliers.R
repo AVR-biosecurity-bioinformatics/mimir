@@ -43,7 +43,7 @@ invisible(lapply(head(process_packages,-1), library, character.only = TRUE, warn
 nf_vars <- c(
     "projectDir",
     "params_dict",
-    "alignment_files",
+    "alignment_cfa",
 	"seqs_file",
     "rf_counts_tsv",
     "thresholds_csv",
@@ -55,11 +55,22 @@ lapply(nf_vars, nf_var_check)
 ### process variables 
 
 # read in list of sequences
-alignment_files <-
-    stringr::str_extract_all(alignment_files, pattern = "[^\\s,\\[\\]]+") %>% unlist()
+alignment_single <- readr::read_lines(alignment_cfa)
 
-# read in sequences as list
-alignment_list <- lapply(alignment_files, Biostrings::readDNAStringSet)
+# process concatenated fasta format into DSS format
+alignment_list <- 
+	alignment_single %>%
+	lapply(
+		.,
+		function(x){
+			x_split <- stringr::str_split_1(x, ">>>")
+			x_head <- x_split[c(TRUE,FALSE)] %>% stringr::str_remove(., "^>") 
+			x_seq <- x_split[c(FALSE,TRUE)]
+			names(x_seq) <- x_head
+			out <- Biostrings::DNAStringSet(x_seq)
+			return(out)
+		}
+	)
 
 # read in all sequences
 seqs <- Biostrings::readDNAStringSet(seqs_file)
@@ -116,15 +127,14 @@ max_loop <-
 			# get distance matrix from alignment
 			x <- alignment_list[[y]]
 			
-			x_d <- DECIPHER::DistanceMatrix(x, verbose = F)
-			
 			# loop through the thresholds, producing clusters for each one and then combining into a single tibble
 			max_cl <- 
 			    lapply(
 			    	names(t_d),
 			        function(y){
+						DECIPHER::DistanceMatrix(x, verbose = F) %>%
 			        	DECIPHER::TreeLine(
-			                myDistMatrix = x_d, 
+							myDistMatrix = .,
 			                method = "complete",
 			                type = "clusters",
 			                cutoff = t_d[names(t_d) == y],

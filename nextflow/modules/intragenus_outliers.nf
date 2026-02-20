@@ -4,7 +4,7 @@ process INTRAGENUS_OUTLIERS {
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(fasta_files)
+    path(alignment_cfa)
     path(rf_counts_tsv)
     path(thresholds_csv)
     val(con_min_n)
@@ -28,7 +28,7 @@ process INTRAGENUS_OUTLIERS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    fasta_files =                    "${fasta_files}"
+    alignment_cfa =                  "${alignment_cfa}"
     rf_counts_tsv =                  "${rf_counts_tsv}"
     thresholds_csv =                 "${thresholds_csv}"
     con_min_n =                      "${con_min_n}"

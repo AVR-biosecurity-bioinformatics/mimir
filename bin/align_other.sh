@@ -16,16 +16,19 @@ if [ -s $4 ]; then
         --thread ${2} \
         --linelength -1 \
         --add ${4} \
-        ${3} \
-        > aligned.fasta
+        ${3} | \
+    sed -e ':a;N;$!ba;s/\n/>>>/g' \
+    > alignment.cfa 
 else 
-    # rename as aligned
+    # process input as .cfa format
     echo "All sequences are already aligned"
-    cp $3 aligned.fasta
+    cat $3 |
+    sed -e ':a;N;$!ba;s/\n/>>>/g' \
+    > alignment.cfa 
 fi 
 
 # throw error if output file is empty
-if [ -s aligned.fasta ]; then
+if [ -s alignment.cfa  ]; then
     echo "Finished aligning all sequences"        
 else 
     echo "alignment output file is empty"

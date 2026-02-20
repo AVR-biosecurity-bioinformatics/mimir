@@ -8,7 +8,7 @@ process ALIGN_BATCH {
     val(file_type)
 
     output: 
-    path("*.aligned.fasta"),             emit: fasta
+    path("alignment.cfa"),             emit: cfa
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
