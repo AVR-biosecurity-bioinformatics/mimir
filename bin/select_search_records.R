@@ -63,12 +63,8 @@ consistent_reps <-
 	dplyr::filter(
 		threshold == "genus_min", # keep genus_min rows
 		name %in% names(seqs), # keep only sequences that passed genus and species filtering
-		consistent == TRUE #keep only consistent genera
+		central == TRUE # keep only central sequences
 	) %>%
-	dplyr::arrange(desc(n)) %>% # most frequent sequences on top
-	dplyr::group_by(taxon) %>%
-	dplyr::slice(1) %>%
-	dplyr::ungroup() %>%
 	dplyr::pull(name)
 
 # get all sequences from inconsistent genera

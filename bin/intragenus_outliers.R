@@ -87,16 +87,19 @@ con_min_prop <- as.numeric(con_min_prop)
 
 ### run code
 
-# loop through each DSS object (representing each genus), cluster and detect outliers
+# loop through each DSS object (representing each genus), cluster and detect outliers (as well as defining central sequences)
 gs_outliers <- 
 	lapply(
-		seqs_list,
-		function(x){
+		seq_along(seqs_list),
+		function(y){
 			#browser()
+			message(stringr::str_glue("Starting {y} of {length(seqs_list)}"))
+			x <- seqs_list[[y]]
 			if (length(x) > 1){
+				x_d <- DECIPHER::DistanceMatrix(x, verbose = F)
 				# produce distance matrix, cluster, then organise into tibble
 				g_c <- 
-					DECIPHER::DistanceMatrix(x, verbose = F) %>% 
+					x_d %>% 
 					DECIPHER::TreeLine(
 						myDistMatrix = ., 
 						method = "single",
@@ -114,7 +117,6 @@ gs_outliers <-
 						genus = stringr::str_remove(species, ";[^;]+?$")
 					) %>%
 					dplyr::arrange(genus_min, species_min, desc(n))
-			
 			} else {
 				# create dummy cluster output when there is only a single sequence in the genus
 				g_c <- 
@@ -127,7 +129,8 @@ gs_outliers <-
 					) %>%
 					dplyr::arrange(genus_min, species_min, desc(n))
 			}
-			
+
+
 			## determine if genus is split into multiple clusters, and whether they are major, minor or ND
 			## also determine if genus is consistent 
 			genus_check <- 
@@ -236,9 +239,47 @@ gs_outliers <-
 			# get DSS of sequences removed at species level
 			species_minor_seqs <- x[names(x) %in% (species_check %>% dplyr::filter(type == "minor") %>% .$name)]
 			
+			# names of all removed sequences
+			minor_names <- c(names(species_minor_seqs), names(genus_minor_seqs))
+			
 			# combine tibbles
-			out_tibble <- 
+			out_tibble.pre <- 
 				dplyr::bind_rows(genus_check, species_check)
+			
+			# determine central sequence of genus (if consistent)
+			if (all(genus_check$consistent)){
+				# only use distance matrix if there is more than one sequence
+				if(length(x) > 1){
+					# remove minor sequences from the distance matrix
+					x_d.new <- x_d[!rownames(x_d) %in% minor_names, !colnames(x_d) %in% minor_names, drop = F]
+					if(length(rownames(x_d.new)) == 1){
+						# if only a single sequence remains, use that as central sequence
+						central_name <- rownames(x_d.new)
+					} else {
+						# median pairwise distance for each sequence
+						x_d.median <- apply(x_d.new, 1, median)
+						# indices and names of sequences with smallest median distance
+						x_d.min <- which(x_d.median == min(x_d.median))
+						# find longest central sequence
+						central_idx <- x[names(x) %in% names(x_d.min)] %>% DECIPHER::RemoveGaps(.) %>% lengths() %>% which.max()
+						# get name of central sequence
+						central_name <- x[names(x) %in% names(x_d.min)][central_idx] %>% names()
+					}
+				} else {
+					central_name <- names(x)
+				}
+				
+				# add central flag to out_tibble
+				out_tibble <- 
+					out_tibble.pre %>%
+					dplyr::mutate(central = name == central_name)
+				 
+			} else {
+				# don't define central sequence
+				out_tibble <- 
+					out_tibble.pre %>%
+					dplyr::mutate(central = FALSE)
+			}
 			
 			### return list per genus
 			return(

@@ -691,28 +691,28 @@ workflow FILTER_SEQUENCES {
         params.consensus_min_prop
     )
 
+    //// get comparator sequences for each consistent genus
+    // SELECT_GENUS_COMPARATORS ()
 
+    //// align comparator sequences
+    // ALIGN_GENUS_COMPARATORS ()
 
+    //// flag genera pairs and determine min component groups
+    // GET_MIN_COMPONENTS ()
 
-    //// build connection graph for min threshold violation
-    // BUILD_GRAPH_MIN ()
-
-    //// branch min components by number of sequences
-
-
-    //// align small components of the min graph
+    //// align small min component groups 
     // ALIGN_MIN_SMALL ()
 
-    //// get core and non-core sequences of large components
+    //// get core and non-core sequences of large min components
     // GET_MIN_CORE ()
 
-    //// align core sequences 
+    //// align core sequences of min components
     // ALIGN_MIN_CORE ()
 
-    //// add other sequences
+    //// add other sequences to min component alignments
     // ALIGN_MIN_OTHER ()
 
-    //// find min threshold outliers within each component
+    //// find min threshold outliers within each component group
     // MIN_THRESHOLD_OUTLIERS ()
 
 
