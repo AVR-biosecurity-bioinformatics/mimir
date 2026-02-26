@@ -8,6 +8,7 @@ include { ALIGN_BATCH as ALIGN_GENUS_SMALL                           } from '../
 include { ALIGN_BATCH as ALIGN_MAX_SMALL                             } from '../modules/align_batch'
 include { ALIGN_CORE as ALIGN_GENUS_CORE                             } from '../modules/align_core'
 include { ALIGN_CORE as ALIGN_MAX_CORE                               } from '../modules/align_core'
+include { ALIGN_MIN_COMPARATORS                                      } from '../modules/align_min_comparators'
 include { ALIGN_OTHER as ALIGN_GENUS_OTHER                           } from '../modules/align_other'
 include { ALIGN_OTHER as ALIGN_MAX_OTHER                             } from '../modules/align_other'
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
@@ -39,6 +40,8 @@ include { INTRAGENUS_OUTLIERS                                        } from '../
 include { MAKE_BLAST_DATABASE                                        } from '../modules/make_blast_database'
 include { MAX_THRESHOLD_OUTLIERS                                     } from '../modules/max_threshold_outliers'
 include { MERGE_SPLITS as MERGE_SPLITS_GENUS                         } from '../modules/merge_splits'
+include { RECHECK_GENERA                                             } from '../modules/recheck_genera'
+include { SELECT_MIN_COMPARATORS                                     } from '../modules/select_min_comparators'
 include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
 include { SELECT_SEARCH_RECORDS                                      } from '../modules/select_search_records'
 include { SORT_BY_LINEAGE                                            } from '../modules/sort_by_lineage'
@@ -691,11 +694,45 @@ workflow FILTER_SEQUENCES {
         params.consensus_min_prop
     )
 
-    //// get comparator sequences for each consistent genus
-    // SELECT_GENUS_COMPARATORS ()
+    //// recheck genera after max outlier detection (central sequences and consistency)
+    RECHECK_GENERA (
+        ch_intragenus_results,
+        ch_genus_processed,
+        MAX_THRESHOLD_OUTLIERS.out.retained,
+        ch_aligned_genera_cfa,
+        ch_synthetic_reps,
+        ch_redundant_counts,
+        params.consensus_min_n,
+        params.consensus_min_prop
+    )
+
+    RECHECK_GENERA.out.cg_list
+        .splitText ( by: 10000, file: true )
+        .set { ch_cg_list }
+
+    //// get min threshold comparator sequences for each consistent genus
+    SELECT_MIN_COMPARATORS (
+        RECHECK_GENERA.out.csv.first(),
+        ch_cg_list,
+        MAX_THRESHOLD_OUTLIERS.out.retained.first(),
+        params.consensus_min_n,
+        params.consensus_min_prop
+    )
+
+    //// split .cfa into chunks of 2000 alignments
+    SELECT_MIN_COMPARATORS.out.cfa
+        .splitText ( by: 2000, file: true )
+        .set { ch_min_comparators }
 
     //// align comparator sequences
-    // ALIGN_GENUS_COMPARATORS ()
+    ALIGN_MIN_COMPARATORS (
+        ch_min_comparators
+    )
+
+    //// recombine alignments into a single .cfa file
+    ALIGN_MIN_COMPARATORS.out.cfa
+        .collectFile ( name: 'min_comparators_aligned.cfa' )
+        .set { ch_min_comparators_aligned }
 
     //// flag genera pairs and determine min component groups
     // GET_MIN_COMPONENTS ()

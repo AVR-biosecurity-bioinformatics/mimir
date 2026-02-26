@@ -57,7 +57,7 @@ lapply(nf_vars, nf_var_check)
 # read in list of sequences
 alignment_single <- readr::read_lines(alignment_cfa)
 
-# process concatenated fasta format into DSS format
+# process concatenated fasta format into list of DSS format
 alignment_list <- 
 	alignment_single %>%
 	lapply(
@@ -108,8 +108,6 @@ counts_new <-
 	dplyr::left_join(., counts_lcrf, by = "name") %>%
 	dplyr::select(name = new, n) %>%
 	dplyr::bind_rows(., count_lcrg)
-
-counts_new
 
 ## convert max thresholds to distances
 t_i <- thresholds %>%

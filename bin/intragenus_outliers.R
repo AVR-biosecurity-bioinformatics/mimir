@@ -138,23 +138,23 @@ gs_outliers <-
 				# remove sequences without genus classification
 				dplyr::filter(!stringr::str_detect(genus, ";Unclassified$")) %>%
 				dplyr::select(name, n, taxon = genus, cluster = genus_min) %>%
-				dplyr::group_by(taxon) %>%
 				dplyr::mutate(
+					.by = c(taxon),
 					threshold = "genus_min",
 					# is taxon split?
 					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
 					# records in genus
 					taxon_n = sum(n)
 				) %>%
-				dplyr::group_by(taxon, cluster) %>%
 				dplyr::mutate(
+					.by = c(taxon, cluster),
 					# records in cluster 
 					cluster_n = sum(n),
 					# proportion of records in cluster
 					cluster_prop = cluster_n/taxon_n,
 					# cluster type (major, minor or ND)
 					type = dplyr::case_when(
-							split == FALSE ~ "major",
+						split == FALSE ~ "major",
 						taxon_n < con_min_n ~ "ND",
 						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
 						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
@@ -163,12 +163,12 @@ gs_outliers <-
 					)
 				) %>%
 				# force ND on all clusters for a taxon if no major cluster exists
-				dplyr::group_by(taxon) %>%
 				dplyr::mutate(
+					.by = c(taxon),
 					nd = !any(type == "major")
 				) %>%
-				dplyr::group_by(taxon, cluster) %>%
 				dplyr::mutate(
+					.by = c(taxon, cluster),
 					type = dplyr::if_else(
 						nd == TRUE, 
 						"ND",
@@ -177,9 +177,10 @@ gs_outliers <-
 				) %>%
 				dplyr::select(-nd) %>%
 				# does the genus have consistent internal taxonomy (after filtering)?
-				dplyr::group_by(taxon) %>%
-				dplyr::mutate(consistent = "major" %in% unique(type)) %>%
-				dplyr::ungroup()
+				dplyr::mutate(
+					.by = c(taxon),
+					consistent = "major" %in% unique(type)
+				) 
 			
 			# get DSS of sequences removed at genus level
 			genus_minor_seqs <- x[names(x) %in% (genus_check %>% dplyr::filter(type == "minor") %>% .$name)]
@@ -187,29 +188,29 @@ gs_outliers <-
 			# check for split species with remaining sequences
 			species_check <- 
 				g_c %>%
-					# remove sequences without species classification
+				# remove sequences without species classification
 				dplyr::filter(!stringr::str_detect(species, ";Unclassified$")) %>%
-					# remove sequences removed at genus level
-					dplyr::filter(!name %in% names(genus_minor_seqs)) %>%
-							dplyr::select(name, n, taxon = species, cluster = species_min) %>%
-					dplyr::arrange(taxon, cluster, desc(n)) %>%
-				dplyr::group_by(taxon) %>%
+				# remove sequences removed at genus level
+				dplyr::filter(!name %in% names(genus_minor_seqs)) %>%
+				dplyr::select(name, n, taxon = species, cluster = species_min) %>%
+				dplyr::arrange(taxon, cluster, desc(n)) %>%
 				dplyr::mutate(
-						threshold = "species_min",
+					.by = c(taxon),
+					threshold = "species_min",
 					# is taxon split?
 					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
 					# records in species
 					taxon_n = sum(n)
 				) %>%
-				dplyr::group_by(taxon, cluster) %>%
 				dplyr::mutate(
+					.by = c(taxon, cluster),
 					# records in cluster 
 					cluster_n = sum(n),
 					# proportion of records in cluster
 					cluster_prop = cluster_n/taxon_n,
 					# cluster type (major, minor or ND)
 					type = dplyr::case_when(
-							split == FALSE ~ "major",
+						split == FALSE ~ "major",
 						taxon_n < con_min_n ~ "ND",
 						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
 						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
@@ -218,12 +219,12 @@ gs_outliers <-
 					)
 				) %>%
 				# force ND on all clusters for a species if no major cluster exists
-				dplyr::group_by(taxon) %>%
 				dplyr::mutate(
+					.by = c(taxon),
 					nd = !any(type == "major")
 				) %>%
-				dplyr::group_by(taxon, cluster) %>%
 				dplyr::mutate(
+					.by = c(taxon, cluster),
 					type = dplyr::if_else(
 						nd == TRUE, 
 						"ND",
@@ -232,10 +233,11 @@ gs_outliers <-
 				) %>%
 				dplyr::select(-nd) %>%
 				# does the species have consistent internal taxonomy (after filtering)?
-				dplyr::group_by(taxon) %>%
-				dplyr::mutate(consistent = "major" %in% unique(type)) %>%
-				dplyr::ungroup() 
-			
+				dplyr::mutate(
+					.by = c(taxon),
+					consistent = "major" %in% unique(type)
+				) 
+							
 			# get DSS of sequences removed at species level
 			species_minor_seqs <- x[names(x) %in% (species_check %>% dplyr::filter(type == "minor") %>% .$name)]
 			
