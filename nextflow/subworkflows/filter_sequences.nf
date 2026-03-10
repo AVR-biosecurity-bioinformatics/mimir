@@ -34,6 +34,7 @@ include { FIND_TOP_HITS                                              } from '../
 include { FLAG_GENERA_PAIRS                                          } from '../modules/flag_genera_pairs'
 include { GET_CORE as GET_GENUS_CORE                                 } from '../modules/get_core'
 include { GET_CORE as GET_MAX_CORE                                   } from '../modules/get_core'
+include { GET_MIN_COMPONENTS                                         } from '../modules/get_min_components'
 include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
 include { HMMSEARCH_AMPLICON                                         } from '../modules/hmmsearch_amplicon'
 include { INTRAGENUS_OUTLIERS                                        } from '../modules/intragenus_outliers'
@@ -735,7 +736,14 @@ workflow FILTER_SEQUENCES {
         .set { ch_min_comparators_aligned }
 
     //// flag genera pairs and determine min component groups
-    // GET_MIN_COMPONENTS ()
+    GET_MIN_COMPONENTS (
+        ch_min_comparators_aligned,
+        RECHECK_GENERA.out.csv,
+        MAX_THRESHOLD_OUTLIERS.out.retained,
+        ch_redundant_counts,
+        ch_thresholds,
+        params.component_group_size
+    )
 
     //// align small min component groups 
     // ALIGN_MIN_SMALL ()

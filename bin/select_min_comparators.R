@@ -109,7 +109,7 @@ comparator_list <-
 			# which ranks are classified?
 			x_classified <- 
 			    x_tax %>% 
-				stringr::str_detect(., "UNCLASSIFIED", negate = T)
+				stringr::str_detect(., "UNCLASSIFIED|Unclassified", negate = T)
 			# get lowest classified rank for focal sequence (ie. max index)
 			x_lcr_i <- which(root.to.genus == root.to.genus[max(match(root.to.genus[x_classified], root.to.genus))] )
 			# classify all LCG by LSR with focal genus
@@ -119,7 +119,6 @@ comparator_list <-
 				dplyr::filter(!genus == x) %>%
 				dplyr::mutate(
 					lsr = dplyr::case_when(
-			            base::paste(x_tax[1:7], collapse = ";") == genus ~ "genus",
 			            base::paste(x_tax[1:6], collapse = ";") == family ~ "family",
 			            base::paste(x_tax[1:5], collapse = ";") == order ~ "order",
 			            base::paste(x_tax[1:4], collapse = ";") == class ~ "class",
@@ -146,8 +145,9 @@ comparator_list <-
 					(lsr == "phylum" & lcr %in% c(7,6,5,4)) |
 					(lsr == "kingdom" & lcr %in% c(7,6,5,4,3))
 				) %>%
+				dplyr::group_by(lsr) %>%
 				# select up to 3 genera per rank
-				dplyr::slice_sample(by = lsr, n = 3)
+				dplyr::slice_sample(n = 3)
 			# combine selected sequences with focal central sequence
 			out <- c(x_central,selections$name)
 			if (y %% 10 == 0) message(stringr::str_glue("{y} of {length(cg_vec)}"))
@@ -166,17 +166,22 @@ comparator_list[sapply(comparator_list, is.null)] <- NULL
 message("Converting selection vectors to .cfa format")
 
 # convert each comparator vector into a DSS object then convert to .cfa format
-cfa_out <- 
-	lapply(
-		comparator_list,
-		function(x){
-			x_seqs_char <- seqs_max[names(seqs_max) %in% x] %>% as.character()
-			x_seqs_cfa <- 
-				as.vector(rbind(names(x_seqs_char) %>% stringr::str_replace("^",">"),unname(x_seqs_char))) %>% 
-				base::paste(collapse = ">>>")
-			return(x_seqs_cfa)
-		}
-	) %>%
-	unlist()
+if (length(comparator_list) > 0){
+	cfa_out <- 
+		lapply(
+			comparator_list,
+			function(x){
+				x_seqs_char <- seqs_max[names(seqs_max) %in% x] %>% as.character()
+				x_seqs_cfa <- 
+					as.vector(rbind(names(x_seqs_char) %>% stringr::str_replace("^",">"),unname(x_seqs_char))) %>% 
+					base::paste(collapse = ">>>")
+				return(x_seqs_cfa)
+			}
+		) %>%
+		unlist()
+} else {
+	cfa_out <- NULL
+}
 
+# writes empty file if needed
 readr::write_lines(cfa_out, "min_comparators.cfa")
