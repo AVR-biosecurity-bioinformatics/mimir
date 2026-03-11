@@ -708,7 +708,7 @@ workflow FILTER_SEQUENCES {
     )
 
     RECHECK_GENERA.out.cg_list
-        .splitText ( by: 10000, file: true )
+        .splitText ( by: 5000, file: true )
         .set { ch_cg_list }
 
     //// get min threshold comparator sequences for each consistent genus

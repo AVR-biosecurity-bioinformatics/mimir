@@ -14,7 +14,7 @@ process INTRAGENUS_OUTLIERS {
     path("gs_tibble.csv"),                                  emit: csv
     path("retained.fasta"),                                 emit: retained
     path("gminor.fasta"),                                   emit: removed_g
-    path("sminor.fasta"),                                   emit: removed_s
+    // path("sminor.fasta"),                                   emit: removed_s
     
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
@@ -33,7 +33,7 @@ process INTRAGENUS_OUTLIERS {
     thresholds_csv =                 "${thresholds_csv}"
     con_min_n =                      "${con_min_n}"
     con_min_prop =                   "${con_min_prop}"
-    
+     
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

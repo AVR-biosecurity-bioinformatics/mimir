@@ -29,7 +29,7 @@ process SELECT_MIN_COMPARATORS {
     seqs_max_fasta =                 "${seqs_max_fasta}"
     con_min_n =                      "${con_min_n}"
     con_min_prop =                   "${con_min_prop}"
-     
+      
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

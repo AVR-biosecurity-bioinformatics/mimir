@@ -150,7 +150,7 @@ comparator_list <-
 				dplyr::slice_sample(n = 3)
 			# combine selected sequences with focal central sequence
 			out <- c(x_central,selections$name)
-			if (y %% 10 == 0) message(stringr::str_glue("{y} of {length(cg_vec)}"))
+			if (y %% 100 == 0) message(stringr::str_glue("{y} of {length(cg_vec)}"))
 			# if no comparators were found, return nothing
 			if (length(out) < 2){
 				return(NULL)
@@ -171,7 +171,8 @@ if (length(comparator_list) > 0){
 		lapply(
 			comparator_list,
 			function(x){
-				x_seqs_char <- seqs_max[names(seqs_max) %in% x] %>% as.character()
+				# use names for subsetting to get sequences in order of the vector (ie. focal first, then comparators)
+				x_seqs_char <- seqs_max[x] %>% as.character()
 				x_seqs_cfa <- 
 					as.vector(rbind(names(x_seqs_char) %>% stringr::str_replace("^",">"),unname(x_seqs_char))) %>% 
 					base::paste(collapse = ">>>")

@@ -218,7 +218,6 @@ consistent_central <-
 			} else {
 				return(NULL)
 			}
-				
 		}
 	) %>%
 	dplyr::bind_rows()
@@ -275,7 +274,8 @@ sg_cs.new <-
 	synthetic_seqs %>% 
 	dplyr::filter(genus %in% sg_cs.missing) %>%
 	dplyr::arrange(genus, desc(n)) %>%
-	dplyr::slice(.by = genus, 1) %>%
+	dplyr::group_by(genus) %>%
+	dplyr::slice(1) %>%
 	dplyr::pull(name)
 
 # update synthetic seqs tibble with new central sequences

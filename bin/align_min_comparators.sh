@@ -18,12 +18,12 @@ while read i; do
         --linelength -1 \
         --globalpair \
         --maxiterate 1000 \
+        --inputorder \
         --quiet \
         tmp.fasta | \
     sed -e ':a;N;$!ba;s/\n/>>>/g' \
     >> alignment.cfa
     echo "Finished alignment $COUNT"
     ((COUNT++))
+    rm -f tmp.fasta
 done < $3
-
-rm -f tmp.fasta

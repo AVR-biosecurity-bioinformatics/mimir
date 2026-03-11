@@ -185,75 +185,75 @@ gs_outliers <-
 			# get DSS of sequences removed at genus level
 			genus_minor_seqs <- x[names(x) %in% (genus_check %>% dplyr::filter(type == "minor") %>% .$name)]
 			
-			# check for split species with remaining sequences
-			species_check <- 
-				g_c %>%
-				# remove sequences without species classification
-				dplyr::filter(!stringr::str_detect(species, ";Unclassified$")) %>%
-				# remove sequences removed at genus level
-				dplyr::filter(!name %in% names(genus_minor_seqs)) %>%
-				dplyr::select(name, n, taxon = species, cluster = species_min) %>%
-				dplyr::arrange(taxon, cluster, desc(n)) %>%
-				dplyr::mutate(
-					.by = c(taxon),
-					threshold = "species_min",
-					# is taxon split?
-					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
-					# records in species
-					taxon_n = sum(n)
-				) %>%
-				dplyr::mutate(
-					.by = c(taxon, cluster),
-					# records in cluster 
-					cluster_n = sum(n),
-					# proportion of records in cluster
-					cluster_prop = cluster_n/taxon_n,
-					# cluster type (major, minor or ND)
-					type = dplyr::case_when(
-						split == FALSE ~ "major",
-						taxon_n < con_min_n ~ "ND",
-						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
-						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
-						round(cluster_prop - (1 - con_min_prop), 10) <= 0 ~ "minor",
-						.default = "ND"
-					)
-				) %>%
-				# force ND on all clusters for a species if no major cluster exists
-				dplyr::mutate(
-					.by = c(taxon),
-					nd = !any(type == "major")
-				) %>%
-				dplyr::mutate(
-					.by = c(taxon, cluster),
-					type = dplyr::if_else(
-						nd == TRUE, 
-						"ND",
-						type
-					)
-				) %>%
-				dplyr::select(-nd) %>%
-				# does the species have consistent internal taxonomy (after filtering)?
-				dplyr::mutate(
-					.by = c(taxon),
-					consistent = "major" %in% unique(type)
-				) 
+			# # check for split species with remaining sequences
+			# species_check <- 
+			# 	g_c %>%
+			# 	# remove sequences without species classification
+			# 	dplyr::filter(!stringr::str_detect(species, ";Unclassified$")) %>%
+			# 	# remove sequences removed at genus level
+			# 	dplyr::filter(!name %in% names(genus_minor_seqs)) %>%
+			# 	dplyr::select(name, n, taxon = species, cluster = species_min) %>%
+			# 	dplyr::arrange(taxon, cluster, desc(n)) %>%
+			# 	dplyr::mutate(
+			# 		.by = c(taxon),
+			# 		threshold = "species_min",
+			# 		# is taxon split?
+			# 		split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
+			# 		# records in species
+			# 		taxon_n = sum(n)
+			# 	) %>%
+			# 	dplyr::mutate(
+			# 		.by = c(taxon, cluster),
+			# 		# records in cluster 
+			# 		cluster_n = sum(n),
+			# 		# proportion of records in cluster
+			# 		cluster_prop = cluster_n/taxon_n,
+			# 		# cluster type (major, minor or ND)
+			# 		type = dplyr::case_when(
+			# 			split == FALSE ~ "major",
+			# 			taxon_n < con_min_n ~ "ND",
+			# 			# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
+			# 			round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
+			# 			round(cluster_prop - (1 - con_min_prop), 10) <= 0 ~ "minor",
+			# 			.default = "ND"
+			# 		)
+			# 	) %>%
+			# 	# force ND on all clusters for a species if no major cluster exists
+			# 	dplyr::mutate(
+			# 		.by = c(taxon),
+			# 		nd = !any(type == "major")
+			# 	) %>%
+			# 	dplyr::mutate(
+			# 		.by = c(taxon, cluster),
+			# 		type = dplyr::if_else(
+			# 			nd == TRUE, 
+			# 			"ND",
+			# 			type
+			# 		)
+			# 	) %>%
+			# 	dplyr::select(-nd) %>%
+			# 	# does the species have consistent internal taxonomy (after filtering)?
+			# 	dplyr::mutate(
+			# 		.by = c(taxon),
+			# 		consistent = "major" %in% unique(type)
+			# 	) 
 							
-			# get DSS of sequences removed at species level
-			species_minor_seqs <- x[names(x) %in% (species_check %>% dplyr::filter(type == "minor") %>% .$name)]
+			# # get DSS of sequences removed at species level
+			# species_minor_seqs <- x[names(x) %in% (species_check %>% dplyr::filter(type == "minor") %>% .$name)]
 			
-			# names of all removed sequences
-			minor_names <- c(names(species_minor_seqs), names(genus_minor_seqs))
+			# # names of all removed sequences
+			# minor_names <- c(names(species_minor_seqs), names(genus_minor_seqs))
 			
 			# combine tibbles
-			out_tibble.pre <- 
-				dplyr::bind_rows(genus_check, species_check)
+			out_tibble.pre <- genus_check
+				#dplyr::bind_rows(genus_check, species_check)
 			
 			# determine central sequence of genus (if consistent)
 			if (all(genus_check$consistent)){
 				# only use distance matrix if there is more than one sequence
 				if(length(x) > 1){
 					# remove minor sequences from the distance matrix
-					x_d.new <- x_d[!rownames(x_d) %in% minor_names, !colnames(x_d) %in% minor_names, drop = F]
+					x_d.new <- x_d[!rownames(x_d) %in% names(genus_minor_seqs), !colnames(x_d) %in% names(genus_minor_seqs), drop = F]
 					if(length(rownames(x_d.new)) == 1){
 						# if only a single sequence remains, use that as central sequence
 						central_name <- rownames(x_d.new)
@@ -287,8 +287,8 @@ gs_outliers <-
 			return(
 				list(
 					"tibble" = out_tibble,
-					"genus_minor_seqs" = genus_minor_seqs,
-					"species_minor_seqs" = species_minor_seqs
+					"genus_minor_seqs" = genus_minor_seqs
+					#"species_minor_seqs" = species_minor_seqs
 				)
 			)
 	
@@ -298,7 +298,7 @@ gs_outliers <-
 
 gs_tibble <- lapply(gs_outliers, '[[', 1) %>% dplyr::bind_rows()
 gs_gminor <- lapply(gs_outliers, '[[', 2) %>% do.call(c, .)
-gs_sminor <- lapply(gs_outliers, '[[', 3) %>% do.call(c, .)
+#gs_sminor <- lapply(gs_outliers, '[[', 3) %>% do.call(c, .)
 
 readr::write_csv(gs_tibble, "gs_tibble.csv")
 
@@ -308,17 +308,17 @@ if (length(gs_gminor) > 0){
 	file.create("gminor.fasta")
 }
 
-if (length(gs_sminor) > 0){
-	Biostrings::writeXStringSet(gs_sminor, "sminor.fasta", width = 9999)
-} else {
-	file.create("sminor.fasta")
-}
+# if (length(gs_sminor) > 0){
+# 	Biostrings::writeXStringSet(gs_sminor, "sminor.fasta", width = 9999)
+# } else {
+# 	file.create("sminor.fasta")
+# }
 
 seqs_retained <- 
 	seqs_list %>% 
 	do.call(c, .) %>%
 	DECIPHER::RemoveGaps(., removeGaps = "all") %>%
-	.[!names(.) %in% c(names(gs_gminor), names(gs_sminor))]
+	.[!names(.) %in% names(gs_gminor)]
 
 if (length(seqs_retained) > 0){
 	Biostrings::writeXStringSet(seqs_retained, "retained.fasta", width = 9999)
