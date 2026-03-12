@@ -14,7 +14,6 @@ include { ALIGN_OTHER as ALIGN_MAX_OTHER                             } from '../
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
 include { ALIGN_TOP_HITS                                             } from '../modules/align_top_hits'
 include { BLAST_TOP_HITS                                             } from '../modules/blast_top_hits'
-include { BUILD_GRAPH_MAX                                            } from '../modules/build_graph_max'
 include { CLUSTER_MMSEQS as CLUSTER_LARGE_GENERA                     } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_MAX_COMPONENTS                   } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_PARTIAL_GENERA                   } from '../modules/cluster_mmseqs'
@@ -34,6 +33,7 @@ include { FIND_TOP_HITS                                              } from '../
 include { FLAG_GENERA_PAIRS                                          } from '../modules/flag_genera_pairs'
 include { GET_CORE as GET_GENUS_CORE                                 } from '../modules/get_core'
 include { GET_CORE as GET_MAX_CORE                                   } from '../modules/get_core'
+include { GET_MAX_COMPONENTS                                         } from '../modules/get_max_components'
 include { GET_MIN_COMPONENTS                                         } from '../modules/get_min_components'
 include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
 include { HMMSEARCH_AMPLICON                                         } from '../modules/hmmsearch_amplicon'
@@ -630,7 +630,7 @@ workflow FILTER_SEQUENCES {
         .set { ch_flagged_genera }
 
     //// build graph of connected genera, outputting groups of components
-    BUILD_GRAPH_MAX (
+    GET_MAX_COMPONENTS (
         ch_flagged_genera,
         ch_genus_processed,
         ch_redundant_counts, 
@@ -638,7 +638,7 @@ workflow FILTER_SEQUENCES {
     )
 
     //// branch component groups by number of records
-    BUILD_GRAPH_MAX.out.fasta
+    GET_MAX_COMPONENTS.out.fasta
         .flatten()
         .map { fasta ->
             n_seqs = fasta.readLines().count { it =~ />/ }
@@ -742,7 +742,8 @@ workflow FILTER_SEQUENCES {
         MAX_THRESHOLD_OUTLIERS.out.retained,
         ch_redundant_counts,
         ch_thresholds,
-        params.component_group_size
+        params.component_group_size,
+        params.consensus_min_n,
     )
 
     //// align small min component groups 

@@ -142,20 +142,12 @@ message("Determined components")
 # split tibble into large and small components
 mc_large <- 
 	max_components %>%
-	dplyr::mutate(
-		.by = component,
-		component_n = sum(act_n)
-	) %>%
 	dplyr::filter(component_n > component_group_size)
 
 readr::write_csv(mc_large, "mc_large.csv")
 
 mc_small <- 
 	max_components %>%
-	dplyr::mutate(
-		.by = component,
-		component_n = sum(act_n)
-	) %>%
 	dplyr::filter(component_n <= component_group_size)
 
 readr::write_csv(mc_small, "mc_small.csv")

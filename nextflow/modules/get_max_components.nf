@@ -1,5 +1,5 @@
-process BUILD_GRAPH_MAX {
-    def module_name = "build_graph_max"
+process GET_MAX_COMPONENTS {
+    def module_name = "get_max_components"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 

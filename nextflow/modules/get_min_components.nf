@@ -10,6 +10,7 @@ process GET_MIN_COMPONENTS {
     path(counts_file)
     path(thresholds_csv)
     val(component_group_size)
+    val(con_min_n)
 
     output: 
     path("component_group*.fasta"),                                  emit: fasta
@@ -31,6 +32,7 @@ process GET_MIN_COMPONENTS {
     counts_file =                          "${counts_file}"
     thresholds_csv =                       "${thresholds_csv}"
     component_group_size =                 "${component_group_size}"
+    con_min_n =                            "${con_min_n}"
     
     ## global variables
     projectDir = "$projectDir"
