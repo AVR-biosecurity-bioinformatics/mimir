@@ -6,16 +6,20 @@ Filter sequences
 //// modules to import
 include { ALIGN_BATCH as ALIGN_GENUS_SMALL                           } from '../modules/align_batch'
 include { ALIGN_BATCH as ALIGN_MAX_SMALL                             } from '../modules/align_batch'
+include { ALIGN_BATCH as ALIGN_MIN_SMALL                             } from '../modules/align_batch'
 include { ALIGN_CORE as ALIGN_GENUS_CORE                             } from '../modules/align_core'
 include { ALIGN_CORE as ALIGN_MAX_CORE                               } from '../modules/align_core'
+include { ALIGN_CORE as ALIGN_MIN_CORE                               } from '../modules/align_core'
 include { ALIGN_MIN_COMPARATORS                                      } from '../modules/align_min_comparators'
 include { ALIGN_OTHER as ALIGN_GENUS_OTHER                           } from '../modules/align_other'
 include { ALIGN_OTHER as ALIGN_MAX_OTHER                             } from '../modules/align_other'
+include { ALIGN_OTHER as ALIGN_MIN_OTHER                             } from '../modules/align_other'
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
 include { ALIGN_TOP_HITS                                             } from '../modules/align_top_hits'
 include { BLAST_TOP_HITS                                             } from '../modules/blast_top_hits'
 include { CLUSTER_MMSEQS as CLUSTER_LARGE_GENERA                     } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_MAX_COMPONENTS                   } from '../modules/cluster_mmseqs'
+include { CLUSTER_MMSEQS as CLUSTER_MIN_COMPONENTS                   } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_PARTIAL_GENERA                   } from '../modules/cluster_mmseqs'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                         } from '../modules/combine_chunks'
@@ -33,6 +37,7 @@ include { FIND_TOP_HITS                                              } from '../
 include { FLAG_GENERA_PAIRS                                          } from '../modules/flag_genera_pairs'
 include { GET_CORE as GET_GENUS_CORE                                 } from '../modules/get_core'
 include { GET_CORE as GET_MAX_CORE                                   } from '../modules/get_core'
+include { GET_CORE as GET_MIN_CORE                                   } from '../modules/get_core'
 include { GET_MAX_COMPONENTS                                         } from '../modules/get_max_components'
 include { GET_MIN_COMPONENTS                                         } from '../modules/get_min_components'
 include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
@@ -41,6 +46,7 @@ include { INTRAGENUS_OUTLIERS                                        } from '../
 include { MAKE_BLAST_DATABASE                                        } from '../modules/make_blast_database'
 include { MAX_THRESHOLD_OUTLIERS                                     } from '../modules/max_threshold_outliers'
 include { MERGE_SPLITS as MERGE_SPLITS_GENUS                         } from '../modules/merge_splits'
+include { MIN_THRESHOLD_OUTLIERS                                     } from '../modules/min_threshold_outliers'
 include { RECHECK_GENERA                                             } from '../modules/recheck_genera'
 include { SELECT_MIN_COMPARATORS                                     } from '../modules/select_min_comparators'
 include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
@@ -645,9 +651,9 @@ workflow FILTER_SEQUENCES {
             [ fasta, n_seqs ]
         }
         .branch { fasta, n_seqs ->
-            small: n_seqs <= 3000 // use params.component_size
+            small: n_seqs <= params.component_group_size
                 return fasta
-            large: n_seqs > 3000 // use params.component_size
+            large: n_seqs > params.component_group_size
                 return fasta
         }
         .set { ch_max_components }
@@ -695,11 +701,16 @@ workflow FILTER_SEQUENCES {
         params.consensus_min_prop
     )
 
+    MAX_THRESHOLD_OUTLIERS.out.retained
+        .collectFile ( name: 'max_retained.fasta')
+        .first()
+        .set { ch_max_retained }
+
     //// recheck genera after max outlier detection (central sequences and consistency)
     RECHECK_GENERA (
         ch_intragenus_results,
         ch_genus_processed,
-        MAX_THRESHOLD_OUTLIERS.out.retained,
+        ch_max_retained,
         ch_aligned_genera_cfa,
         ch_synthetic_reps,
         ch_redundant_counts,
@@ -715,7 +726,7 @@ workflow FILTER_SEQUENCES {
     SELECT_MIN_COMPARATORS (
         RECHECK_GENERA.out.csv.first(),
         ch_cg_list,
-        MAX_THRESHOLD_OUTLIERS.out.retained.first(),
+        ch_max_retained,
         params.consensus_min_n,
         params.consensus_min_prop
     )
@@ -739,29 +750,77 @@ workflow FILTER_SEQUENCES {
     GET_MIN_COMPONENTS (
         ch_min_comparators_aligned,
         RECHECK_GENERA.out.csv,
-        MAX_THRESHOLD_OUTLIERS.out.retained,
+        ch_max_retained,
         ch_redundant_counts,
         ch_thresholds,
         params.component_group_size,
-        params.consensus_min_n,
+        params.consensus_min_n
     )
 
+    //// branch min component groups by number of records
+    GET_MIN_COMPONENTS.out.fasta
+        .flatten()
+        .map { fasta ->
+            n_seqs = fasta.readLines().count { it =~ />/ }
+            [ fasta, n_seqs ]
+        }
+        .branch { fasta, n_seqs ->
+            small: n_seqs <= params.component_group_size 
+                return fasta
+            large: n_seqs > params.component_group_size 
+                return fasta
+        }
+        .set { ch_min_components }
+
     //// align small min component groups 
-    // ALIGN_MIN_SMALL ()
+    ALIGN_MIN_SMALL (
+        ch_min_components.small,
+        "small"
+    )
 
-    //// get core and non-core sequences of large min components
-    // GET_MIN_CORE ()
+    //// cluster large components to get representative core sequences
+    CLUSTER_MIN_COMPONENTS (
+        ch_min_components.large,
+        ch_thresholds,
+        'component'
+    )
 
-    //// align core sequences of min components
-    // ALIGN_MIN_CORE ()
+    //// get core and non-core sequences of large components
+    GET_MIN_CORE (
+        CLUSTER_MIN_COMPONENTS.out.clusters
+    )
 
-    //// add other sequences to min component alignments
-    // ALIGN_MIN_OTHER ()
+    //// align core sequences 
+    ALIGN_MIN_CORE (
+        GET_MAX_CORE.out.fasta
+    )
+
+    //// add other sequences
+    ALIGN_MIN_OTHER (
+        ALIGN_MAX_CORE.out.fasta
+    )
+
+    ALIGN_MIN_SMALL.out.cfa
+        .mix ( ALIGN_MIN_OTHER.out.cfa )
+        .collectFile( name: 'aligned_min.cfa' )
+        .set { ch_aligned_min_components }
 
     //// find min threshold outliers within each component group
-    // MIN_THRESHOLD_OUTLIERS ()
+    MIN_THRESHOLD_OUTLIERS (
+        ch_aligned_min_components,
+        ch_max_retained,
+        ch_redundant_counts,
+        ch_thresholds,
+        params.consensus_min_n,
+        params.consensus_min_prop
+    )
 
 
+    //// find intra-species outliers and potentially split species into clusters
+    // INTRASPECIES_OUTLIERS ()
+
+
+    //// apply final taxonomic outlier filtering and output fate channels for each sequence
 
 
 
