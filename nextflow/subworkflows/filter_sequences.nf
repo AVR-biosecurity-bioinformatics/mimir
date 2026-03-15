@@ -408,7 +408,7 @@ workflow FILTER_SEQUENCES {
         //// subsample from all records 
         SUBSAMPLE_RECORDS (
             ch_subsample_input,
-            params.threshold_sample_size
+            params.threshold_subsample_size
         )
 
         SUBSAMPLE_RECORDS.out.fasta
@@ -689,6 +689,7 @@ workflow FILTER_SEQUENCES {
     ALIGN_MAX_SMALL.out.cfa
         .mix ( ALIGN_MAX_OTHER.out.cfa )
         .collectFile( name: 'aligned_max.cfa' )
+        .splitText ( by: 10, file: true )
         .set { ch_aligned_max_components }
 
     //// find max threshold outliers within each component
@@ -701,16 +702,16 @@ workflow FILTER_SEQUENCES {
         params.consensus_min_prop
     )
 
-    MAX_THRESHOLD_OUTLIERS.out.retained
-        .collectFile ( name: 'max_retained.fasta')
+    MAX_THRESHOLD_OUTLIERS.out.removed
+        .collectFile ( name: 'max_removed.fasta')
         .first()
-        .set { ch_max_retained }
+        .set { ch_max_removed }
 
     //// recheck genera after max outlier detection (central sequences and consistency)
     RECHECK_GENERA (
         ch_intragenus_results,
         ch_genus_processed,
-        ch_max_retained,
+        ch_max_removed,
         ch_aligned_genera_cfa,
         ch_synthetic_reps,
         ch_redundant_counts,
@@ -722,11 +723,15 @@ workflow FILTER_SEQUENCES {
         .splitText ( by: 5000, file: true )
         .set { ch_cg_list }
 
+    ch_seqs_rechecked = RECHECK_GENERA.out.fasta.first()
+
+    ch_counts_new = RECHECK_GENERA.out.counts_tsv.first()
+
     //// get min threshold comparator sequences for each consistent genus
     SELECT_MIN_COMPARATORS (
         RECHECK_GENERA.out.csv.first(),
         ch_cg_list,
-        ch_max_retained,
+        ch_seqs_rechecked,
         params.consensus_min_n,
         params.consensus_min_prop
     )
@@ -750,8 +755,8 @@ workflow FILTER_SEQUENCES {
     GET_MIN_COMPONENTS (
         ch_min_comparators_aligned,
         RECHECK_GENERA.out.csv,
-        ch_max_retained,
-        ch_redundant_counts,
+        ch_seqs_rechecked,
+        ch_counts_new,
         ch_thresholds,
         params.component_group_size,
         params.consensus_min_n
@@ -792,12 +797,12 @@ workflow FILTER_SEQUENCES {
 
     //// align core sequences 
     ALIGN_MIN_CORE (
-        GET_MAX_CORE.out.fasta
+        GET_MIN_CORE.out.fasta
     )
 
     //// add other sequences
     ALIGN_MIN_OTHER (
-        ALIGN_MAX_CORE.out.fasta
+        ALIGN_MIN_CORE.out.fasta
     )
 
     ALIGN_MIN_SMALL.out.cfa
@@ -808,8 +813,8 @@ workflow FILTER_SEQUENCES {
     //// find min threshold outliers within each component group
     MIN_THRESHOLD_OUTLIERS (
         ch_aligned_min_components,
-        ch_max_retained,
-        ch_redundant_counts,
+        ch_seqs_rechecked,
+        ch_counts_new,
         ch_thresholds,
         params.consensus_min_n,
         params.consensus_min_prop

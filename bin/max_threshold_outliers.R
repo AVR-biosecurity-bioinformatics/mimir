@@ -124,23 +124,23 @@ max_loop <-
         function(y){
 			# get distance matrix from alignment
 			x <- alignment_list[[y]]
-			
+			x.d <- DECIPHER::DistanceMatrix(x, verbose = F)
+
 			# loop through the thresholds, producing clusters for each one and then combining into a single tibble
 			max_cl <- 
 			    lapply(
 			    	names(t_d),
-			        function(y){
-						DECIPHER::DistanceMatrix(x, verbose = F) %>%
+			        function(z){
 			        	DECIPHER::TreeLine(
-							myDistMatrix = .,
+							myDistMatrix = x.d,
 			                method = "complete",
 			                type = "clusters",
-			                cutoff = t_d[names(t_d) == y],
+			                cutoff = t_d[names(t_d) == z],
 			                verbose = F
 			            ) %>%
 			                tibble::as_tibble(rownames = "name") %>%
 			                tidyr::pivot_longer(cluster, names_to = "threshold", values_to = "cluster") %>%
-			                dplyr::mutate(threshold = replace(threshold, threshold == "cluster", y))
+			                dplyr::mutate(threshold = replace(threshold, threshold == "cluster", z))
 			        }
 			    ) %>%
 			    dplyr::bind_rows() %>%
@@ -164,7 +164,9 @@ max_loop <-
 			    dplyr::left_join(., counts_new, by = "name") %>%
 			    dplyr::arrange(kingdom_max, phylum_max, class_max, order_max, family_max, genus_max, species_max, desc(n))
 			
-			
+			rm(x.d)
+			gc()
+
 			#### determine mixed clusters
 			
 			## family
@@ -452,8 +454,10 @@ max_loop <-
 				dplyr::filter(type == "minor") %>%
 				dplyr::select(component_group, name, n, threshold)
 			
-			message(paste("Finished component",y))
+			message(paste("Finished component",y,"of",length(alignment_list)))
 			
+			gc()
+
 			return(
 				list(
 					"all" = c_all_max,

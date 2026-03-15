@@ -76,7 +76,7 @@ alignment_list <-
 seqs <- Biostrings::readDNAStringSet(seqs_file)
 
 # read in rf_counts csv
-rf_counts <- readr::read_tsv(rf_counts_tsv, col_names = c("name","n"), show_col_types = FALSE)
+counts_new <- readr::read_tsv(rf_counts_tsv, show_col_types = FALSE)
 
 # read in thresholds csv
 thresholds <- readr::read_csv(thresholds_csv,  show_col_types = FALSE)
@@ -89,32 +89,6 @@ con_min_prop <- as.numeric(con_min_prop)
 
 stop()
 
-
-
-
-
-
-## make sure counts sequence names match new names for synthetic genera
-# LCR family or above
-counts_lcrf <- 
-	rf_counts %>%
-	dplyr::filter(stringr::str_detect(name, ";Unclassified;[^;]+$"))
-
-# LCR genus or below
-count_lcrg <- 
-	rf_counts %>%
-	dplyr::filter(stringr::str_detect(name, ";Unclassified;[^;]+$", negate = T))
-
-# make new counts tibble
-counts_new <- 
-	names(seqs)[stringr::str_detect(names(seqs), ";Unclassified\\d+;[^;]+$")] %>%
-	tibble::as_tibble_col(column_name = "new") %>%
-	dplyr::mutate(
-		name = stringr::str_replace(new, ";Unclassified\\d+;(?=[^;]+$)", ";Unclassified;")
-	) %>%
-	dplyr::left_join(., counts_lcrf, by = "name") %>%
-	dplyr::select(name = new, n) %>%
-	dplyr::bind_rows(., count_lcrg)
 
 ## convert max thresholds to distances
 t_i <- thresholds %>%

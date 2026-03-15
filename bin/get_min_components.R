@@ -76,8 +76,8 @@ comparators_list <-
 		}
 	)
 
-# read in table of redundancy counts (pre-synthetic renaming)
-rf_counts <- readr::read_tsv(counts_file, col_names = c("name","n"), show_col_types = FALSE)
+# read in table of redundancy counts (post-synthetic renaming)
+counts_new <- readr::read_tsv(counts_file, show_col_types = FALSE)
 
 # read in thresholds csv
 thresholds <- readr::read_csv(thresholds_csv,  show_col_types = FALSE)
@@ -102,28 +102,6 @@ kingdom_min <- thresholds[thresholds$lsr == "kingdom","min"] %>% as.numeric()
 
 ### run code
 
-## make sure counts sequence names match new names for synthetic genera
-# LCR family or above
-counts_lcrf <- 
-	rf_counts %>%
-	dplyr::filter(stringr::str_detect(name, ";Unclassified;[^;]+$"))
-
-# LCR genus or below
-count_lcrg <- 
-	rf_counts %>%
-	dplyr::filter(stringr::str_detect(name, ";Unclassified;[^;]+$", negate = T))
-
-# make new counts tibble using names(seqs)
-counts_new <- 
-	names(seqs)[stringr::str_detect(names(seqs), ";Unclassified\\d+;[^;]+$")] %>%
-	tibble::as_tibble_col(column_name = "new") %>%
-	dplyr::mutate(
-		name = stringr::str_replace(new, ";Unclassified\\d+;(?=[^;]+$)", ";Unclassified;")
-	) %>%
-	dplyr::left_join(., counts_lcrf, by = "name") %>%
-	dplyr::select(name = new, n) %>%
-	dplyr::bind_rows(., count_lcrg)
-
 # summarise counts by genus
 genus_summary <- 
 	counts_new %>%
@@ -134,7 +112,6 @@ genus_summary <-
 		act_n = n()
 	) %>%
 	dplyr::arrange(desc(act_n))
-
 
 ## make tibble of genus lineage of each sequence record
 seqs_genus <- 
@@ -285,69 +262,76 @@ ig_gen <-
 	dplyr::pull(genus) 
 
 ## for each IG, find a single non-flagged LCG per rank
-
-flags_ig <- 
-	lapply(
-		seq_along(ig_gen),
-		function(y){
-			x <- ig_gen[y]
-			x_tax <- 
-				stringr::str_split(x, ";", n = 7, simplify = F) %>% 
-			    unlist() %>% 
-				c("Root", .) %>%
-			    stringr::str_replace_all(., "^Unclassified$", "UNCLASSIFIED")
-			# which ranks are classified?
-			x_classified <- 
-			    x_tax %>% 
-				stringr::str_detect(., "UNCLASSIFIED|Unclassified", negate = T)
-			# get lowest classified rank for focal sequence (ie. max index)
-			x_lcr_i <- which(root.to.genus == root.to.genus[max(match(root.to.genus[x_classified], root.to.genus))] )
-			# select flags
-			out <- 
-				lcg_nf_tax %>%
-				dplyr::mutate(
-					lsr = dplyr::case_when(
-			            base::paste(x_tax[1:6], collapse = ";") == family ~ "family",
-			            base::paste(x_tax[1:5], collapse = ";") == order ~ "order",
-			            base::paste(x_tax[1:4], collapse = ";") == class ~ "class",
-			            base::paste(x_tax[1:3], collapse = ";") == phylum ~ "phylum",
-			            base::paste(x_tax[1:2], collapse = ";") == kingdom ~ "kingdom",
-			            .default = "root"
-					),
-					lcr_i = dplyr::case_when(
-			            stringr::str_detect(genus, "Unclassified", negate = T) ~ 7,
-			            stringr::str_detect(family, "Unclassified", negate = T) ~ 6,
-			            stringr::str_detect(order, "Unclassified", negate = T) ~ 5,
-			            stringr::str_detect(class, "Unclassified", negate = T) ~ 4,
-			            stringr::str_detect(phylum, "Unclassified", negate = T) ~ 3,
-			            stringr::str_detect(kingdom, "Unclassified", negate = T) ~ 2,
-			            .default = 1
-			        ),
-					lcr = pmin(x_lcr_i,lcr_i)
-				) %>%
-				# subset to genera that are known to be LSR at each rank
-				dplyr::filter(
-					(lsr == "family" & lcr %in% c(7)) |
-					(lsr == "order" & lcr %in% c(7,6)) |
-					(lsr == "class" & lcr %in% c(7,6,5)) |
-					(lsr == "phylum" & lcr %in% c(7,6,5,4)) |
-					(lsr == "kingdom" & lcr %in% c(7,6,5,4,3))
-				) %>%
-				dplyr::group_by(lsr) %>%
-				# select 1 genus per rank
-				dplyr::slice_sample(n = 1) %>%
-				dplyr::mutate(f_g = x) %>%
-				dplyr::ungroup()
-			
-			return(out)
-		}
-	) %>% 
-	dplyr::bind_rows() %>%
-	dplyr::arrange(f_g, lsr) %>%
-	dplyr::mutate(
-		c_g = stringr::str_remove(genus, "^Root;")
-	) 
-
+if (length(ig_gen) > 0){
+	flags_ig <- 
+		lapply(
+			seq_along(ig_gen),
+			function(y){
+				x <- ig_gen[y]
+				x_tax <- 
+					stringr::str_split(x, ";", n = 7, simplify = F) %>% 
+				    unlist() %>% 
+					c("Root", .) %>%
+				    stringr::str_replace_all(., "^Unclassified$", "UNCLASSIFIED")
+				# which ranks are classified?
+				x_classified <- 
+				    x_tax %>% 
+					stringr::str_detect(., "UNCLASSIFIED|Unclassified", negate = T)
+				# get lowest classified rank for focal sequence (ie. max index)
+				x_lcr_i <- which(root.to.genus == root.to.genus[max(match(root.to.genus[x_classified], root.to.genus))] )
+				# select flags
+				out <- 
+					lcg_nf_tax %>%
+					dplyr::mutate(
+						lsr = dplyr::case_when(
+				            base::paste(x_tax[1:6], collapse = ";") == family ~ "family",
+				            base::paste(x_tax[1:5], collapse = ";") == order ~ "order",
+				            base::paste(x_tax[1:4], collapse = ";") == class ~ "class",
+				            base::paste(x_tax[1:3], collapse = ";") == phylum ~ "phylum",
+				            base::paste(x_tax[1:2], collapse = ";") == kingdom ~ "kingdom",
+				            .default = "root"
+						),
+						lcr_i = dplyr::case_when(
+				            stringr::str_detect(genus, "Unclassified", negate = T) ~ 7,
+				            stringr::str_detect(family, "Unclassified", negate = T) ~ 6,
+				            stringr::str_detect(order, "Unclassified", negate = T) ~ 5,
+				            stringr::str_detect(class, "Unclassified", negate = T) ~ 4,
+				            stringr::str_detect(phylum, "Unclassified", negate = T) ~ 3,
+				            stringr::str_detect(kingdom, "Unclassified", negate = T) ~ 2,
+				            .default = 1
+				        ),
+						lcr = pmin(x_lcr_i,lcr_i)
+					) %>%
+					# subset to genera that are known to be LSR at each rank
+					dplyr::filter(
+						(lsr == "family" & lcr %in% c(7)) |
+						(lsr == "order" & lcr %in% c(7,6)) |
+						(lsr == "class" & lcr %in% c(7,6,5)) |
+						(lsr == "phylum" & lcr %in% c(7,6,5,4)) |
+						(lsr == "kingdom" & lcr %in% c(7,6,5,4,3))
+					) %>%
+					dplyr::group_by(lsr) %>%
+					# select 1 genus per rank
+					dplyr::slice_sample(n = 1) %>%
+					dplyr::mutate(f_g = x) %>%
+					dplyr::ungroup()
+				
+				return(out)
+			}
+		) %>% 
+		dplyr::bind_rows() %>%
+		dplyr::arrange(f_g, lsr) %>%
+		dplyr::mutate(
+			c_g = stringr::str_remove(genus, "^Root;")
+		) 
+	
+	# get final flags for IG
+	flags_ig.f <- 
+		flags_ig %>%
+		dplyr::select(f_g, c_g)
+} else {
+	flags_ig.f <- NULL
+}
 
 ## convert cg and ig flags tibbles into pairs of genera
 # get final flags for CG
@@ -360,12 +344,7 @@ flags_cg.f <-
 	# dplyr::ungroup() %>%
 	dplyr::select(f_g, c_g = genus)
 
-# get final flags for IG
-flags_ig.f <- 
-	flags_ig %>%
-	dplyr::select(f_g, c_g)
-
-# all flags together
+# combine all flags together
 flagged_genera <- dplyr::bind_rows(flags_cg.f, flags_ig.f) %>% dplyr::select(query = f_g, target = c_g)
 
 # build graph of min flagged genera

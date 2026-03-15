@@ -253,13 +253,13 @@ gs_outliers <-
 				# only use distance matrix if there is more than one sequence
 				if(length(x) > 1){
 					# remove minor sequences from the distance matrix
-					x_d.new <- x_d[!rownames(x_d) %in% names(genus_minor_seqs), !colnames(x_d) %in% names(genus_minor_seqs), drop = F]
-					if(length(rownames(x_d.new)) == 1){
+					x_d <- x_d[!rownames(x_d) %in% names(genus_minor_seqs), !colnames(x_d) %in% names(genus_minor_seqs), drop = F]
+					if(length(rownames(x_d)) == 1){
 						# if only a single sequence remains, use that as central sequence
-						central_name <- rownames(x_d.new)
+						central_name <- rownames(x_d)
 					} else {
 						# median pairwise distance for each sequence
-						x_d.median <- apply(x_d.new, 1, median)
+						x_d.median <- apply(x_d, 1, median)
 						# indices and names of sequences with smallest median distance
 						x_d.min <- which(x_d.median == min(x_d.median))
 						# find longest central sequence
@@ -283,6 +283,9 @@ gs_outliers <-
 					dplyr::mutate(central = FALSE)
 			}
 			
+			rm(x_d)
+			gc()
+
 			### return list per genus
 			return(
 				list(

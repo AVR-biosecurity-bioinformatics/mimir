@@ -19,6 +19,8 @@ if [[ $6 == "partial" ]]; then
 	# get median for genus and species for calculations
 	MED_GENUS=$( awk -F, '(NR>1) && ($1=="genus")'  $5 | cut -f2 -d, )
 	MED_SPECIES=$( awk -F, '(NR>1) && ($1=="species")'  $5 | cut -f2 -d, )
+	### HIGH_LIMIT=$MED_SPECIES
+	HIGH_LIMIT="0.99"
 	# minimum records to change min_seq_id 
 	MIN_N=50000
 	# records at which scaling stops at median species ID
@@ -46,19 +48,20 @@ for FILE in $4; do
 			MIN_SEQ_ID=$MED_GENUS
 		elif [[ $N_SEQS > $MAX_N ]]; then
 			# use species if many sequences
-			MIN_SEQ_ID=$MED_SPECIES
+			MIN_SEQ_ID=$HIGH_LIMIT
 		else 
-			# scale between genus and species on log-scale if in-between
+			# scale between genus and high limit on log-scale if in-between
 			MIN_SEQ_ID=$( awk \
-				-v species_id="$MED_SPECIES" \
+				-v high_limit="$HIGH_LIMIT" \
 				-v genus_id="$MED_GENUS" \
 				-v n_seqs="$N_SEQS" \
 				-v min_n="$MIN_N" \
 				-v max_n="$MAX_N" \
 				' BEGIN { 
 					scaling_factor=(log(n_seqs) - log(min_n)) / (log(max_n) - log(min_n))
-					print genus_id + ((species_id - genus_id) * scaling_factor) 
+					print genus_id + ((high_limit - genus_id) * scaling_factor) 
 				} ' )
+			echo "Clustering threshold for file ${4} (${N_SEQS} sequences) set to $MIN_SEQ_ID"
 		fi 
 	fi
 	

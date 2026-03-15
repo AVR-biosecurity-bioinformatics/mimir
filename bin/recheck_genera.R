@@ -59,11 +59,11 @@ lapply(nf_vars, nf_var_check)
 # read in intragenus csv
 intragenus <- readr::read_csv(intragenus_csv, show_col_types = FALSE)
 
-# read in sequences that passed intragenus filtering as names
-seqs_all_names <- Biostrings::readDNAStringSet(seqs_all_fasta) %>% names()
+# read in sequences that passed intragenus filtering
+seqs_all <- Biostrings::readDNAStringSet(seqs_all_fasta)
 
-# read in sequences passing max thresholds
-seqs_max <- Biostrings::readDNAStringSet(seqs_max_fasta)
+# read in sequences failing max thresholds
+seqs_mf <- Biostrings::readDNAStringSet(seqs_max_fasta)
 
 # read in aligned genera .cfa as a list of DSS alignments
 aligned_genera_list <- 
@@ -97,6 +97,9 @@ root_ranks <- c("root", allowed_ranks)
 
 set.seed(1)
 
+seqs_all_names <- names(seqs_all)
+
+
 ## make sure counts sequence names match new names for synthetic genera
 # LCR family or above
 counts_lcrf <- 
@@ -122,14 +125,14 @@ counts_new <-
 
 ### redetermine intragenus consistency by removing sequences not retained after max outlier detection
 
-# names of sequences removed at max outlier detection
-max_removed <- seqs_all_names[!seqs_all_names %in% names(seqs_max)]
+# names of sequences removed at max outlier detection, deduplicated
+seqs_mf_names <- names(seqs_mf) %>% unique()
 
 ## remove max outliers from intragenus results and then recalculate split genera
 intragenus_new <- 
 	intragenus %>%
-	dplyr::filter(threshold == "genus_min") %>%
-	dplyr::filter(!name %in% max_removed) %>% 
+	# remove sequences that failed max thresholds
+	dplyr::filter(!name %in% seqs_mf_names) %>% 
 	# keep only needed columns
 	dplyr::select(name, n, taxon, cluster, threshold) %>%
 	# recalculate results
@@ -177,10 +180,10 @@ intragenus_new <-
 	) 
 	
 # names of sequences that are newly minor-ised (new intragenus outliers)
-minor_new <- intragenus_new %>% dplyr::filter(type == "minor", name %in% names(seqs_max)) %>% dplyr::pull(name)
+minor_new <- intragenus_new %>% dplyr::filter(type == "minor", name %in% seqs_mf_names) %>% dplyr::pull(name)
 
 # names of sequences that were removed in max threshold detection or new intragenus filtering
-removed_new <- c(minor_new, max_removed)
+removed_all <- c(minor_new, seqs_mf_names)
 
 # recalculate central sequence for all consistent genera
 consistent_genera <- 
@@ -195,7 +198,7 @@ consistent_central <-
 		function(y){
 			x <- aligned_genera_list[[y]]
 			# remove any sequences if they have been excluded
-			x.ret <- x[!names(x) %in% removed_new]
+			x.ret <- x[!names(x) %in% removed_all]
 			# get genus name
 			genus_name <- names(x.ret)[1] %>% stringr::str_extract(., "(?<=;).+$") %>% stringr::str_remove(., ";[^;]+$")
 			if (genus_name %in% consistent_genera){
@@ -259,7 +262,7 @@ synthetic_seqs <-
 	) %>%
 	dplyr::filter(genus %>% stringr::str_detect(., ";Unclassified\\d+$")) %>%
 	dplyr::arrange(genus, desc(n)) %>%
-	dplyr::filter(!name %in% max_removed) %>%
+	dplyr::filter(!name %in% seqs_mf_names) %>%
 	dplyr::mutate(
 		central = name %in% synthetic_reps
 	) 
@@ -301,3 +304,9 @@ readr::write_csv(cg_all, "cg_all.csv")
 
 # write list of consistent genera to file
 readr::write_lines(cg_all$genus, "cg_list.txt")
+
+# write renamed counts
+readr::write_tsv(counts_new, "rf_counts_new.tsv")
+
+# write sequences that pass rechecking and max threshold outlier detection
+Biostrings::writeXStringSet(seqs_all[!names(seqs_all) %in% removed_all], "out.fasta")
