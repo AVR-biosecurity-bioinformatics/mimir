@@ -33,7 +33,7 @@ process MIN_THRESHOLD_OUTLIERS {
     thresholds_csv =                 "${thresholds_csv}"
     con_min_n =                      "${con_min_n}"
     con_min_prop =                   "${con_min_prop}"
-    
+     
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
@@ -42,7 +42,7 @@ process MIN_THRESHOLD_OUTLIERS {
     ### source functions and themes, load packages, and import Nextflow params
     ### from "bin/process_start.R"
     sys.source("${projectDir}/bin/process_start.R", envir = .GlobalEnv)
-
+ 
     ### run module code
     sys.source(
         "${projectDir}/bin/$module_script", # run script

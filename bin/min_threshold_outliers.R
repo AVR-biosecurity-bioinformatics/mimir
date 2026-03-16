@@ -142,218 +142,12 @@ min_loop <-
 			    dplyr::left_join(., counts_new, by = "name") %>%
 			    dplyr::arrange(kingdom_min, phylum_min, class_min, order_min, family_min, genus_min, species_min, desc(n))
 			
-			
 			#### determine mixed clusters
-			
-			## family
-			c_f_min <- 
-			    min_cl %>%
-			    dplyr::select(component_group, name, n, taxon = family, cluster = family_min) %>%
-			    # remove sequences without family classification
-			    dplyr::filter(!stringr::str_detect(taxon, ";Unclassified\\d+$")) %>%
-			    dplyr::mutate(
-					.by = c(taxon),
-					threshold = "family_min",
-					# is taxon split?
-					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
-					# records in genus
-					taxon_n = sum(n)
-				) %>%
-			    dplyr::mutate(
-					.by = c(taxon, cluster),
-					# records in cluster 
-					cluster_n = sum(n),
-					# proportion of records in cluster
-					cluster_prop = cluster_n/taxon_n,
-					# cluster type (major, minor or ND)
-					type = dplyr::case_when(
-						split == FALSE ~ "major",
-						taxon_n < con_min_n ~ "ND",
-						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
-						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
-						round(cluster_prop - (1 - con_min_prop), 10) <= 0 ~ "minor",
-						.default = "ND"
-					)
-				) %>%
-				# force ND on all clusters for a taxon if no major cluster exists
-				dplyr::mutate(
-					.by = c(taxon),
-					nd = !any(type == "major")
-				) %>%
-				dplyr::mutate(
-					.by = c(taxon, cluster),
-					type = dplyr::if_else(
-						nd == TRUE, 
-						"ND",
-						type
-					)
-				) %>%
-				dplyr::select(-nd) %>%
-			    dplyr::arrange(taxon, desc(cluster_prop), desc(n)) 
-			
-			# get names of records that failed step 
-			f_min_fail <- c_f_min %>% dplyr::filter(type == "minor") %>% pull(name)
-			# get names of records that passed step 
-			f_min_pass <- c_f_min %>% dplyr::filter(type %in% c("major", "ND")) %>% pull(name)
-			            
-			
-			## order
-			c_o_min <- 
-			    min_cl %>%
-			    dplyr::select(component_group, name, n, taxon = order, cluster = family_min) %>%
-			    # remove sequences without order classification
-			    dplyr::filter(!stringr::str_detect(taxon, ";Unclassified\\d+$")) %>%
-			    dplyr::mutate(
-					.by = c(taxon),
-					threshold = "order_min",
-					# is taxon split?
-					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
-					# records in genus
-					taxon_n = sum(n)
-				) %>%
-			    dplyr::mutate(
-					.by = c(taxon, cluster),
-					# records in cluster 
-					cluster_n = sum(n),
-					# proportion of records in cluster
-					cluster_prop = cluster_n/taxon_n,
-					# cluster type (major, minor or ND)
-					type = dplyr::case_when(
-						split == FALSE ~ "major",
-						taxon_n < con_min_n ~ "ND",
-						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
-						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
-						round(cluster_prop - (1 - con_min_prop), 10) <= 0 ~ "minor",
-						.default = "ND"
-					)
-				) %>%
-				# force ND on all clusters for a taxon if no major cluster exists
-				dplyr::mutate(
-					.by = c(taxon),
-					nd = !any(type == "major")
-				) %>%
-				dplyr::mutate(
-					.by = c(taxon, cluster),
-					type = dplyr::if_else(
-						nd == TRUE, 
-						"ND",
-						type
-					)
-				) %>%
-				dplyr::select(-nd) %>%
-			    dplyr::arrange(taxon, desc(cluster_prop), desc(n)) 
-			
-			# get names of records that failed step 
-			o_min_fail <- c_o_min %>% dplyr::filter(type == "minor") %>% pull(name)
-			# get names of records that passed step 
-			o_min_pass <- c_o_min %>% dplyr::filter(type %in% c("major", "ND")) %>% pull(name)
-			
-			## class
-			c_c_min <- 
-			    min_cl %>%
-			    dplyr::select(component_group, name, n, taxon = class, cluster = family_min) %>%
-			    # remove sequences without class classification
-			    dplyr::filter(!stringr::str_detect(taxon, ";Unclassified\\d+$")) %>%
-			    dplyr::mutate(
-					.by = c(taxon),
-					threshold = "class_min",
-					# is taxon split?
-					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
-					# records in genus
-					taxon_n = sum(n)
-				) %>%
-			    dplyr::mutate(
-					.by = c(taxon, cluster),
-					# records in cluster 
-					cluster_n = sum(n),
-					# proportion of records in cluster
-					cluster_prop = cluster_n/taxon_n,
-					# cluster type (major, minor or ND)
-					type = dplyr::case_when(
-						split == FALSE ~ "major",
-						taxon_n < con_min_n ~ "ND",
-						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
-						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
-						round(cluster_prop - (1 - con_min_prop), 10) <= 0 ~ "minor",
-						.default = "ND"
-					)
-				) %>%
-				# force ND on all clusters for a taxon if no major cluster exists
-				dplyr::mutate(
-					.by = c(taxon),
-					nd = !any(type == "major")
-				) %>%
-				dplyr::mutate(
-					.by = c(taxon, cluster),
-					type = dplyr::if_else(
-						nd == TRUE, 
-						"ND",
-						type
-					)
-				) %>%
-				dplyr::select(-nd) %>%
-			    dplyr::arrange(taxon, desc(cluster_prop), desc(n)) 
-			
-			# get names of records that failed step 
-			c_min_fail <- c_c_min %>% dplyr::filter(type == "minor") %>% pull(name)
-			# get names of records that passed step 
-			c_min_pass <- c_c_min %>% dplyr::filter(type %in% c("major", "ND")) %>% pull(name)
-			
-			## phylum
-			c_p_min <- 
-			    min_cl %>%
-			    dplyr::select(component_group, name, n, taxon = phylum, cluster = family_min) %>%
-			    # remove sequences without phylum classification
-			    dplyr::filter(!stringr::str_detect(taxon, ";Unclassified\\d+$")) %>%
-			    dplyr::mutate(
-					.by = c(taxon),
-					threshold = "phylum_min",
-					# is taxon split?
-					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
-					# records in genus
-					taxon_n = sum(n)
-				) %>%
-			    dplyr::mutate(
-					.by = c(taxon, cluster),
-					# records in cluster 
-					cluster_n = sum(n),
-					# proportion of records in cluster
-					cluster_prop = cluster_n/taxon_n,
-					# cluster type (major, minor or ND)
-					type = dplyr::case_when(
-						split == FALSE ~ "major",
-						taxon_n < con_min_n ~ "ND",
-						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
-						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
-						round(cluster_prop - (1 - con_min_prop), 10) <= 0 ~ "minor",
-						.default = "ND"
-					)
-				) %>%
-				# force ND on all clusters for a taxon if no major cluster exists
-				dplyr::mutate(
-					.by = c(taxon),
-					nd = !any(type == "major")
-				) %>%
-				dplyr::mutate(
-					.by = c(taxon, cluster),
-					type = dplyr::if_else(
-						nd == TRUE, 
-						"ND",
-						type
-					)
-				) %>%
-				dplyr::select(-nd) %>%
-			    dplyr::arrange(taxon, desc(cluster_prop), desc(n)) 
-			
-			# get names of records that failed step 
-			p_min_fail <- c_p_min %>% dplyr::filter(type == "minor") %>% pull(name)
-			# get names of records that passed step 
-			p_min_pass <- c_p_min %>% dplyr::filter(type %in% c("major", "ND")) %>% pull(name)
 			
 			## kingdom
 			c_k_min <- 
 			    min_cl %>%
-			    dplyr::select(component_group, name, n, taxon = kingdom, cluster = family_min) %>%
+			    dplyr::select(component_group, name, n, taxon = kingdom, cluster = kingdom_min) %>%
 			    # remove sequences without kingdom classification
 			    dplyr::filter(!stringr::str_detect(taxon, ";Unclassified\\d+$")) %>%
 			    dplyr::mutate(
@@ -401,14 +195,232 @@ min_loop <-
 			# get names of records that passed step 
 			k_min_pass <- c_k_min %>% dplyr::filter(type %in% c("major", "ND")) %>% pull(name)
 			
+			
+			## phylum
+			c_p_min <- 
+			    min_cl %>%
+			    dplyr::select(component_group, name, n, taxon = phylum, cluster = phylum_min) %>%
+			    # remove sequences without phylum classification
+			    dplyr::filter(!stringr::str_detect(taxon, ";Unclassified\\d+$")) %>%
+				# remove sequences previously removed
+			    dplyr::filter(!name %in% c(k_min_fail)) %>%
+			    dplyr::mutate(
+					.by = c(taxon),
+					threshold = "phylum_min",
+					# is taxon split?
+					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
+					# records in genus
+					taxon_n = sum(n)
+				) %>%
+			    dplyr::mutate(
+					.by = c(taxon, cluster),
+					# records in cluster 
+					cluster_n = sum(n),
+					# proportion of records in cluster
+					cluster_prop = cluster_n/taxon_n,
+					# cluster type (major, minor or ND)
+					type = dplyr::case_when(
+						split == FALSE ~ "major",
+						taxon_n < con_min_n ~ "ND",
+						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
+						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
+						round(cluster_prop - (1 - con_min_prop), 10) <= 0 ~ "minor",
+						.default = "ND"
+					)
+				) %>%
+				# force ND on all clusters for a taxon if no major cluster exists
+				dplyr::mutate(
+					.by = c(taxon),
+					nd = !any(type == "major")
+				) %>%
+				dplyr::mutate(
+					.by = c(taxon, cluster),
+					type = dplyr::if_else(
+						nd == TRUE, 
+						"ND",
+						type
+					)
+				) %>%
+				dplyr::select(-nd) %>%
+			    dplyr::arrange(taxon, desc(cluster_prop), desc(n)) 
+			
+			# get names of records that failed step 
+			p_min_fail <- c_p_min %>% dplyr::filter(type == "minor") %>% pull(name)
+			# get names of records that passed step 
+			p_min_pass <- c_p_min %>% dplyr::filter(type %in% c("major", "ND")) %>% pull(name)
+			
+			
+			## class
+			c_c_min <- 
+			    min_cl %>%
+			    dplyr::select(component_group, name, n, taxon = class, cluster = class_min) %>%
+			    # remove sequences without class classification
+			    dplyr::filter(!stringr::str_detect(taxon, ";Unclassified\\d+$")) %>%
+				# remove sequences previously removed
+			    dplyr::filter(!name %in% c(k_min_fail, p_min_fail)) %>%
+			    dplyr::mutate(
+					.by = c(taxon),
+					threshold = "class_min",
+					# is taxon split?
+					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
+					# records in genus
+					taxon_n = sum(n)
+				) %>%
+			    dplyr::mutate(
+					.by = c(taxon, cluster),
+					# records in cluster 
+					cluster_n = sum(n),
+					# proportion of records in cluster
+					cluster_prop = cluster_n/taxon_n,
+					# cluster type (major, minor or ND)
+					type = dplyr::case_when(
+						split == FALSE ~ "major",
+						taxon_n < con_min_n ~ "ND",
+						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
+						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
+						round(cluster_prop - (1 - con_min_prop), 10) <= 0 ~ "minor",
+						.default = "ND"
+					)
+				) %>%
+				# force ND on all clusters for a taxon if no major cluster exists
+				dplyr::mutate(
+					.by = c(taxon),
+					nd = !any(type == "major")
+				) %>%
+				dplyr::mutate(
+					.by = c(taxon, cluster),
+					type = dplyr::if_else(
+						nd == TRUE, 
+						"ND",
+						type
+					)
+				) %>%
+				dplyr::select(-nd) %>%
+			    dplyr::arrange(taxon, desc(cluster_prop), desc(n)) 
+			
+			# get names of records that failed step 
+			c_min_fail <- c_c_min %>% dplyr::filter(type == "minor") %>% pull(name)
+			# get names of records that passed step 
+			c_min_pass <- c_c_min %>% dplyr::filter(type %in% c("major", "ND")) %>% pull(name)
+			
+			
+			## order
+			c_o_min <- 
+			    min_cl %>%
+			    dplyr::select(component_group, name, n, taxon = order, cluster = order_min) %>%
+			    # remove sequences without order classification
+			    dplyr::filter(!stringr::str_detect(taxon, ";Unclassified\\d+$")) %>%
+				# remove sequences previously removed
+			    dplyr::filter(!name %in% c(k_min_fail, p_min_fail, c_min_fail)) %>%
+			    dplyr::mutate(
+					.by = c(taxon),
+					threshold = "order_min",
+					# is taxon split?
+					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
+					# records in genus
+					taxon_n = sum(n)
+				) %>%
+			    dplyr::mutate(
+					.by = c(taxon, cluster),
+					# records in cluster 
+					cluster_n = sum(n),
+					# proportion of records in cluster
+					cluster_prop = cluster_n/taxon_n,
+					# cluster type (major, minor or ND)
+					type = dplyr::case_when(
+						split == FALSE ~ "major",
+						taxon_n < con_min_n ~ "ND",
+						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
+						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
+						round(cluster_prop - (1 - con_min_prop), 10) <= 0 ~ "minor",
+						.default = "ND"
+					)
+				) %>%
+				# force ND on all clusters for a taxon if no major cluster exists
+				dplyr::mutate(
+					.by = c(taxon),
+					nd = !any(type == "major")
+				) %>%
+				dplyr::mutate(
+					.by = c(taxon, cluster),
+					type = dplyr::if_else(
+						nd == TRUE, 
+						"ND",
+						type
+					)
+				) %>%
+				dplyr::select(-nd) %>%
+			    dplyr::arrange(taxon, desc(cluster_prop), desc(n)) 
+			
+			# get names of records that failed step 
+			o_min_fail <- c_o_min %>% dplyr::filter(type == "minor") %>% pull(name)
+			# get names of records that passed step 
+			o_min_pass <- c_o_min %>% dplyr::filter(type %in% c("major", "ND")) %>% pull(name)
+			
+			
+			## family
+			c_f_min <- 
+			    min_cl %>%
+			    dplyr::select(component_group, name, n, taxon = family, cluster = family_min) %>%
+			    # remove sequences without family classification
+			    dplyr::filter(!stringr::str_detect(taxon, ";Unclassified\\d+$")) %>%
+				# remove sequences previously removed
+			    dplyr::filter(!name %in% c(k_min_fail, p_min_fail, c_min_fail, o_min_fail)) %>%
+			    dplyr::mutate(
+					.by = c(taxon),
+					threshold = "family_min",
+					# is taxon split?
+					split = dplyr::if_else(length(unique(cluster)) == 1, FALSE, TRUE),
+					# records in genus
+					taxon_n = sum(n)
+				) %>%
+			    dplyr::mutate(
+					.by = c(taxon, cluster),
+					# records in cluster 
+					cluster_n = sum(n),
+					# proportion of records in cluster
+					cluster_prop = cluster_n/taxon_n,
+					# cluster type (major, minor or ND)
+					type = dplyr::case_when(
+						split == FALSE ~ "major",
+						taxon_n < con_min_n ~ "ND",
+						# use 'round' to try to avoid floating-point comparison issues when value is either 'exactly' the consensus or its converse
+						round(cluster_prop - con_min_prop, 10) >= 0 ~ "major",
+						round(cluster_prop - (1 - con_min_prop), 10) <= 0 ~ "minor",
+						.default = "ND"
+					)
+				) %>%
+				# force ND on all clusters for a taxon if no major cluster exists
+				dplyr::mutate(
+					.by = c(taxon),
+					nd = !any(type == "major")
+				) %>%
+				dplyr::mutate(
+					.by = c(taxon, cluster),
+					type = dplyr::if_else(
+						nd == TRUE, 
+						"ND",
+						type
+					)
+				) %>%
+				dplyr::select(-nd) %>%
+			    dplyr::arrange(taxon, desc(cluster_prop), desc(n)) 
+			
+			# get names of records that failed step 
+			f_min_fail <- c_f_min %>% dplyr::filter(type == "minor") %>% pull(name)
+			# get names of records that passed step 
+			f_min_pass <- c_f_min %>% dplyr::filter(type %in% c("major", "ND")) %>% pull(name)
+			
+			
+			
 			## combined output for component_group
 			c_all_min <-
 				dplyr::bind_rows(
-					c_f_min,
-					c_o_min,
-					c_c_min,
+					c_k_min,
 					c_p_min,
-					c_k_min
+					c_c_min,
+					c_o_min,
+					c_f_min
 				)
 			
 			## get tibble of minor sequences and their violated thresholds
