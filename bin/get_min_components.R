@@ -206,7 +206,7 @@ flags_cg <-
 					focal_name = focal_name
 				) 
 			
-			if (y %% 100 == 0) message(stringr::str_glue("Finished {y} of {length(comparators_list)}"))	
+			if (y %% 100 == 0) message(stringr::str_glue("Examined comparators of {y} of {length(comparators_list)} consistent genera"))	
 			
 			return(x.flags)	
 		}
@@ -402,7 +402,7 @@ if (nrow(mc_large) > 1){
 	# split by component
 	mcl_split <- split(mc_large, mc_large$component)
 	
-	message("Splitting components...")
+	message("Splitting large components...")
 
 	# make a tibble of flagged pairs with f_g, c_g, query act_n and target act_n
 	flagged_joined <- 
@@ -489,7 +489,7 @@ if (nrow(mc_large) > 1){
 					}
 					
 					#subcomp_list <- subcomp_list[order(seq_sum, method = "radix")]
-					if ((i %% 100 == 0) || (i == length(gp_list))) message(stringr::str_glue("\t{i} of {length(gp_list)}"))
+					if ((i %% 100 == 0) || (i == length(gp_list))) message(stringr::str_glue("\tProcessed {i} of {length(gp_list)} genus pairs"))
 				}
 
 				# remove remaining null elements
@@ -531,7 +531,7 @@ if (nrow(mc_large) > 1){
 # combine small and subcomponented-large components together
 mc_all <- dplyr::bind_rows(mc_small, mc_sub)
 
-message("Combined small and processed large components")
+message("Combined small and split large components")
 
 # group small components together so groups with more than 1 member have max 'component_group_size' sequences
 # this is so we don't align more than 'component_group_size' sequences together unless we have to

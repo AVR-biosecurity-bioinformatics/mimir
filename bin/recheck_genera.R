@@ -62,8 +62,11 @@ intragenus <- readr::read_csv(intragenus_csv, show_col_types = FALSE)
 # read in sequences that passed intragenus filtering
 seqs_all <- Biostrings::readDNAStringSet(seqs_all_fasta)
 
-# read in sequences failing max thresholds
-seqs_mf <- Biostrings::readDNAStringSet(seqs_max_fasta)
+# deduplicated names of sequences failing max thresholds
+seqs_mf_names <- Biostrings::readDNAStringSet(seqs_max_fasta) %>% names() %>% unique()
+
+
+# subset sequences to 
 
 # read in aligned genera .cfa as a list of DSS alignments
 aligned_genera_list <- 
@@ -125,9 +128,6 @@ counts_new <-
 
 ### redetermine intragenus consistency by removing sequences not retained after max outlier detection
 
-# names of sequences removed at max outlier detection, deduplicated
-seqs_mf_names <- names(seqs_mf) %>% unique()
-
 ## remove max outliers from intragenus results and then recalculate split genera
 intragenus_new <- 
 	intragenus %>%
@@ -180,7 +180,7 @@ intragenus_new <-
 	) 
 	
 # names of sequences that are newly minor-ised (new intragenus outliers)
-minor_new <- intragenus_new %>% dplyr::filter(type == "minor", name %in% seqs_mf_names) %>% dplyr::pull(name)
+minor_new <- intragenus_new %>% dplyr::filter(type == "minor") %>% dplyr::pull(name)
 
 # names of sequences that were removed in max threshold detection or new intragenus filtering
 removed_all <- c(minor_new, seqs_mf_names)

@@ -820,6 +820,8 @@ workflow FILTER_SEQUENCES {
         params.consensus_min_prop
     )
 
+    //// attempt reharmonisation for taxa that failed max threshold outlier detection
+    // REHARMONISE_TAXA ()
 
     //// find intra-species outliers and potentially split species into clusters
     // INTRASPECIES_OUTLIERS ()

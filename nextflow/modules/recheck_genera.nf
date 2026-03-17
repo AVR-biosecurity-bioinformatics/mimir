@@ -27,7 +27,7 @@ process RECHECK_GENERA {
     def module_script = "${module_name}.R"
     """
     #!/usr/bin/env Rscript
-     
+      
     ### defining Nextflow environment variables as R variables
     ## input channel variables
     intragenus_csv =                 "${intragenus_csv}"
