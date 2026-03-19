@@ -44,9 +44,7 @@ nf_vars <- c(
     "projectDir",
     "params_dict",
     "alignment_cfa",
-    "thresholds_file",
-    "seqs_file",
-    "counts_file"
+    "thresholds_file"
 )
 lapply(nf_vars, nf_var_check)
 
@@ -71,10 +69,6 @@ seqs_list <-
 	) 
 
 thresholds <- readr::read_csv(thresholds_file, show_col_types = F)
-
-seqs <- Biostrings::readDNAStringSet(seqs_file)
-
-counts <- readr::read_tsv(counts_file, col_names = c("name","n"), show_col_types = FALSE)
 
 allowed_ranks <- c("kingdom","phylum", "class", "order", "family", "genus", "species")
 root_ranks <- c("root", allowed_ranks)

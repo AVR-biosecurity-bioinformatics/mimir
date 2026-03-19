@@ -16,7 +16,6 @@ process RECHECK_GENERA {
     output: 
     path("cg_all.csv"),                                     emit: csv
     path("cg_list.txt"),                                    emit: cg_list
-    path("rf_counts_new.tsv"),                              emit: counts_tsv
     path("out.fasta"),                                      emit: fasta
     
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'

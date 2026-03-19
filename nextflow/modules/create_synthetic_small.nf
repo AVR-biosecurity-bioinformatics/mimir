@@ -1,14 +1,18 @@
-process FLAG_GENERA_PAIRS {
-    def module_name = "flag_genera_pairs"
+process CREATE_SYNTHETIC_SMALL {
+    def module_name = "create_synthetic_small"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    path(alignment_cfa)
-    path(thresholds_file)
+    tuple path(fasta_files, name: 'input*.fasta'), path(clusters_tsv)
+    path(rf_counts_tsv)
+    val(max_synthetic_size)
 
     output: 
-    path("genera_pairs.csv"),                                  emit: csv
+    path("synthetic_genera.fasta"),                          emit: synthetic_fasta // sequences renamed as synthetic genera, one file
+    path("reps.txt"),                                        emit: reps // representative sequence names for synthetic genera
+    path("counts_renamed.tsv"),                              emit: counts_renamed_tsv // counts table for renamed sequences 
+    path("large*.fasta"),                                    emit: large_fasta // individual .fasta files for each cluster larger than threshold
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -21,9 +25,11 @@ process FLAG_GENERA_PAIRS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
-    alignment_cfa =                     "${alignment_cfa}"
-    thresholds_file =                   "${thresholds_file}"
-    
+    fasta_files =                    "${fasta_files}"
+    clusters_tsv =                   "${clusters_tsv}"
+    rf_counts_tsv =                  "${rf_counts_tsv}"
+    max_synthetic_size =             "${max_synthetic_size}"
+
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

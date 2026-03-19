@@ -20,10 +20,12 @@ include { BLAST_TOP_HITS                                             } from '../
 include { CLUSTER_MMSEQS as CLUSTER_LARGE_GENERA                     } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_MAX_COMPONENTS                   } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_MIN_COMPONENTS                   } from '../modules/cluster_mmseqs'
-include { CLUSTER_MMSEQS as CLUSTER_PARTIAL_GENERA                   } from '../modules/cluster_mmseqs'
+include { CLUSTER_MMSEQS as CLUSTER_PARTIAL_ALL                      } from '../modules/cluster_mmseqs'
+include { CLUSTER_MMSEQS as CLUSTER_PARTIAL_LARGE                    } from '../modules/cluster_mmseqs'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_1                         } from '../modules/combine_chunks'
 include { COMBINE_CHUNKS as COMBINE_CHUNKS_2                         } from '../modules/combine_chunks'
-include { CREATE_SYNTHETIC_GENERA                                    } from '../modules/create_synthetic_genera'
+include { CREATE_SYNTHETIC_LARGE                                     } from '../modules/create_synthetic_large'
+include { CREATE_SYNTHETIC_SMALL                                     } from '../modules/create_synthetic_small'
 include { ESTIMATE_THRESHOLDS                                        } from '../modules/estimate_thresholds'
 include { FILTER_AMBIGUOUS                                           } from '../modules/filter_ambiguous'
 include { FILTER_DUPLICATES                                          } from '../modules/filter_duplicates'
@@ -515,7 +517,7 @@ workflow FILTER_SEQUENCES {
     CLUSTER_LARGE_GENERA (
         ch_genera_sizebranch.large,
         ch_thresholds,
-        'large_genus'
+        'species_median'
     )
 
     //// ...then get representative 'core' sequences
@@ -558,26 +560,64 @@ workflow FILTER_SEQUENCES {
         .collectFile( keepHeader: true, skip: 1, name: 'gs_tibble.csv', storeDir: './output/results' )
         .set { ch_intragenus_results }
 
+    //// collect partially classified genera into groups for clustering
+    SPLIT_BY_CLASSIFICATION.out.part
+        .flatten()
+        .filter { it.size() > 0 }
+        .collect( sort: true )
+        .flatten()
+        .buffer( size: 10, remainder: true )
+        .set { ch_partial_genera }
+
     //// cluster partially classified lineages using median genus pairwise identity
-    CLUSTER_PARTIAL_GENERA (
-        SPLIT_BY_CLASSIFICATION.out.part,
+    CLUSTER_PARTIAL_ALL (
+        ch_partial_genera,
         ch_thresholds,
-        'partial'
+        'genus_median'
     )
 
-    //// create synthetic genera in partially classified lineages 
-    CREATE_SYNTHETIC_GENERA (
-        CLUSTER_PARTIAL_GENERA.out.clusters
+    //// create synthetic genera in partially classified lineages, outputting renamed small clusters and identified large clusters
+    CREATE_SYNTHETIC_SMALL (
+        CLUSTER_PARTIAL_ALL.out.clusters,
+        ch_redundant_counts,
+        '3000' // replace with params.max_synthetic_size
+    )
+
+    //// cluster partially classified lineages using median genus pairwise identity
+    CLUSTER_PARTIAL_LARGE (
+        CREATE_SYNTHETIC_SMALL.out.large_fasta.filter { it.size() > 0 }, // remove empty dummy file if it exists
+        ch_thresholds,
+        '0.99'
+    )
+
+    //// collect cluster reps from small synthetic genera
+    CREATE_SYNTHETIC_SMALL.out.reps
+        .collectFile ( name: "cluster_reps.txt" )
+        .set { ch_synthetic_reps_small }
+
+    //// create synthetic genera from large clusters
+    CREATE_SYNTHETIC_LARGE (
+        CLUSTER_PARTIAL_LARGE.out.clusters,
+        ch_redundant_counts,
+        ch_synthetic_reps_small
     )
 
     //// collect cluster reps from synthetic genera
-    CREATE_SYNTHETIC_GENERA.out.reps
+    CREATE_SYNTHETIC_SMALL.out.reps
+        .mix ( CREATE_SYNTHETIC_LARGE.out.reps )
         .collectFile ( name: "cluster_reps.txt" )
         .set { ch_synthetic_reps }
 
+    //// collect renamed redundancy counts lines into a single table
+    CREATE_SYNTHETIC_SMALL.out.counts_renamed_tsv
+        .mix( CREATE_SYNTHETIC_LARGE.out.counts_renamed_tsv )
+        .collectFile( name: 'rf_counts_renamed.tsv' )
+        .set { ch_counts_renamed }
+
     //// collect fully classified (without intragenus outliers) and partially classified (with synthetic genera) into a single .fasta file
     INTRAGENUS_OUTLIERS.out.retained
-        .mix( CREATE_SYNTHETIC_GENERA.out.fasta )
+        .mix( CREATE_SYNTHETIC_SMALL.out.synthetic_fasta )
+        .mix( CREATE_SYNTHETIC_LARGE.out.synthetic_fasta )
         .collectFile ( name: 'genus_processed.fasta' )
         .first()
         .set { ch_genus_processed }
@@ -623,9 +663,7 @@ workflow FILTER_SEQUENCES {
     //// convert top hits to flagged genera pairs 
     FLAG_GENERA_PAIRS (
         ALIGN_TOP_HITS.out.cfa,
-        ch_thresholds,
-        ch_genus_processed, // not necessary?
-        ch_redundant_counts 
+        ch_thresholds
         //// NOTE: This process needs to be changed so that it checks if query and target sizes could allow consensus
         //// if not, two genera from the top hits can be combined into a 'joint-genus' that nevers gets split during sub-component grouping
     )
@@ -640,8 +678,11 @@ workflow FILTER_SEQUENCES {
         ch_flagged_genera,
         ch_genus_processed,
         ch_redundant_counts, 
+        ch_counts_renamed,
         params.component_group_size
     )
+
+    ch_counts_new = GET_MAX_COMPONENTS.out.counts_tsv.first()
 
     //// branch component groups by number of records
     GET_MAX_COMPONENTS.out.fasta
@@ -658,20 +699,20 @@ workflow FILTER_SEQUENCES {
         }
         .set { ch_max_components }
 
-    //// align groups of small components of the max graph
+    //// align small groups of components of the max graph
     ALIGN_MAX_SMALL (
         ch_max_components.small,
         "small"
     )
 
-    //// cluster large components to get representative core sequences
+    //// cluster large component groups to get representative core sequences
     CLUSTER_MAX_COMPONENTS (
         ch_max_components.large,
         ch_thresholds,
-        'component'
+        'genus_median'
     )
 
-    //// get core and non-core sequences of large components
+    //// get core and non-core sequences of large component groups
     GET_MAX_CORE (
         CLUSTER_MAX_COMPONENTS.out.clusters
     )
@@ -692,11 +733,11 @@ workflow FILTER_SEQUENCES {
         .splitText ( by: 10, file: true )
         .set { ch_aligned_max_components }
 
-    //// find max threshold outliers within each component
+    //// find max threshold outliers within each component group
     MAX_THRESHOLD_OUTLIERS (
         ch_aligned_max_components,
         ch_genus_processed,
-        ch_redundant_counts,
+        ch_counts_new,
         ch_thresholds,
         params.consensus_min_n,
         params.consensus_min_prop
@@ -714,7 +755,7 @@ workflow FILTER_SEQUENCES {
         ch_max_removed,
         ch_aligned_genera_cfa,
         ch_synthetic_reps,
-        ch_redundant_counts,
+        ch_counts_new,
         params.consensus_min_n,
         params.consensus_min_prop
     )
@@ -724,8 +765,6 @@ workflow FILTER_SEQUENCES {
         .set { ch_cg_list }
 
     ch_seqs_rechecked = RECHECK_GENERA.out.fasta.first()
-
-    ch_counts_new = RECHECK_GENERA.out.counts_tsv.first()
 
     //// get min threshold comparator sequences for each consistent genus
     SELECT_MIN_COMPARATORS (
@@ -787,7 +826,7 @@ workflow FILTER_SEQUENCES {
     CLUSTER_MIN_COMPONENTS (
         ch_min_components.large,
         ch_thresholds,
-        'component'
+        'genus_median'
     )
 
     //// get core and non-core sequences of large components

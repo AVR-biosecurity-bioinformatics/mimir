@@ -1,14 +1,17 @@
-process CREATE_SYNTHETIC_GENERA {
-    def module_name = "create_synthetic_genera"
+process CREATE_SYNTHETIC_LARGE {
+    def module_name = "create_synthetic_large"
     // tag "-"
     container "jackscanlan/piperline-multi:0.0.1"
 
     input:
-    tuple path(fasta_files), path(clusters_tsv)
+    tuple path(fasta_files, name: 'input*.fasta'), path(clusters_tsv)
+    path(rf_counts_tsv)
+    path(small_reps_txt)
 
     output: 
-    path("seqs_out.fasta"),                                  emit: fasta
-    path("reps.txt"),                                        emit: reps
+    path("synthetic_genera.fasta"),                          emit: synthetic_fasta // sequences renamed as synthetic genera, one file
+    path("reps.txt"),                                        emit: reps // representative sequence names for synthetic genera
+    path("counts_renamed.tsv"),                              emit: counts_renamed_tsv // counts table for renamed sequences 
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -23,6 +26,8 @@ process CREATE_SYNTHETIC_GENERA {
     ## input channel variables
     fasta_files =                    "${fasta_files}"
     clusters_tsv =                   "${clusters_tsv}"
+    rf_counts_tsv =                  "${rf_counts_tsv}"
+    small_reps_txt =                 "${small_reps_txt}"
 
     ## global variables
     projectDir = "$projectDir"

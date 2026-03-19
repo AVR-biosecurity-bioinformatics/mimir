@@ -46,7 +46,8 @@ nf_vars <- c(
     "params_dict",
     "flagged_genera_file",
     "seqs_file",
-    "counts_file",
+    "counts_original_file",
+    "counts_renamed_file",
 	"component_group_size"
 )
 lapply(nf_vars, nf_var_check)
@@ -57,11 +58,34 @@ flagged_genera <- readr::read_csv(flagged_genera_file, show_col_types = FALSE) %
 
 seqs <- Biostrings::readDNAStringSet(seqs_file)
 
-counts <- readr::read_tsv(counts_file, col_names = c("name","n"), show_col_types = FALSE)
+counts_original <- readr::read_tsv(counts_original_file, col_names = c("name","n"), show_col_types = FALSE)
+counts_renamed <- readr::read_tsv(counts_renamed_file, col_names = c("name","n"), show_col_types = FALSE)
 
 component_group_size <- as.numeric(component_group_size)
 
 ### run code
+
+## make new counts file
+
+# get original name from new name in counts file
+original_names <- 
+	counts_renamed %>%
+	dplyr::mutate(name_orig = stringr::str_remove(name, "(?<=Unclassified)\\d+(?=;[^;]+$)")) %>%
+	dplyr::pull(name_orig)
+
+if (any(duplicated(original_names))) stop("Some original names of renamed sequences in counts file are duplicated -- something is wrong")
+
+# make combined new table of counts with renamed sequences replacing original names
+counts_new <- 
+	counts_original %>%
+	# remove original names from counts_original
+	dplyr::filter(!name %in% original_names) %>%
+	dplyr::bind_rows(., counts_renamed)
+
+# write out table of new counts
+readr::write_tsv(counts_new, "rf_counts_new.tsv", col_names = FALSE)
+
+##
 
 # make tibble of genus lineage of each sequence record
 seqs_genus <- 
@@ -73,28 +97,6 @@ seqs_genus <-
         genus = stringr::str_extract(lineage_string, "^.+(?=;)")
     ) %>%
 	dplyr::select(name, genus)
-
-## make sure counts sequence names match new names for synthetic genera
-# LCR family or above
-counts_lcrf <- 
-	counts %>%
-	dplyr::filter(stringr::str_detect(name, ";Unclassified;[^;]+$"))
-
-# LCR genus or below
-count_lcrg <- 
-	counts %>%
-	dplyr::filter(stringr::str_detect(name, ";Unclassified;[^;]+$", negate = T))
-
-# make new counts tibble
-counts_new <- 
-	names(seqs)[stringr::str_detect(names(seqs), ";Unclassified\\d+;[^;]+$")] %>%
-	tibble::as_tibble_col(column_name = "new") %>%
-	dplyr::mutate(
-		name = stringr::str_replace(new, ";Unclassified\\d+;(?=[^;]+$)", ";Unclassified;")
-	) %>%
-	dplyr::left_join(., counts_lcrf, by = "name") %>%
-	dplyr::select(name = new, n) %>%
-	dplyr::bind_rows(., count_lcrg)
 
 # summarise counts by genus
 genus_summary <- 

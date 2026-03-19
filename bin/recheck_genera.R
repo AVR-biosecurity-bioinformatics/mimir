@@ -86,8 +86,8 @@ aligned_genera_list <-
 # read in vector of synthetic genus representatives
 synthetic_reps <- readr::read_lines(synthetic_reps_txt)
 
-# read in table of redundancy counts (pre-synthetic renaming)
-rf_counts <- readr::read_tsv(rf_counts_tsv, col_names = c("name","n"), show_col_types = FALSE)
+# read in table of redundancy counts (renamed)
+counts_new <- readr::read_tsv(rf_counts_tsv, col_names = c("name","n"), show_col_types = FALSE)
 
 # consensus parameters
 con_min_n <- as.numeric(con_min_n)
@@ -101,30 +101,6 @@ root_ranks <- c("root", allowed_ranks)
 set.seed(1)
 
 seqs_all_names <- names(seqs_all)
-
-
-## make sure counts sequence names match new names for synthetic genera
-# LCR family or above
-counts_lcrf <- 
-	rf_counts %>%
-	dplyr::filter(stringr::str_detect(name, ";Unclassified;[^;]+$"))
-
-# LCR genus or below
-count_lcrg <- 
-	rf_counts %>%
-	dplyr::filter(stringr::str_detect(name, ";Unclassified;[^;]+$", negate = T))
-
-# make new counts tibble using seqs_all_names
-counts_new <- 
-	seqs_all_names[stringr::str_detect(seqs_all_names, ";Unclassified\\d+;[^;]+$")] %>%
-	tibble::as_tibble_col(column_name = "new") %>%
-	dplyr::mutate(
-		name = stringr::str_replace(new, ";Unclassified\\d+;(?=[^;]+$)", ";Unclassified;")
-	) %>%
-	dplyr::left_join(., counts_lcrf, by = "name") %>%
-	dplyr::select(name = new, n) %>%
-	dplyr::bind_rows(., count_lcrg)
-
 
 ### redetermine intragenus consistency by removing sequences not retained after max outlier detection
 
@@ -304,9 +280,6 @@ readr::write_csv(cg_all, "cg_all.csv")
 
 # write list of consistent genera to file
 readr::write_lines(cg_all$genus, "cg_list.txt")
-
-# write renamed counts
-readr::write_tsv(counts_new, "rf_counts_new.tsv")
 
 # write sequences that pass rechecking and max threshold outlier detection
 Biostrings::writeXStringSet(seqs_all[!names(seqs_all) %in% removed_all], "out.fasta")

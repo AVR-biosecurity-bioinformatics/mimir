@@ -6,11 +6,13 @@ process GET_MAX_COMPONENTS {
     input:
     path(flagged_genera_file)
     path(seqs_file)
-    path(counts_file)
+    path(counts_original_file)
+    path(counts_renamed_file)
     val(component_group_size)
 
     output: 
     path("component_group*.fasta"),                                  emit: fasta
+    path("rf_counts_new.tsv"),                                       emit: counts_tsv
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -25,7 +27,8 @@ process GET_MAX_COMPONENTS {
     ## input channel variables
     flagged_genera_file =                  "${flagged_genera_file}"
     seqs_file =                            "${seqs_file}"
-    counts_file =                          "${counts_file}"
+    counts_original_file =                 "${counts_original_file}"
+    counts_renamed_file =                  "${counts_renamed_file}"
     component_group_size =                 "${component_group_size}"
     
     ## global variables

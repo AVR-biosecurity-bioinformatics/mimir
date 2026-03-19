@@ -6,7 +6,7 @@ process CLUSTER_MMSEQS {
     input:
     path(fasta_files)
     path(thresholds_csv)
-    val(process_type)
+    val(cluster_threshold)
 
     output: 
     tuple path(fasta_files), path("clusters.tsv"),                            emit: clusters
@@ -27,7 +27,7 @@ process CLUSTER_MMSEQS {
         ${task.memory.getKilo()} \
         "${fasta_files}" \
         ${thresholds_csv} \
-        ${process_type}
+        ${cluster_threshold}
         
     """
 
