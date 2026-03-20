@@ -155,11 +155,16 @@ intragenus_new <-
 		consistent = "major" %in% unique(type)
 	) 
 	
-# names of sequences that are newly minor-ised (new intragenus outliers)
-minor_new <- intragenus_new %>% dplyr::filter(type == "minor") %>% dplyr::pull(name)
+# previously minor sequences
+minor_old <- intragenus %>% dplyr::filter(type == "minor") %>% dplyr::pull(name)
 
-# names of sequences that were removed in max threshold detection or new intragenus filtering
-removed_all <- c(minor_new, seqs_mf_names)
+# names of sequences that are newly minor-ised (new intragenus outliers)
+minor_new <- intragenus_new %>% dplyr::filter(type == "minor", !name %in% minor_old) %>% dplyr::pull(name)
+
+# names of sequences that were removed in max threshold detection or old/new intragenus filtering
+removed_all <- c(minor_old, minor_new, seqs_mf_names)
+
+message("Rechecked intragenus consistency with max threshold outliers excluded")
 
 # recalculate central sequence for all consistent genera
 consistent_genera <- 
@@ -168,11 +173,12 @@ consistent_genera <-
 	dplyr::pull(taxon) %>%
 	unique()
 
+message("Recalculating central sequences...")
+
 consistent_central <- 
-	lapply(
-		seq_along(aligned_genera_list),
-		function(y){
-			x <- aligned_genera_list[[y]]
+	purrr::imap(
+		aligned_genera_list,
+		function(x, idx){
 			# remove any sequences if they have been excluded
 			x.ret <- x[!names(x) %in% removed_all]
 			# get genus name
@@ -193,10 +199,12 @@ consistent_central <-
 					central_name <- names(x.ret)
 				}
 				# create tibble output that links name to genus
-				return(tibble::tibble(name = central_name, taxon = genus_name, central = TRUE))
+				out <- tibble::tibble(name = central_name, taxon = genus_name, central = TRUE)
 			} else {
-				return(NULL)
+				out <- NULL
 			}
+			if (idx %% 10 == 0) message(stringr::str_glue("Finished {idx} of {length(aligned_genera_list)} genera"))
+			return(out)
 		}
 	) %>%
 	dplyr::bind_rows()
@@ -206,6 +214,8 @@ intragenus_central <-
 	intragenus_new %>%
 	dplyr::left_join(., consistent_central, by = c("name", "taxon")) %>%
 	dplyr::mutate(central = dplyr::if_else(is.na(central), FALSE, TRUE))
+
+message("Recalculated central sequences for consistent genera")
 
 ## make sure every classified consistent genus has a central sequence
 # classified consistent genera
@@ -261,6 +271,8 @@ sg_cs.new <-
 synthetic_seqs <- 
 	synthetic_seqs %>%
 	dplyr::mutate(central = dplyr::if_else(name %in% sg_cs.new, TRUE, central))
+
+message("Got new central sequences for synthetic genera")
 
 # summarise synthetic seqs to genera, central seq and total rep count
 cg_synth <- 

@@ -76,7 +76,7 @@ alignment_list <-
 seqs <- Biostrings::readDNAStringSet(seqs_file)
 
 # read in rf_counts csv
-counts_new <- readr::read_tsv(rf_counts_tsv, show_col_types = FALSE)
+counts_new <- readr::read_tsv(rf_counts_tsv, col_names = c("name","n"), show_col_types = FALSE)
 
 # read in thresholds csv
 thresholds <- readr::read_csv(thresholds_csv,  show_col_types = FALSE)
@@ -429,7 +429,7 @@ min_loop <-
 				dplyr::filter(type == "minor") %>%
 				dplyr::select(component_group, name, n, threshold)
 			
-			message(paste("Finished component",y))
+			message(paste("Finished component",y,"of",length(alignment_list)))
 			
 			return(
 				list(

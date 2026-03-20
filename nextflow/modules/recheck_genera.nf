@@ -37,7 +37,7 @@ process RECHECK_GENERA {
     rf_counts_tsv =                  "${rf_counts_tsv}"
     con_min_n =                      "${con_min_n}"
     con_min_prop =                   "${con_min_prop}"
-    
+     
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

@@ -77,7 +77,7 @@ comparators_list <-
 	)
 
 # read in table of redundancy counts (post-synthetic renaming)
-counts_new <- readr::read_tsv(counts_file, show_col_types = FALSE)
+counts_new <- readr::read_tsv(counts_file, col_names = c("name","n"), show_col_types = FALSE)
 
 # read in thresholds csv
 thresholds <- readr::read_csv(thresholds_csv,  show_col_types = FALSE)

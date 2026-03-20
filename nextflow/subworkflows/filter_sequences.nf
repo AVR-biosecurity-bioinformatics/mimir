@@ -566,7 +566,7 @@ workflow FILTER_SEQUENCES {
         .filter { it.size() > 0 }
         .collect( sort: true )
         .flatten()
-        .buffer( size: 10, remainder: true )
+        .buffer( size: 20, remainder: true )
         .set { ch_partial_genera }
 
     //// cluster partially classified lineages using median genus pairwise identity
@@ -593,6 +593,7 @@ workflow FILTER_SEQUENCES {
     //// collect cluster reps from small synthetic genera
     CREATE_SYNTHETIC_SMALL.out.reps
         .collectFile ( name: "cluster_reps.txt" )
+        .first()
         .set { ch_synthetic_reps_small }
 
     //// create synthetic genera from large clusters
@@ -622,7 +623,7 @@ workflow FILTER_SEQUENCES {
         .first()
         .set { ch_genus_processed }
 
-    // select sequences from total for top-hit searching
+    // select sequences from total for top-hit searching; also deduplicate renamed sequences
     SELECT_SEARCH_RECORDS (
         ch_genus_processed,
         ch_intragenus_results,

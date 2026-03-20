@@ -85,7 +85,7 @@ for FILE in $4; do
 	# fi
 	
 	echo ""
-	echo "*** Clustering file: $4 ***"
+	echo "*** Clustering file: $FILE ***"
 	echo ""
 
 	# replace each space in sequence headers of fasta with the string "!?!?"

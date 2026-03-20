@@ -28,7 +28,7 @@ process CREATE_SYNTHETIC_LARGE {
     clusters_tsv =                   "${clusters_tsv}"
     rf_counts_tsv =                  "${rf_counts_tsv}"
     small_reps_txt =                 "${small_reps_txt}"
-
+ 
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

@@ -89,7 +89,7 @@ flags <-
 				query_tax <- 
 				    stringr::str_split(query_name, ";", n = 8, simplify = F) %>% 
 				    unlist %>% 
-				    stringr::str_replace_all(., "^Unclassified$", "UNCLASSIFIED") %>% 
+				    stringr::str_replace_all(., "^Unclassified(?=(\\d+)?$)", "UNCLASSIFIED") %>% 
 				    .[2:8] %>%
 				    c("Root", .)
 				query_k <- base::paste(query_tax[1:2], collapse = ";")
@@ -99,7 +99,7 @@ flags <-
 				query_f <- base::paste(query_tax[1:6], collapse = ";")
 				query_g <- base::paste(query_tax[1:7], collapse = ";")
 				query_s <- base::paste(query_tax[1:8], collapse = ";")
-				query_classified <- stringr::str_detect(query_tax, "UNCLASSIFIED|Unclassified(\\d+)?", negate = T)
+				query_classified <- stringr::str_detect(query_tax, "UNCLASSIFIED", negate = T)
 				# get lowest classified rank for focal sequence (ie. max index)
 				query_lcr <- root_ranks[max(match(root_ranks[query_classified], root_ranks))] 
 				query_lcr_i <- which(root_ranks == query_lcr)

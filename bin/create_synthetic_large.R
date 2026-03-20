@@ -76,7 +76,7 @@ genera_renamed <-
 	dplyr::mutate(
 		genus_new = stringr::str_extract(name, "(?<=;).+$") %>% stringr::str_extract(., ".+(?=;)"),
 		genus_old = stringr::str_remove(genus_new, "\\d+$"),
-		cluster_number = stringr::str_extract(genus_new, "\\d+$")
+		cluster_number = stringr::str_extract(genus_new, "\\d+$") %>% as.numeric()
 	) %>%
 	dplyr::mutate(
 		.by = genus_old,

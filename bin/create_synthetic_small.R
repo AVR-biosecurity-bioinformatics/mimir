@@ -146,7 +146,6 @@ if(length(clusters_large$name) > 0){
 				)
 				message(stringr::str_glue("Wrote {length(seqs_out)} sequences to 'large{idx}.fasta'"))
 			}
-			
 		}
 	)
 } else {

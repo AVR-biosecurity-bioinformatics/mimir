@@ -150,7 +150,7 @@ comparator_list <-
 				dplyr::slice_sample(n = 3)
 			# combine selected sequences with focal central sequence
 			out <- c(x_central,selections$name)
-			if (y %% 100 == 0) message(stringr::str_glue("{y} of {length(cg_vec)}"))
+			if (y %% 100 == 0) message(stringr::str_glue("Selected comparators for {y} of {length(cg_vec)} genera"))
 			# if no comparators were found, return nothing
 			if (length(out) < 2){
 				return(NULL)
