@@ -580,14 +580,14 @@ workflow FILTER_SEQUENCES {
     CREATE_SYNTHETIC_SMALL (
         CLUSTER_PARTIAL_ALL.out.clusters,
         ch_redundant_counts,
-        '3000' // replace with params.max_synthetic_size
+        params.synthetic_max_size
     )
 
     //// cluster partially classified lineages using median genus pairwise identity
     CLUSTER_PARTIAL_LARGE (
         CREATE_SYNTHETIC_SMALL.out.large_fasta.filter { it.size() > 0 }, // remove empty dummy file if it exists
         ch_thresholds,
-        '0.99'
+        params.synthetic_large_threshold
     )
 
     //// collect cluster reps from small synthetic genera

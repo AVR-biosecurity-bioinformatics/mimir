@@ -6,7 +6,7 @@ process CREATE_SYNTHETIC_SMALL {
     input:
     tuple path(fasta_files, name: 'input*.fasta'), path(clusters_tsv)
     path(rf_counts_tsv)
-    val(max_synthetic_size)
+    val(synthetic_max_size)
 
     output: 
     path("synthetic_genera.fasta"),                          emit: synthetic_fasta // sequences renamed as synthetic genera, one file
@@ -28,7 +28,7 @@ process CREATE_SYNTHETIC_SMALL {
     fasta_files =                    "${fasta_files}"
     clusters_tsv =                   "${clusters_tsv}"
     rf_counts_tsv =                  "${rf_counts_tsv}"
-    max_synthetic_size =             "${max_synthetic_size}"
+    synthetic_max_size =             "${synthetic_max_size}"
 
     ## global variables
     projectDir = "$projectDir"

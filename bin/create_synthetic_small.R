@@ -46,7 +46,7 @@ nf_vars <- c(
     "fasta_files",
     "clusters_tsv",
     "rf_counts_tsv",
-    "max_synthetic_size"
+    "synthetic_max_size"
 )
 lapply(nf_vars, nf_var_check)
 
@@ -64,7 +64,7 @@ clusters <- readr::read_tsv(clusters_tsv, col_names = c("rep","name"), show_col_
 # read in rf_counts csv
 rf_counts <- readr::read_tsv(rf_counts_tsv, col_names = c("name","n"), show_col_types = FALSE)
 
-max_synthetic_size <- as.numeric(max_synthetic_size)
+synthetic_max_size <- as.numeric(synthetic_max_size)
 
 ### run code
 
@@ -76,8 +76,8 @@ clusters_size <-
 		size = n()
 	) 
 
-clusters_small <- clusters_size %>% dplyr::filter(size <= max_synthetic_size)
-clusters_large <- clusters_size %>% dplyr::filter(size > max_synthetic_size)
+clusters_small <- clusters_size %>% dplyr::filter(size <= synthetic_max_size)
+clusters_large <- clusters_size %>% dplyr::filter(size > synthetic_max_size)
 
 ## small clusters
 
