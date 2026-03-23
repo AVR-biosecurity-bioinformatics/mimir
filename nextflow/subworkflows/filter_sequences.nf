@@ -348,7 +348,7 @@ workflow FILTER_SEQUENCES {
         .mix ( MERGE_SPLITS_GENUS.out.fasta.flatten() )
         .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
         .flatten ()
-        .buffer ( size: 100, remainder: true ) 
+        .buffer ( size: 10, remainder: true ) 
         .set { ch_filter_redundant_input }
 
     //// filter out redundant (ie. identical and contained) sequences within each species, counting the number of sequences absorbed
@@ -868,7 +868,12 @@ workflow FILTER_SEQUENCES {
 
 
     //// apply final taxonomic outlier filtering and output fate channels for each sequence
+    // FILTER_TAXONOMIC_OUTLIERS ()
 
+    //// filter partially classified sequences
+    // FILTER_PARTIALLY_CLASSIFIED ()
+
+    ////
 
 
     // //// cluster sequences into OTUs with mmseqs2

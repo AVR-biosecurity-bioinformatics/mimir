@@ -48,11 +48,12 @@ for i in $FASTA_LIST; do
     # split genus-level file into species-level files, saving sequences to new files based on their lineage string hash
     mawk  -v RS=">" -v ORS="" -v FS="[\r\n]+" -v OFS="\n" ' NR>1 {
         split($1, he, ";" )
-        lineage_string=""
+        lineage_string = ""
         for (i = 2; i <= 8; i++ )
             lineage_string = lineage_string ";" he[i]
-        tmp="echo \""lineage_string"\" | md5sum | cut -f1 -d\" \" | tr -d \"\n\""
-        tmp | getline linhash
+        tmp=("echo \""lineage_string"\" | md5sum | cut -f1 -d\" \" | tr -d \"\n\"")
+        (tmp | getline linhash)
+        close(tmp) # needed to make getline work properly
         gsub(/[^[:alnum:]]/, "", linhash)
         print ">" $0 > ( "tmpspp." linhash ".fasta")
         }' \
