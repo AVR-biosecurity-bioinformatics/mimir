@@ -62,12 +62,13 @@ esac
 
 # save sequences to new files based on their lineage string hash
 awk -v n_seps="$N_SEPS" -v RS=">" -v ORS="" -v FS="[\r\n]+" -v OFS="\n" ' NR>1 {
-    split($1, he, ";", seps )
-    lineage_string=""
-    for (i = 2; i <= n_seps; i++ )
+    split($1, he, ";")
+    lineage_string = he[2]
+    for (i = 3; i <= n_seps; i++ )
         lineage_string = lineage_string ";" he[i]
-    tmp="echo \""lineage_string"\" | md5sum | cut -f1 -d\" \""
-    tmp | getline linhash
+    tmp=("echo \""lineage_string"\" | md5sum | cut -f1 -d\" \"")
+    (tmp | getline linhash)
+    close(tmp) # needed to make getline work properly
     gsub(/[^[:alnum:]]/, "", linhash)
     print ">" $0 > ( linhash ".lineage.fasta")
     }' \
