@@ -330,9 +330,8 @@ workflow FILTER_SEQUENCES {
         } 
         .set { ch_split_genus_output }
 
-    //// group merging files into groups of 1000 genera for merging
+    //// set up merging channel
     ch_split_genus_output.merge
-        .buffer ( size: 1000, remainder: true )
         .flatten ()
         .collect ()
         .set { ch_merge_splits_genus_input }
@@ -342,13 +341,36 @@ workflow FILTER_SEQUENCES {
         ch_merge_splits_genus_input
     )
 
-    //// group genus-level .fasta files into batches for redundancy filtering
+    //// mix merged and non-merged files then branch by number of records in .fasta
     ch_split_genus_output.no_merge
         .flatten ()
         .mix ( MERGE_SPLITS_GENUS.out.fasta.flatten() )
         .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
         .flatten ()
-        .buffer ( size: 10, remainder: true ) 
+        .map { fasta ->
+            n_seqs = fasta.readLines().count { it =~ />/ }
+            [ fasta, n_seqs ]
+        }
+        .branch { file, n_seqs ->
+            small: n_seqs < 100
+                return file
+            medium: n_seqs >= 100 && n_seqs < 10000
+                return file 
+            large: n_seqs >= 10000
+                return file
+        }
+        .set { ch_split_genus_branch }
+
+    //// buffer medium files into groups of 10
+    ch_split_genus_branch.medium
+        .buffer( size: 10, remainder: true )
+        .set { ch_split_genus_medium }
+
+    //// buffer small files into groups of 1000 and mix with medium and large files channel
+    ch_split_genus_branch.small
+        .buffer( size: 1000, remainder: true )
+        .mix ( ch_split_genus_medium )
+        .mix ( ch_split_genus_branch.large )
         .set { ch_filter_redundant_input }
 
     //// filter out redundant (ie. identical and contained) sequences within each species, counting the number of sequences absorbed
