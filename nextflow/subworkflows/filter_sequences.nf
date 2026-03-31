@@ -16,7 +16,7 @@ include { ALIGN_OTHER as ALIGN_MAX_OTHER                             } from '../
 include { ALIGN_OTHER as ALIGN_MIN_OTHER                             } from '../modules/align_other'
 include { ALIGN_SUBSAMPLE                                            } from '../modules/align_subsample'
 include { ALIGN_TOP_HITS                                             } from '../modules/align_top_hits'
-include { BLAST_TOP_HITS                                             } from '../modules/blast_top_hits'
+include { SEARCH_TOP_HITS                                            } from '../modules/search_top_hits'
 include { CLUSTER_MMSEQS as CLUSTER_LARGE_GENERA                     } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_MAX_COMPONENTS                   } from '../modules/cluster_mmseqs'
 include { CLUSTER_MMSEQS as CLUSTER_MIN_COMPONENTS                   } from '../modules/cluster_mmseqs'
@@ -35,7 +35,6 @@ include { FILTER_REDUNDANT                                           } from '../
 include { FILTER_SEQ_OUTLIERS                                        } from '../modules/filter_seq_outliers'
 include { FILTER_TAX_OUTLIERS                                        } from '../modules/filter_tax_outliers'
 include { FILTER_UNCLASSIFIED                                        } from '../modules/filter_unclassified'
-include { FIND_TOP_HITS                                              } from '../modules/find_top_hits'
 include { FLAG_GENERA_PAIRS                                          } from '../modules/flag_genera_pairs'
 include { GET_CORE as GET_GENUS_CORE                                 } from '../modules/get_core'
 include { GET_CORE as GET_MAX_CORE                                   } from '../modules/get_core'
@@ -45,14 +44,14 @@ include { GET_MIN_COMPONENTS                                         } from '../
 include { HMMSEARCH_FULL                                             } from '../modules/hmmsearch_full'
 include { HMMSEARCH_AMPLICON                                         } from '../modules/hmmsearch_amplicon'
 include { INTRAGENUS_OUTLIERS                                        } from '../modules/intragenus_outliers'
-include { MAKE_BLAST_DATABASE                                        } from '../modules/make_blast_database'
+include { MAKE_SEARCH_DATABASE                                       } from '../modules/make_search_database'
 include { MAX_THRESHOLD_OUTLIERS                                     } from '../modules/max_threshold_outliers'
 include { MERGE_SPLITS as MERGE_SPLITS_GENUS                         } from '../modules/merge_splits'
 include { MIN_THRESHOLD_OUTLIERS                                     } from '../modules/min_threshold_outliers'
 include { RECHECK_GENERA                                             } from '../modules/recheck_genera'
 include { SELECT_MIN_COMPARATORS                                     } from '../modules/select_min_comparators'
 include { SELECT_FINAL_SEQUENCES                                     } from '../modules/select_final_sequences'
-include { SELECT_SEARCH_RECORDS                                      } from '../modules/select_search_records'
+// include { SELECT_SEARCH_RECORDS                                      } from '../modules/select_search_records'
 include { SORT_BY_LINEAGE                                            } from '../modules/sort_by_lineage'
 include { SPLIT_BY_CLASSIFICATION                                    } from '../modules/split_by_classification'
 include { SPLIT_BY_RANK as SPLIT_BY_GENUS                            } from '../modules/split_by_rank'
@@ -645,47 +644,47 @@ workflow FILTER_SEQUENCES {
         .first()
         .set { ch_genus_processed }
 
-    // select sequences from total for top-hit searching; also deduplicate renamed sequences
-    SELECT_SEARCH_RECORDS (
-        ch_genus_processed,
-        ch_intragenus_results,
-        ch_synthetic_reps
-    )
+    // // select sequences from total for top-hit searching; also deduplicate renamed sequences
+    // SELECT_SEARCH_RECORDS (
+    //     ch_genus_processed,
+    //     ch_intragenus_results,
+    //     ch_synthetic_reps
+    // )
 
-    SELECT_SEARCH_RECORDS.out.fasta
-        .first()
-        .set { ch_search_records }
+    // SELECT_SEARCH_RECORDS.out.fasta
+    //     .first()
+    //     .set { ch_search_records }
 
     //// create blastn database of target records
-    MAKE_BLAST_DATABASE (
-        ch_search_records
+    MAKE_SEARCH_DATABASE (
+        ch_genus_processed
     )
 
-    MAKE_BLAST_DATABASE.out.blast_db
+    MAKE_SEARCH_DATABASE.out.db
         .first()
-        .set { ch_blast_db }
+        .set { ch_search_db }
 
     //// split records into chunks for searching
-    ch_search_records
+    ch_genus_processed
         .splitFasta( by: 200, file: true )
         .set { ch_search_queries }
 
     //// searching chunks against representative records for highest-identity hits
-    BLAST_TOP_HITS (
+    SEARCH_TOP_HITS (
         ch_search_queries,
-        ch_blast_db,
+        ch_search_db,
         params.top_hits_n
     )
 
     //// align inter-genus top hits per sequence
     ALIGN_TOP_HITS (
-        BLAST_TOP_HITS.out.tsv,
-        ch_search_records
+        SEARCH_TOP_HITS.out.tsv.filter { it.size() > 0 }, // remove results tsv files that are empty
+        ch_genus_processed
     )
 
     //// convert top hits to flagged genera pairs 
     FLAG_GENERA_PAIRS (
-        ALIGN_TOP_HITS.out.cfa,
+        ALIGN_TOP_HITS.out.cfa.filter { it.size() > 0 },
         ch_thresholds
         //// NOTE: This process needs to be changed so that it checks if query and target sizes could allow consensus
         //// if not, two genera from the top hits can be combined into a 'joint-genus' that nevers gets split during sub-component grouping

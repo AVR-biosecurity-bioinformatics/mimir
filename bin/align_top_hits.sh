@@ -11,10 +11,10 @@ set -o pipefail
 # unwrap fasta file
 awk '/^>/ { print (NR==1 ? "" : RS) $0; next } { printf "%s", $0 } END { printf RS }' $4 > unwrapped.fasta
 
-# split input table by query, explicitly sorting by query beforehand
+# split input table by query, explicitly (and stably) sorting by query beforehand
 cat $3 | \
-    sort -k1,1 - | \
-    awk '
+    sort -k1,1 -s - | \
+    awk -v RS="\n" -v ORS="\n" -v FS="\t" -v OFS="\t" '
         BEGIN {
             prev_query = ""
             file_index = 0
