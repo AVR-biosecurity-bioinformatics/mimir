@@ -51,7 +51,7 @@ workflow FORMAT_DATABASE {
         //// add other sequences to core alignment
         ALIGN_DATABASE_OTHER (
             ALIGN_DATABASE_CORE.out.fasta,
-            GET_CORE_SEQUENCES.out.other
+            GET_DATABASE_CORE.out.other
         )
 
         ALIGN_DATABASE_OTHER.out.fasta

@@ -347,7 +347,7 @@ workflow FILTER_SEQUENCES {
         .collect ( sort: true ) // force the channel order to be the same every time for caching -- unlikely to be a bottleneck?
         .flatten ()
         .map { fasta ->
-            n_seqs = fasta.readLines().count { it =~ />/ }
+            def n_seqs = fasta.readLines().count { it =~ />/ }
             [ fasta, n_seqs ]
         }
         .branch { file, n_seqs ->
@@ -499,7 +499,7 @@ workflow FILTER_SEQUENCES {
         .collect(sort: true)
         .flatten()
         .map { fasta ->
-            n_seqs = fasta.readLines().count { it =~ />/ }
+            def n_seqs = fasta.readLines().count { it =~ />/ }
             [ fasta, n_seqs ]
         }
         // branch channel depending on the number of sequences in the file
@@ -710,7 +710,7 @@ workflow FILTER_SEQUENCES {
     GET_MAX_COMPONENTS.out.fasta
         .flatten()
         .map { fasta ->
-            n_seqs = fasta.readLines().count { it =~ />/ }
+            def n_seqs = fasta.readLines().count { it =~ />/ }
             [ fasta, n_seqs ]
         }
         .branch { fasta, n_seqs ->
@@ -827,7 +827,7 @@ workflow FILTER_SEQUENCES {
     GET_MIN_COMPONENTS.out.fasta
         .flatten()
         .map { fasta ->
-            n_seqs = fasta.readLines().count { it =~ />/ }
+            def n_seqs = fasta.readLines().count { it =~ />/ }
             [ fasta, n_seqs ]
         }
         .branch { fasta, n_seqs ->

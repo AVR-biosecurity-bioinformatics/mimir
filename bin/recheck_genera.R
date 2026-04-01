@@ -191,10 +191,14 @@ consistent_central <-
 					x_d.median <- apply(x_d, 1, median)
 					# indices and names of sequences with smallest median distance
 					x_d.min <- which(x_d.median == min(x_d.median))
-					# find longest central sequence
-					central_idx <- x.ret[names(x.ret) %in% names(x_d.min)] %>% DECIPHER::RemoveGaps(.) %>% lengths() %>% which.max()
-					# get name of central sequence
-					central_name <- x.ret[names(x.ret) %in% names(x_d.min)][central_idx] %>% names()
+					if(length(x_d.min) > 1){
+						# break ties with the smallest summed distance to all other points (medoid definition)
+						x_d.sum <- apply(x_d, 1, sum)
+						central_name <- x_d.sum[names(x_d.sum) %in% names(x_d.min)] %>% sort() %>% .[1] %>% names()
+					} else {
+						# use sequence with smallest median distance
+						central_name <- names(x_d.min)
+					}
 				} else {
 					central_name <- names(x.ret)
 				}

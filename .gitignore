@@ -10,3 +10,4 @@
 /trace/
 /test/*
 /scripts/*
+.vscode/*

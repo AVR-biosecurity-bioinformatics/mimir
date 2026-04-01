@@ -33,7 +33,7 @@ process INTRAGENUS_OUTLIERS {
     thresholds_csv =                 "${thresholds_csv}"
     con_min_n =                      "${con_min_n}"
     con_min_prop =                   "${con_min_prop}"
-     
+        
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"
