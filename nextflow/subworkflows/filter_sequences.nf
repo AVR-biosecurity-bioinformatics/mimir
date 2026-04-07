@@ -673,6 +673,7 @@ workflow FILTER_SEQUENCES {
     SEARCH_TOP_HITS (
         ch_search_queries,
         ch_search_db,
+        ch_thresholds,
         params.top_hits_n
     )
 

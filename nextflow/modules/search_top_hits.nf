@@ -6,6 +6,7 @@ process SEARCH_TOP_HITS {
     input:
     path(query_fasta)
     path(search_db)
+    path(thresholds_csv)
     val(n_top_hits)
 
     output: 
@@ -25,6 +26,7 @@ process SEARCH_TOP_HITS {
         ${projectDir} \
         ${task.cpus} \
         "${query_fasta}" \
+        "${thresholds_csv}" \
         ${n_top_hits}
         
     """
