@@ -1,13 +1,14 @@
 process ALIGN_BATCH {
     def module_name = "align_batch"
     // tag "-"
-    container "staphb/clustalo:1.2.4"
+    container "staphb/mafft:7.526"
 
     input:
-    tuple val(fasta_file), path(counts_file)
+    path(fasta_files)
+    val(file_type)
 
     output: 
-    tuple path("*.aligned.fasta"), path(counts_file),             emit: aligned_fasta
+    path("alignment.cfa"),             emit: cfa
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -17,12 +18,13 @@ process ALIGN_BATCH {
     def module_script = "${module_name}.sh"
     """
     #!/usr/bin/env bash
-
+    
     ### run module code #
     bash ${module_name}.sh \
         ${projectDir} \
         ${task.cpus} \
-        "${fasta_file}" 
+        "${fasta_files}" \
+        ${file_type}
             
     """
 }

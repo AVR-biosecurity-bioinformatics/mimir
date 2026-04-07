@@ -1,31 +1,34 @@
 #!/bin/bash
 set -e
 set -u
+set -o pipefail
 ## args are the following:
 # $1 = projectDir 
 # $2 = cpus
-# $3 = core.aligned.fasta
+# $3 = core.fasta
 # $4 = other.fasta
 
-
-# if 'other' sequence file does not contain sequences, skip alignment
-if [[ $( grep -c "^>" $4 ) > 0 ]]; then 
+# if 'other' sequence file is empty, skip alignment
+if [ -s $4 ]; then 
     # align
     mafft \
         --nuc \
         --thread ${2} \
         --linelength -1 \
-        --memsavetree \
         --add ${4} \
-        ${3} \
-        > all.aligned.fasta
+        ${3} | \
+    sed -e ':a;N;$!ba;s/\n/>>>/g' \
+    > alignment.cfa 
 else 
-    # rename as aligned
-    cp $3 all.aligned.fasta
+    # process input as .cfa format
+    echo "All sequences are already aligned"
+    cat $3 |
+    sed -e ':a;N;$!ba;s/\n/>>>/g' \
+    > alignment.cfa 
 fi 
 
 # throw error if output file is empty
-if [ -s all.aligned.fasta ]; then
+if [ -s alignment.cfa  ]; then
     echo "Finished aligning all sequences"        
 else 
     echo "alignment output file is empty"

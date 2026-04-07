@@ -6,12 +6,17 @@ process MATCH_BOLD {
     input:
     path(seq_tibble)
     path(ncbi_lineageparents)
-    path(ncbi_synonyms)
+    path(ncbi_filteredsynonyms)
+    path(genbank_accessions)
     val(placeholder_as_unclassified)
     val(digits_as_unclassified)
+    val(bold_idmethod_filter)
 
     output: 
-    tuple path("bold_seqs.*.fasta"), path("matching_taxids.*.csv"), path("synchanges.*.csv"),    emit: matching_data
+    path("bold_seqs.fasta"),                   emit: fasta
+    path("matching_taxids.csv"),               emit: matching_taxids
+    path("synchanges.csv"),                    emit: synchanges
+    path("bold_gp_dups.csv"),                  emit: gb_dups
 
     // publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -26,10 +31,12 @@ process MATCH_BOLD {
     ## input channel variables
     seq_tibble =                    "${seq_tibble}"
     ncbi_lineageparents =           "${ncbi_lineageparents}"
-    ncbi_synonyms =                 "${ncbi_synonyms}"
+    ncbi_filteredsynonyms =         "${ncbi_filteredsynonyms}"
+    genbank_accessions =            "${genbank_accessions}"
     placeholder_as_unclassified =   "${placeholder_as_unclassified}"
     digits_as_unclassified =        "${digits_as_unclassified}"
-
+    bold_idmethod_filter =          "${bold_idmethod_filter}"
+    
     ## global variables
     projectDir = "$projectDir"
     params_dict = "$params"

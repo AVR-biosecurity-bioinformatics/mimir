@@ -38,7 +38,9 @@ esac
 ### TODO: make these downloads more robust
 
 # download PHMM from InterPro and unzip
-curl --retry 10 --retry-delay 5 --retry-connrefused $PHMM_URL | gunzip > full.hmm
+curl -N --retry 30 --retry-delay 1 --retry-connrefused $PHMM_URL > full.hmm.gz
+gunzip -c full.hmm.gz > full.hmm
 
 # download seed alignment for PHMM from InterPro and unzip
-curl --retry 10 --retry-delay 5 --retry-connrefused $SEED_URL | gunzip > seed.stockholm
+curl -N --retry 30 --retry-delay 1 --retry-connrefused $SEED_URL > seed.stockholm.gz
+gunzip -c seed.stockholm.gz > seed.stockholm

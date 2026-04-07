@@ -27,17 +27,18 @@ USE_MITO=${8}
 
 QUERY_NUC="txid${TAXON_ID}[Organism:exp] AND (${MARKER}) AND ${MIN_LENGTH}:${MAX_LENGTH}[Sequence Length]"
 
-# query by marker name
+# query by marker name (convert version to accession)
 esearch \
     -db nuccore \
     -query "$QUERY_NUC" \
     | \
     efetch \
     -format acc \
-    -mode txt \
+    -mode txt | \
+    sed "s/\.[0-9]//" \
     > ${TAXON_ID}_nuc.txt 
 
-# query mitochondrial genomes
+# query mitochondrial genomes (convert version to accession)
 if [[ $USE_MITO == "true" ]]; then
 
     QUERY_MITO="txid${TAXON_ID}[Organism:exp] AND mitochondrion[filter] AND genome AND complete"
@@ -48,7 +49,8 @@ if [[ $USE_MITO == "true" ]]; then
         | \
         efetch \
         -format acc \
-        -mode txt \
+        -mode txt | \
+        sed "s/\.[0-9]//" \
         > ${TAXON_ID}_mito.txt 
 
 else 

@@ -21,7 +21,7 @@ process RENAME_GENBANK {
     def module_script = "${module_name}.R"
     """
     #!/usr/bin/env Rscript
-     
+      
     ### defining Nextflow environment variables as R variables
     ### input channel variables
     gb_file =                           "${gb_file}"
@@ -29,7 +29,7 @@ process RENAME_GENBANK {
     ncbi_rankedlineage_noname =         "${ncbi_rankedlineage_noname}"
     placeholder_as_unclassified =       "${placeholder_as_unclassified}"
     digits_as_unclassified =            "${digits_as_unclassified}"
-
+    
     ### global variables
     projectDir = "$projectDir"
     params_dict = "$params"

@@ -6,9 +6,11 @@ process MAKE_SYNONYMS {
     input:
     path(ncbi_taxidnamerank)
     path(ncbi_names)
+    path(ncbi_lineageparents)
 
     output: 
-    path("ncbi_synonyms.rds"),             emit: synonyms
+    path("ncbi_synonyms.rds"),                     emit: synonyms
+    path("ncbi_filteredsynonyms.rds"),             emit: filteredsynonyms
     
     publishDir "${projectDir}/output/modules/${module_name}",  mode: 'copy'
 
@@ -21,12 +23,13 @@ process MAKE_SYNONYMS {
     
     ### defining Nextflow environment variables as R variables
     ## input channel variables
+    ncbi_taxidnamerank =    "$ncbi_taxidnamerank"
+    ncbi_names =            "$ncbi_names"
+    ncbi_lineageparents =   "$ncbi_lineageparents"
 
     ## global variables
-    projectDir = "$projectDir"
-    params_dict = "$params"
-    ncbi_taxidnamerank = "$ncbi_taxidnamerank"
-    ncbi_names = "$ncbi_names"
+    projectDir =            "$projectDir"
+    params_dict =           "$params"
 
     tryCatch({
     ### source functions and themes, load packages, and import Nextflow params
