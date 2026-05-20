@@ -104,7 +104,12 @@ ncbi_synonyms_filtered <-
         ncbi_lineageparents %>% dplyr::select(tax_id, parent_taxon, grandparent_taxon),
         by = join_by(tax_id)
     ) %>%
-    dplyr::select(synonym = name_txt, tax_name, rank, parent_taxon, grandparent_taxon) # only keep four columns
+    dplyr::select(synonym = name_txt, tax_name, rank, parent_taxon, grandparent_taxon) %>% # only keep four columns
+    # handle cases where there are identical synonyms with the same parent and grandparent but different tax_names
+    dplyr::group_by(synonym, rank, parent_taxon, grandparent_taxon) %>%
+    dplyr::arrange(tax_name) %>%
+    dplyr::slice(1) %>%
+    dplyr::ungroup()
     ## NOTE: 'synonym' is the taxon name synonymous with the valid taxon name 'tax_name', 'rank' is the rank of the taxon
 
 ### TODO: manually add in known synonyms between BOLD and NCBI
