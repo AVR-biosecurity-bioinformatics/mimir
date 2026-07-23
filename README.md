@@ -2,7 +2,7 @@
 
 `mimir` is a [Nextflow](https://www.nextflow.io/docs/latest/index.html)-based pipeline for reference database curation of DNA barcode sequences, such as those required for metabarcoding experiments. It is partially a successor to [`taxreturn`](https://github.com/alexpiper/taxreturn).
 
-This pipeline is being developed by a team at [Agriculture Victoria Research](https://agriculture.vic.gov.au/), as a part of the [National Grains Diagnostic & Surveillance Initiative (NGDSI)](https://grdc.com.au/grdc-investments/investments/investment?code=DEE2305-004RTX). 
+This pipeline is being developed by a team at [Agriculture Science & Technology](https://agriculture.vic.gov.au/), as a part of the [National Grains Diagnostic & Surveillance Initiative (NGDSI)](https://grdc.com.au/grdc-investments/investments/investment?code=DEE2305-004RTX). 
 
 `mimir` is a sibling pipeline to [`freyr`](https://github.com/AVR-biosecurity-bioinformatics/freyr), which handles sequencing data analysis for metabarcoding experiments. 
 
